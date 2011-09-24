@@ -1,0 +1,11 @@
+#!/usr/bin/env node
+/*-*- mode: Javascript; -*-*/
+
+require.paths.push(__dirname);
+require.paths.push(__dirname + '/deps');
+
+var reporter = require('nodeunit').reporters.default;
+
+process.chdir(__dirname);
+reporter.run(['test']);
+
