@@ -1,7 +1,13 @@
 // Copyright 2011 Bobby Powers. All rights reserved.
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
-var $ = require('jquery');
+if (typeof $ === 'undefined')
+    $ = require('jquery');
+
+if (typeof exports === 'undefined')
+    exports = {};
+
+boosd = exports;
 
 ERR_VERSION  = exports.ERR_VERSION  = "bad xml or unknown smile version";
 ERR_BAD_TIME = exports.ERR_BAD_TIME = "bad time (control) data";
