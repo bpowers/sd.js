@@ -4,8 +4,8 @@
 
 // if we're running under node this will be defined.  Otherwise, just
 // use a simple object.
-if (typeof exports === 'undefined')
-    exports = {};
+    if (typeof exports === 'undefined')
+        exports = {};
 boosd = exports;
 
 ERR_VERSION  = exports.ERR_VERSION  = "bad xml or unknown smile version";
@@ -14,6 +14,19 @@ exports.err = null;
 
 const requiredSpecs = ['start', 'stop', 'dt'];
 
+/**
+   Turns the array of arguments into a hashset.  Bascially an object
+   like:
+
+   {arg1: true, arg2: true, ...}
+*/
+boosd.set = function() {
+    var result = {};
+    var i;
+    for (i = 0; i < arguments.length; ++i)
+        result[arguments[i]] = true;
+    return result;
+}
 
 boosd.builtins = {
     'max': function(a, b) {
@@ -60,7 +73,7 @@ function Model(xmlString) {
     this.valid = true
     return;
 }
-
+exports.Model = Model;
 exports.newModel = function(xmlString) {
     const model = new Model(xmlString);
 
@@ -117,7 +130,7 @@ const parseControlInfo = function(simspecs) {
    @param macros JQuery list of all the DOM's macros.
    @return A validated map of all the defined macros.
 */
-parseMacros = function(macros) {
+const parseMacros = function(macros) {
     if (macros.length === 0)
         return {}
 
@@ -194,11 +207,12 @@ const mapText = function(jQueryObj) {
    Validates & figures out all necessary variable information.
 */
 Model.prototype._parseVars = function(varList) {
+    const that = this;
 
-    const initials = []
-    const stocks = []
-    const flows = []
-    const vars = {}
+    this.initials = []
+    this.stocks   = []
+    this.flows    = []
+    this.vars     = {}
 
     varList.map(function() {
         const name     = $(this).attr('name').trim().toLowerCase();
@@ -213,12 +227,12 @@ Model.prototype._parseVars = function(varList) {
         // Stocks go into both intials and stocks, because they both
         // have initial values & update their values after we
         // calculate all the flows and auxes.
-        vars[name] = v;
-        if (type === 'stock') {
-            initials.push(v);
-            stocks.push(v);
+        that.vars[name] = v;
+        if (type === 'STOCK') {
+            that.initials.push(v);
+            that.stocks.push(v);
         } else {
-            flows.push(v);
+            that.flows.push(v);
         }
     });
 
