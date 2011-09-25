@@ -43,19 +43,24 @@ this.engineSuite.lynx1 = function(test) {
         test.ok(model instanceof boosd.Model && !boosd.err,
                 'model not an object')
 
-        function setSameLen(aSet, anArray) {
-            return Object.keys(aSet).length === anArray.length;
-        }
+	function verifyVars(aSet, anArray) {
+            test.ok(Object.keys(aSet).length === anArray.length,
+                    'num of vars ' + anArray.length +
+		    ' (expected: ' + Object.keys(aSet).length + ')');
+	    var i;
+	    for (i = 0; i < anArray.length; ++i) {
+		test.ok(anArray[i].name in aSet,
+			'set contains: ' + anArray[i].name);
+	    }
+	}
 
         test.ok(Object.keys(model.vars).length === 14, 'wrong vars len');
 
         expectedInitials = set('hares', 'lynx');
-        test.ok(setSameLen(expectedInitials, model.initials),
-                'wrong num of initials ' + model.initials.length);
+	verifyVars(expectedInitials, model.initials);
 
         expectedStocks = set('hares', 'lynx');
-        test.ok(setSameLen(expectedStocks, model.stocks),
-                'wrong num of stocks ' + model.stocks.length);
+        verifyVars(expectedStocks, model.stocks);
 
         expectedFlows = set('hare_births', 'hare_deaths',
                             'lynx_births', 'lynx_deaths',
@@ -64,9 +69,7 @@ this.engineSuite.lynx1 = function(test) {
                             'area', 'lynx_birth_fraction',
                             'size_of_1_time_lynx_harvest',
                             'lynx_death_fraction', 'hares_killed_per_lynx');
-        test.ok(setSameLen(expectedFlows, model.flows),
-                'wrong num of flows ' + model.flows.length + ' (want:' +
-                Object.keys(expectedFlows).length + ')');
+        verifyVars(expectedFlows, model.flows);
 
         test.done();
     });
