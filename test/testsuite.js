@@ -74,3 +74,18 @@ this.engineSuite.lynx1 = function(test) {
         test.done();
     });
 };
+
+this.engineSuite.sort = function(test) {
+    // its not comprehensive, but its something.
+    var toSort   = [7, 5, 5, 7, 2, 1];
+    const sorted = [1, 2, 5, 5, 7, 7];
+
+    // sorts in place;
+    boosd.sort(toSort);
+    var i;
+    for (i = 0; i < sorted.length; ++i) {
+	test.ok(sorted[i] === toSort[i], sorted[i] + ' === ' + toSort[i]);
+    }
+
+    test.done();
+};
