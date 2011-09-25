@@ -36,7 +36,7 @@
             <display color="purple" x="171" y="80" nmpos="top"/>
         </flow>
         <flow name="hare_deaths">
-            <eqn>Lynx*hares_killed__per_lynx</eqn>
+            <eqn>Lynx*hares_killed_per_lynx</eqn>
             <display color="purple" x="427" y="79" nmpos="top"/>
         </flow>
         <stock name="Lynx">
@@ -47,15 +47,15 @@
             <display x="367" y="268" nmpos="center"/>
         </stock>
         <flow name="lynx_births">
-            <eqn>Lynx*lynx_birth__fraction</eqn>
+            <eqn>Lynx*lynx_birth_fraction</eqn>
             <display x="470" y="271" nmpos="right" nmoff="-30"/>
         </flow>
         <flow name="lynx_deaths">
-            <eqn>Lynx*lynx_death__fraction</eqn>
+            <eqn>Lynx*lynx_death_fraction</eqn>
             <display x="286" y="272" nmpos="top" nmoff="-30"/>
         </flow>
         <flow name="one_time_lynx_harvest">
-            <eqn>PULSE(size_of_1_time__lynx_harvest, 4, 1e3)</eqn>
+            <eqn>PULSE(size_of_1_time_lynx_harvest, 4, 1e3)</eqn>
             <display x="297" y="339" nmpos="bottom" nmoff="30"/>
         </flow>
         <aux name="hare_birth_fraction">

@@ -1,16 +1,23 @@
 
 this.engineSuite = {};
 this.engineSuite.scanner = function(test) {
-    const macro = 'IF value THEN MAX(flow, 0) ELSE flow';
-    const expected = ['if', 'value', 'then', 'max', '(', 'flow', ',', 0, ')', 'else', 'flow'];
+    const testLex = function(str, expected) {
+	var scanner = new boosd.Scanner(str);
+	var tok;
+	var i = 0;
 
-    var scanner = new boosd.Scanner(macro);
-    var tok;
-    var i = 0;
-    while ((tok = scanner.getToken())) {
-	test.ok(tok.tok === expected[i], 'checking ' + tok.tok);
-	i += 1;
+	while ((tok = scanner.getToken())) {
+	    test.ok(tok.tok === expected[i],
+		    'checking ' + tok.tok + ' === ' + expected[i]);
+	    i += 1;
+	}
     }
+    testLex('IF value THEN MAX(flow, 0) ELSE flow',
+	    ['if', 'value', 'then', 'max', '(', 'flow', ',', 0, ')', 'else', 'flow']);
+
+    // we do a .toLowerCase internally, so both of these work.
+    testLex('5E4', [50000]);
+    testLex('5e4', [50000]);
 
     test.done();
 };

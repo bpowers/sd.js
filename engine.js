@@ -14,6 +14,14 @@ exports.err = null;
 
 const requiredSpecs = ['start', 'stop', 'dt'];
 
+
+boosd.builtins = {
+    'max': function(a, b) {
+        return a > b ? a : b;
+    }
+};
+
+
 /**
    Extracts the <simspecs> information into nice, usable, validated
    object. Sets exports.err on error.
@@ -56,17 +64,6 @@ const parseControlInfo = function(simspecs) {
 }
 
 /**
-   Macros.
-*/
-var Macro = {};
-
-builtins = {
-    'max': function(a, b) {
-        return a > b ? a : b;
-    }
-};
-
-/**
    Extracts all <macro>'s into a usable format.
 
    FIXME: I'm skipping macros for now, will come back to them after
@@ -87,10 +84,18 @@ parseMacros = function(macros) {
         return name;
     });
 
-
-    console.log('vars: (' + params[0] + ' ' + params[1]);
-
     return {};
+}
+
+/**
+   Validates & figures out all necessary variable information.
+*/
+parseVars = function(vars) {
+
+    vars.map(function() {
+	var eqn = $(this).children('eqn').text();
+	console.log($(this).attr('name') + ' = ' + eqn);
+    });
 }
 
 /**
@@ -120,6 +125,8 @@ exports.modelGen = function(xmlString) {
     model.macros = parseMacros(xmile.children('macro'));
     if (!model.macros)
         return null;
+
+    model.vars = parseVars(xmile.children('model').children());
 
     return {};
 }
@@ -203,7 +210,8 @@ Scanner.prototype._lexIdentifier = function(startPos) {
                      new SourceLoc(startPos.line, startPos.pos + len));
 }
 Scanner.prototype._lexNumber = function(startPos) {
-    const numStr = /\d*\.\d*|\d+/.exec(this.text.substring(this._pos))[0];
+    // we do a .toLowerCase before the string gets to here, so we don't need to match for lower and upper cased 'e's.
+    const numStr = /[\d*\.\d*|\d+](e\d+)?/.exec(this.text.substring(this._pos))[0];
     const len = numStr.length;
     const num = parseFloat(numStr);
     this._fastForward(len);
