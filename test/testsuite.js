@@ -33,11 +33,11 @@ this.engineSuite.lynx1 = function(test) {
         }
 
 	const xmlString = '' + data;
-	model = boosd.modelGen('');
+	model = boosd.newModel('');
 	test.ok(model == null && boosd.err == boosd.ERR_VERSION,
 		'no error on bad model');
 
-	model = boosd.modelGen(xmlString);
+	model = boosd.newModel(xmlString);
 	test.ok(model && typeof model === 'object' && !boosd.err,
 		'model not an object')
 

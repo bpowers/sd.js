@@ -23,6 +23,51 @@ boosd.builtins = {
 
 
 /**
+   Converts a string of xml data represnting an xmile model into a
+   javascript object.  The resulting javascript object can give
+   information about the model (what variables does it have, what are
+   their equations, etc), and can also create simulation objects.
+   Simulation objects can be parametarized and run (simulated),
+   generating time-series data on all of the variables.
+*/
+function Model(xmlString) {
+    exports.err = null;
+
+    const model = {};
+    const xmile = $(xmlString);
+    if (!xmile || xmile.find('header smile').attr('version') != "1.0") {
+        exports.err = ERR_VERSION;
+	this.valid = false;
+        return;
+    }
+    model.name = xmile.find('header name').text() || 'boosd model';
+
+    // get our time info: start-time, end-time, dt, etc.
+    model.ctrl = parseControlInfo(xmile.children('simspecs'));
+    if (!model.ctrl) {
+	this.valid = false;
+        return;
+    }
+
+    model.macros = parseMacros(xmile.children('macro'));
+    if (!model.macros) {
+	this.valid = false;
+        return null;
+    }
+
+    model.vars = this._parseVars(xmile.children('model').children());
+
+    this.valid = true
+    return;
+}
+
+exports.newModel = function(xmlString) {
+    const model = new Model(xmlString);
+
+    return model.valid ? model : null;
+}
+
+/**
    Extracts the <simspecs> information into nice, usable, validated
    object. Sets exports.err on error.
 
@@ -87,51 +132,109 @@ parseMacros = function(macros) {
     return {};
 }
 
+function varCompare(other) {
+    return 0;
+}
+
+function stockCompare(other) {
+    return 0;
+}
+
+function varDeps(other) {
+    return [];
+}
+
+function stockDeps(other) {
+    return [];
+}
+
+function Variable(name, type, eqn, inflows, outflows) {
+    this.eqnOrig = eqn;
+    eqn = eqn.toLowerCase();
+    this.name = name;
+    this.type = type;
+    if (type === 'stock') {
+	this.compare = stockCompare;
+	this.deps = stockDeps;
+	this.initial = eqn;
+	this.inflows = inflows;
+	this.outflows = outflows;
+    } else {
+	this.compare = varCompare;
+	this.deps = varDeps;
+	this.eqn = eqn;
+    }
+}
+// returns a string of this variables initial equation. suitable for
+// exec()'ing
+Variable.prototype.initialEquation = function() {
+    if (this.type === 'stock') {
+	return this.initial;
+    } else {
+	return this.eqn;
+    }
+}
+Variable.prototype.equation = function() {
+    if (this.type === 'stock') {
+	return '';
+    } else {
+	return this.eqn;
+    }
+}
+
+const mapText = function(jQueryObj) {
+    var list = []
+    jQueryObj.map(function() {
+	list.push($(this).text().trim().toLowerCase());
+    });
+    return list;
+}
+
 /**
    Validates & figures out all necessary variable information.
 */
-parseVars = function(vars) {
+Model.prototype._parseVars = function(varList) {
 
-    vars.map(function() {
-	var eqn = $(this).children('eqn').text();
-	console.log($(this).attr('name') + ' = ' + eqn);
+    const initials = []
+    const stocks = []
+    const flows = []
+    const vars = {}
+
+    varList.map(function() {
+	const name     = $(this).attr('name').trim().toLowerCase();
+	const type     = $(this).get(0).tagName;
+	const eqn      = $(this).children('eqn').text().trim();
+	const inflows  = mapText($(this).children('inflow'));
+	const outflows = mapText($(this).children('outflow'));
+	const v        = new Variable(name, type, eqn, inflows, outflows);
+
+	// add the variable to the map of all vars, and also to the
+	// particular lists it needs to be in for calculations.
+	// Stocks go into both intials and stocks, because they both
+	// have initial values & update their values after we
+	// calculate all the flows and auxes.
+	vars[name] = v;
+	if (type === 'stock') {
+	    initials.push(v);
+	    stocks.push(v);
+	} else {
+	    flows.push(v);
+	}
     });
-}
 
-/**
-   Converts a string of xml data represnting an xmile model into a
-   javascript object.  The resulting javascript object can give
-   information about the model (what variables does it have, what are
-   their equations, etc), and can also create simulation objects.
-   Simulation objects can be parametarized and run (simulated),
-   generating time-series data on all of the variables.
-*/
-exports.modelGen = function(xmlString) {
-    exports.err = null;
+    // now we promote constants from being calculated every time step
+    // (with the flows) to being calculated once, with the other
+    // initial values.
 
-    const model = {};
-    const xmile = $(xmlString);
-    if (!xmile || xmile.find('header smile').attr('version') != "1.0") {
-        exports.err = ERR_VERSION;
-        return null;
-    }
-    model.name = xmile.find('header name').text() || 'boosd model';
-
-    // get our time info: start-time, end-time, dt, etc.
-    model.ctrl = parseControlInfo(xmile.children('simspecs'));
-    if (!model.ctrl)
-        return null;
-
-    model.macros = parseMacros(xmile.children('macro'));
-    if (!model.macros)
-        return null;
-
-    model.vars = parseVars(xmile.children('model').children());
-
-    return {};
+    // now we need to sort all of the 3 lists, to make sure all our
+    // computations happen in the right order.
 }
 
 //=============================================================== scanner ==//
+
+// the idea is to use the scanner (& an eventual parser) to validate
+// the equations, but especially the macros
+
 const reservedWords = {
     'if': true,
     'then': true,
@@ -210,7 +313,8 @@ Scanner.prototype._lexIdentifier = function(startPos) {
                      new SourceLoc(startPos.line, startPos.pos + len));
 }
 Scanner.prototype._lexNumber = function(startPos) {
-    // we do a .toLowerCase before the string gets to here, so we don't need to match for lower and upper cased 'e's.
+    // we do a .toLowerCase before the string gets to here, so we
+    // don't need to match for lower and upper cased 'e's.
     const numStr = /[\d*\.\d*|\d+](e\d+)?/.exec(this.text.substring(this._pos))[0];
     const len = numStr.length;
     const num = parseFloat(numStr);
