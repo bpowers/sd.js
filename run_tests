@@ -2,7 +2,7 @@
 /*-*- mode: Javascript; -*-*/
 
 var fs = require('fs')
-var $ = require('jquery');
+$ = require('jquery');
 var _ = require('underscore');
 var boosd = require('./engine.js');
 

@@ -1,5 +1,20 @@
 
 this.engineSuite = {};
+this.engineSuite.scanner = function(test) {
+    const macro = 'IF value THEN MAX(flow, 0) ELSE flow';
+    const expected = ['if', 'value', 'then', 'max', '(', 'flow', ',', 0, ')', 'else', 'flow'];
+
+    var scanner = new boosd.Scanner(macro);
+    var tok;
+    var i = 0;
+    while ((tok = scanner.getToken())) {
+	test.ok(tok.tok === expected[i], 'checking ' + tok.tok);
+	i += 1;
+    }
+
+    test.done();
+};
+
 this.engineSuite.lynx1 = function(test) {
     dataStore.getFile('test/data/lynx-hares2.xml', function(err, data) {
 	var model;
