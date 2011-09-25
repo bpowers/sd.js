@@ -37,7 +37,7 @@ function Model(xmlString) {
     const xmile = $(xmlString);
     if (!xmile || xmile.find('header smile').attr('version') != "1.0") {
         exports.err = ERR_VERSION;
-	this.valid = false;
+        this.valid = false;
         return;
     }
     model.name = xmile.find('header name').text() || 'boosd model';
@@ -45,17 +45,17 @@ function Model(xmlString) {
     // get our time info: start-time, end-time, dt, etc.
     model.ctrl = parseControlInfo(xmile.children('simspecs'));
     if (!model.ctrl) {
-	this.valid = false;
+        this.valid = false;
         return;
     }
 
     model.macros = parseMacros(xmile.children('macro'));
     if (!model.macros) {
-	this.valid = false;
+        this.valid = false;
         return null;
     }
 
-    model.vars = this._parseVars(xmile.children('model').children());
+    model.vars = this._parseVars(xmile.children('model').children('stock,flow,aux'));
 
     this.valid = true
     return;
@@ -154,38 +154,38 @@ function Variable(name, type, eqn, inflows, outflows) {
     this.name = name;
     this.type = type;
     if (type === 'stock') {
-	this.compare = stockCompare;
-	this.deps = stockDeps;
-	this.initial = eqn;
-	this.inflows = inflows;
-	this.outflows = outflows;
+        this.compare = stockCompare;
+        this.deps = stockDeps;
+        this.initial = eqn;
+        this.inflows = inflows;
+        this.outflows = outflows;
     } else {
-	this.compare = varCompare;
-	this.deps = varDeps;
-	this.eqn = eqn;
+        this.compare = varCompare;
+        this.deps = varDeps;
+        this.eqn = eqn;
     }
 }
 // returns a string of this variables initial equation. suitable for
 // exec()'ing
 Variable.prototype.initialEquation = function() {
     if (this.type === 'stock') {
-	return this.initial;
+        return this.initial;
     } else {
-	return this.eqn;
+        return this.eqn;
     }
 }
 Variable.prototype.equation = function() {
     if (this.type === 'stock') {
-	return '';
+        return '';
     } else {
-	return this.eqn;
+        return this.eqn;
     }
 }
 
 const mapText = function(jQueryObj) {
     var list = []
     jQueryObj.map(function() {
-	list.push($(this).text().trim().toLowerCase());
+        list.push($(this).text().trim().toLowerCase());
     });
     return list;
 }
@@ -201,25 +201,25 @@ Model.prototype._parseVars = function(varList) {
     const vars = {}
 
     varList.map(function() {
-	const name     = $(this).attr('name').trim().toLowerCase();
-	const type     = $(this).get(0).tagName;
-	const eqn      = $(this).children('eqn').text().trim();
-	const inflows  = mapText($(this).children('inflow'));
-	const outflows = mapText($(this).children('outflow'));
-	const v        = new Variable(name, type, eqn, inflows, outflows);
+        const name     = $(this).attr('name').trim().toLowerCase();
+        const type     = $(this).get(0).tagName;
+        const eqn      = $(this).children('eqn').text().trim();
+        const inflows  = mapText($(this).children('inflow'));
+        const outflows = mapText($(this).children('outflow'));
+        const v        = new Variable(name, type, eqn, inflows, outflows);
 
-	// add the variable to the map of all vars, and also to the
-	// particular lists it needs to be in for calculations.
-	// Stocks go into both intials and stocks, because they both
-	// have initial values & update their values after we
-	// calculate all the flows and auxes.
-	vars[name] = v;
-	if (type === 'stock') {
-	    initials.push(v);
-	    stocks.push(v);
-	} else {
-	    flows.push(v);
-	}
+        // add the variable to the map of all vars, and also to the
+        // particular lists it needs to be in for calculations.
+        // Stocks go into both intials and stocks, because they both
+        // have initial values & update their values after we
+        // calculate all the flows and auxes.
+        vars[name] = v;
+        if (type === 'stock') {
+            initials.push(v);
+            stocks.push(v);
+        } else {
+            flows.push(v);
+        }
     });
 
     // now we promote constants from being calculated every time step
