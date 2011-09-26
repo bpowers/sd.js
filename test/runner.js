@@ -19,6 +19,7 @@ if (typeof module !== 'undefined' && module.exports) {
     });
 
     $ = require('jquery');
+    _ = require('underscore');
 
     requirejs(['test/testsuite'], function(suite){
         exports.suite = suite;
