@@ -7,7 +7,7 @@ define(['../lib/engine', '../lib/lex', '../lib/util'], function(boosd, lex, util
 
     var suite = {};
     suite.lex = function(test) {
-	const testLex = function(str, expected) {
+	const testLex = function(str, expected, types) {
             var scanner = new lex.Scanner(str);
             var tok;
             var i = 0;
@@ -15,15 +15,20 @@ define(['../lib/engine', '../lib/lex', '../lib/util'], function(boosd, lex, util
             while ((tok = scanner.getToken())) {
 		test.ok(tok.tok === expected[i],
 			'checking ' + tok.tok + ' === ' + expected[i]);
+		test.ok(tok.type === types[i],
+			'checking ' + tok.type + ' === ' + types[i]);
 		i += 1;
             }
 	}
 	testLex('IF value THEN MAX(flow, 0) ELSE flow',
-		['if', 'value', 'then', 'max', '(', 'flow', ',', 0, ')', 'else', 'flow']);
+		['if', 'value', 'then', 'max', '(', 'flow', ',', 0, ')', 'else', 'flow'],
+		[lex.RESERVED, lex.IDENT, lex.RESERVED, lex.IDENT,
+		 lex.TOKEN, lex.IDENT, lex.TOKEN, lex.NUMBER, lex.TOKEN,
+		 lex.RESERVED, lex.IDENT]);
 
 	// we do a .toLowerCase internally, so both of these work.
-	testLex('5E4', [50000]);
-	testLex('5e4', [50000]);
+	testLex('5E4', [50000], [lex.NUMBER]);
+	testLex('5e4', [50000], [lex.NUMBER]);
 
 	test.done();
     };
