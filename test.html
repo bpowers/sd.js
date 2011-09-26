@@ -5,24 +5,11 @@
     <script src="deps/underscore.js"></script>
     <script src="deps/jquery.js"></script>
     <script src="deps/nodeunit/nodeunit.js"></script>
-    <script src="engine.js"></script>
-    <script src="test/testsuite.js"></script>
+    <script data-main="test/runner" src="deps/require.js"></script>
   </head>
   <body>
     <h1 id="nodeunit-header">JSSD Test Suite</h1>
     <script>
-	var dataStore = {};
-	dataStore.getFile = function(path, cb) {
-	    $.ajax(path, {
-	        'dataType': 'text',
-	        'success': function(data) {
-	            cb(null, data);
-	        }
-	    });
-	}
-	nodeunit.run({
-	    'Engine Tests': engineSuite
-	});
     </script>
   </body>
 </html>

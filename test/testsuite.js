@@ -1,8 +1,9 @@
+define(['../lib/engine'], function(boosd) {
 
 const set = boosd.set;
 
-this.engineSuite = {};
-this.engineSuite.scanner = function(test) {
+var suite = {};
+suite.scanner = function(test) {
     const testLex = function(str, expected) {
         var scanner = new boosd.Scanner(str);
         var tok;
@@ -24,7 +25,7 @@ this.engineSuite.scanner = function(test) {
     test.done();
 };
 
-this.engineSuite.lynx1 = function(test) {
+suite.lynx1 = function(test) {
     dataStore.getFile('test/data/lynx-hares2.xml', function(err, data) {
         var model;
 
@@ -75,7 +76,7 @@ this.engineSuite.lynx1 = function(test) {
     });
 };
 
-this.engineSuite.sort = function(test) {
+suite.sort = function(test) {
     // its not comprehensive, but its something.
     var toSort   = [7, 5, 5, 7, 2, 1];
     const sorted = [1, 2, 5, 5, 7, 7];
@@ -89,3 +90,7 @@ this.engineSuite.sort = function(test) {
 
     test.done();
 };
+
+    return suite;
+
+});
