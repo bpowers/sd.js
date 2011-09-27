@@ -1,7 +1,7 @@
 // Copyright 2011 Bobby Powers. All rights reserved.
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
-define(['../lib/engine', '../lib/lex', '../lib/util'], function(boosd, lex, util) {
+define(['../lib/sd', '../lib/lex', '../lib/util'], function(boosd, lex, util) {
 
     const set = util.set;
 
