@@ -1,7 +1,7 @@
 // Copyright 2011 Bobby Powers. All rights reserved.
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
-define(['../lib/sd', '../lib/lex', '../lib/util'], function(boosd, lex, util) {
+define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
 
     const set = util.set;
 
@@ -54,12 +54,12 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(boosd, lex, util) {
             }
 
             const xmlString = '' + data;
-            model = boosd.newModel('');
-            test.ok(model == null && boosd.err == boosd.ERR_VERSION,
+            model = sd.newModel('');
+            test.ok(model == null && sd.err == sd.ERR_VERSION,
                     'no error on bad model');
 
-            model = boosd.newModel(xmlString);
-            test.ok(model instanceof boosd.Model && !boosd.err,
+            model = sd.newModel(xmlString);
+            test.ok(model instanceof sd.Model && !sd.err,
                     'model not an object')
 
             function verifyVars(aSet, anArray) {

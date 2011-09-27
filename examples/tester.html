@@ -1,0 +1,80 @@
+<html>
+  <head>
+    <title>JSSD Test Suite</title>
+    <link rel="stylesheet" href="deps/nodeunit/nodeunit.css" type="text/css" />
+    <script src="deps/underscore.js"></script>
+    <script src="deps/jquery.js"></script>
+    <script src="deps/nodeunit/nodeunit.js"></script>
+    <script src="sd.js"></script>
+  </head>
+  <body>
+    <h1 id="nodeunit-header">JSSD Test Suite</h1>
+    <script>
+
+set = function() {
+    var result = {};
+    var i;
+    for (i = 0; i < arguments.length; ++i)
+        result[arguments[i]] = true;
+    return result;
+}
+
+var testSuite = {};
+testSuite.lynx1 = function(test) {
+    $.ajax('lynx-hares2.xml', {
+        'dataType': 'text',
+        'success': function(data) {
+            var model;
+
+            const xmlString = '' + data;
+            model = sd.newModel('');
+            test.ok(model == null && sd.err == sd.ERR_VERSION,
+                    'no error on bad model');
+
+            model = sd.newModel(xmlString);
+            test.ok(model instanceof sd.Model && !sd.err,
+                    'model not an object')
+
+            function verifyVars(aSet, anArray) {
+		test.ok(Object.keys(aSet).length === anArray.length,
+			'num of vars ' + anArray.length +
+			' (expected: ' + Object.keys(aSet).length + ')');
+		var i;
+		for (i = 0; i < anArray.length; ++i) {
+                    test.ok(anArray[i].name in aSet,
+                            'set contains: ' + anArray[i].name);
+		}
+            }
+
+            test.ok(Object.keys(model.vars).length === 14, 'wrong vars len');
+
+            expectedInitials = set('hares', 'lynx');
+            verifyVars(expectedInitials, model.initials);
+
+            expectedStocks = set('hares', 'lynx');
+            verifyVars(expectedStocks, model.stocks);
+
+            expectedFlows = set('hare_births', 'hare_deaths',
+				'lynx_births', 'lynx_deaths',
+				'one_time_lynx_harvest',
+				'hare_birth_fraction', 'hare_density',
+				'area', 'lynx_birth_fraction',
+				'size_of_1_time_lynx_harvest',
+				'lynx_death_fraction',
+				'hares_killed_per_lynx');
+            verifyVars(expectedFlows, model.flows);
+
+            test.done();
+	}
+    });
+};
+
+// run the actual unit tests at the page's load event.
+$(function() {
+    nodeunit.run({
+        'Engine Tests': testSuite
+    });
+});
+    </script>
+  </body>
+</html>
