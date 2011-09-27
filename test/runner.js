@@ -4,10 +4,12 @@
 
 dataStore = {};
 
+// handle the cases of running in the browser or headless under node
 if (typeof module !== 'undefined' && module.exports) {
+    // we're running in node
     var fs = require('fs');
     dataStore.getFile = function(path, cb) {
-        fs.readFile('test/data/lynx-hares2.xml', function(err, data) {
+        fs.readFile(path, function(err, data) {
             cb(err, data);
         });
     }
@@ -26,6 +28,7 @@ if (typeof module !== 'undefined' && module.exports) {
     });
 
 } else {
+    // we're running in the browser
     dataStore.getFile = function(path, cb) {
         $.ajax(path, {
             'dataType': 'text',
@@ -43,5 +46,4 @@ if (typeof module !== 'undefined' && module.exports) {
             });
         });
     });
-
 }
