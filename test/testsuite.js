@@ -214,5 +214,42 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
         test.done();
     };
 
+    suite.lookup = function(test) {
+        var table;
+        function expect(index, val) {
+            const result = util.lookup(table, index);
+            test.ok(result === val,
+                    'lookup expect result ' + result + ' === ' + val);
+        }
+
+        table = {
+            x: [1, 2, 3],
+            y: [1, 2, 3],
+        };
+        expect(0, 1);
+        expect(1, 1);
+        expect(1.5, 1.5);
+        expect(2, 2);
+        expect(3, 3);
+        expect(9, 3);
+
+        table = {
+            x: [-1, 1, 2, 3],
+            y: [.5, 1, 5, -5],
+        };
+        expect(-10, .5);
+        expect(-1, .5);
+        expect(0, .75);
+        expect(1, 1);
+        expect(1.5, 3);
+        expect(2, 5);
+        expect(2.5, 0);
+        expect(2.75, -2.5);
+        expect(3, -5);
+        expect(9, -5);
+
+        test.done();
+    };
+
     return suite;
 });
