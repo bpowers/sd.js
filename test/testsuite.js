@@ -40,6 +40,12 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
         testLex('5E4', [50000], [lex.NUMBER]);
         testLex('5e4', [50000], [lex.NUMBER]);
 
+        testLex('pulse(size_of_1_time_lynx_harvest, 4, 1e3)',
+                ['pulse', '(', 'size_of_1_time_lynx_harvest', ',', 4, ',', 1000, ')'],
+                [lex.IDENT, lex.TOKEN, lex.IDENT, lex.TOKEN, lex.NUMBER,
+                 lex.TOKEN, lex.NUMBER, lex.TOKEN])
+
+
         test.done();
     };
 
@@ -53,6 +59,8 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
                 return;
             }
 
+            // on node data is a byte array.  this forces it into a
+            // string.
             const xmlString = '' + data;
             model = sd.newModel('');
             test.ok(model === null && sd.error() === sd.errors.ERR_VERSION,
@@ -94,8 +102,40 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
         });
     };
 
+    // check the variable dependencies used by the sorting routines.
     suite.varDeps = function(test) {
-        test.done();
+        dataStore.getFile('test/data/lynx-hares2.xml', function(err, data) {
+            var model;
+
+            test.ok(!err, 'error reading file');
+            if (err) {
+                test.done();
+                return;
+            }
+
+            // on node data is a byte array.  this forces it into a
+            // string.
+            const xmlString = '' + data;
+
+            model = sd.newModel(xmlString);
+            test.ok(model instanceof sd.Model && !sd.error(),
+                    'model not an object');
+
+            function verifyDeps(name, depArray) {
+                if (!model.vars.hasOwnProperty(name)) {
+                    test.ok(false, 'dep verify failed, unknown var ' + name);
+                    return;
+                }
+                const deps = model.vars[name].getDeps();
+
+                //test.ok(deps.length === depArray.length,
+                //      'expected ' + depArray.length + ', got ' + deps.length);
+            }
+
+            verifyDeps('hares', ['hare_births', 'hare_deaths', 'hare_gangstas']);
+
+            test.done();
+        });
     };
 
     suite.sort = function(test) {
@@ -114,5 +154,4 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
     };
 
     return suite;
-
 });
