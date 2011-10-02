@@ -55,12 +55,12 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
 
             const xmlString = '' + data;
             model = sd.newModel('');
-            test.ok(model == null && sd.err == sd.ERR_VERSION,
+            test.ok(model === null && sd.error() === sd.errors.ERR_VERSION,
                     'no error on bad model');
 
             model = sd.newModel(xmlString);
-            test.ok(model instanceof sd.Model && !sd.err,
-                    'model not an object')
+            test.ok(model instanceof sd.Model && !sd.error(),
+                    'model not an object');
 
             function verifyVars(aSet, anArray) {
                 test.ok(Object.keys(aSet).length === anArray.length,
@@ -92,6 +92,10 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
 
             test.done();
         });
+    };
+
+    suite.varDeps = function(test) {
+        test.done();
     };
 
     suite.sort = function(test) {
