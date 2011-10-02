@@ -53,7 +53,7 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
         dataStore.getFile('test/data/lynx-hares2.xml', function(err, data) {
             var model;
 
-            test.ok(!err, 'error reading file');
+            test.ok(!err, 'read file');
             if (err) {
                 test.done();
                 return;
@@ -64,11 +64,11 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
             const xmlString = '' + data;
             model = sd.newModel('');
             test.ok(model === null && sd.error() === sd.errors.ERR_VERSION,
-                    'no error on bad model');
+                    'error on bad model');
 
             model = sd.newModel(xmlString);
             test.ok(model instanceof sd.Model && !sd.error(),
-                    'model not an object');
+                    'model an object');
 
             function verifyVars(aSet, anArray) {
                 test.ok(Object.keys(aSet).length === anArray.length,
@@ -81,7 +81,7 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
                 }
             }
 
-            test.ok(Object.keys(model.vars).length === 14, 'wrong vars len');
+            test.ok(Object.keys(model.vars).length === 14, 'vars len 14');
 
             expectedInitials = set('hares', 'lynx');
             verifyVars(expectedInitials, model.initials);
@@ -103,11 +103,11 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
     };
 
     // check the variable dependencies used by the sorting routines.
-    suite.varDeps = function(test) {
+    suite['var - deps'] = function(test) {
         dataStore.getFile('test/data/lynx-hares2.xml', function(err, data) {
             var model;
 
-            test.ok(!err, 'error reading file');
+            test.ok(!err, 'read file');
             if (err) {
                 test.done();
                 return;
@@ -119,7 +119,7 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
 
             model = sd.newModel(xmlString);
             test.ok(model instanceof sd.Model && !sd.error(),
-                    'model not an object');
+                    'model an object');
 
             function verifyDeps(name, depArray) {
                 if (!model.vars.hasOwnProperty(name)) {
@@ -130,7 +130,8 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
                 const depsLen = _.keys(deps).length;
 
                 test.ok(depsLen === depArray.length,
-                        'expected ' + depArray.length + ', got ' + depsLen);
+                        name +  ' expected len ' + depArray.length +
+                        ', got ' + depsLen);
 
                 var i;
                 for (i = 0; i < depArray.length; ++i) {
@@ -139,7 +140,7 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
                 }
             }
 
-            verifyDeps('hares', ['hare_births', 'hare_deaths']);
+            verifyDeps('hares', []);
             verifyDeps('one_time_lynx_harvest', ['size_of_1_time_lynx_harvest']);
             verifyDeps('hare_births', ['hares', 'hare_birth_fraction']);
             verifyDeps('hare_density', ['hares', 'area']);
@@ -149,16 +150,57 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
         });
     };
 
+    suite['var - less than'] = function(test){
+        dataStore.getFile('test/data/lynx-hares2.xml', function(err, data) {
+            var model;
+
+            test.ok(!err, 'read file');
+            if (err) {
+                test.done();
+                return;
+            }
+
+            // on node data is a byte array.  this forces it into a
+            // string.
+            const xmlString = '' + data;
+
+            model = sd.newModel(xmlString);
+            test.ok(model instanceof sd.Model && !sd.error(),
+                    'model an object');
+
+            const vars = model.vars;
+
+            test.ok(!vars['hare_births'].lessThan(vars['hare_birth_fraction']),
+                    'births lt birth_fraction');
+            test.ok(vars['hare_birth_fraction'].lessThan(vars['hare_births']),
+                    'birth_fraction lt births');
+
+            test.done();
+        });
+    };
+
     suite.sort = function(test) {
+        // wrap a list of primitive numbers in an object that provides
+        // a lessThan method implementation.
+        function wrapNum() {
+            function num(n) {
+                this.n = n;
+            }
+            num.prototype.lessThan = function(that) {
+                return this.n < that.n
+            };
+            return _.map(arguments, function(n) {return new num(n)});
+        }
         // its not comprehensive, but its something.
-        var toSort   = [7, 5, 5, 7, 2, 1];
-        const sorted = [1, 2, 5, 5, 7, 7];
+        var toSort   = wrapNum(7, 5, 5, 7, 2, 1);
+        const sorted = wrapNum(1, 2, 5, 5, 7, 7);
 
         // sorts in place;
         util.sort(toSort);
         var i;
         for (i = 0; i < sorted.length; ++i) {
-            test.ok(sorted[i] === toSort[i], sorted[i] + ' === ' + toSort[i]);
+            test.ok(sorted[i].n === toSort[i].n,
+                    sorted[i].n + ' === ' + toSort[i].n);
         }
 
         test.done();
