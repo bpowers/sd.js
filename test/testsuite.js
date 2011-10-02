@@ -127,12 +127,23 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
                     return;
                 }
                 const deps = model.vars[name].getDeps();
+                const depsLen = _.keys(deps).length;
 
-                //test.ok(deps.length === depArray.length,
-                //      'expected ' + depArray.length + ', got ' + deps.length);
+                test.ok(depsLen === depArray.length,
+                        'expected ' + depArray.length + ', got ' + depsLen);
+
+                var i;
+                for (i = 0; i < depArray.length; ++i) {
+                    test.ok(depArray[i] in deps,
+                            name + ' has dep ' + depArray[i]);
+                }
             }
 
-            verifyDeps('hares', ['hare_births', 'hare_deaths', 'hare_gangstas']);
+            verifyDeps('hares', ['hare_births', 'hare_deaths']);
+            verifyDeps('one_time_lynx_harvest', ['size_of_1_time_lynx_harvest']);
+            verifyDeps('hare_births', ['hares', 'hare_birth_fraction']);
+            verifyDeps('hare_density', ['hares', 'area']);
+            verifyDeps('area', []);
 
             test.done();
         });
