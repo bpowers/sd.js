@@ -98,6 +98,14 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
                                 'lynx_death_fraction', 'hares_killed_per_lynx');
             verifyVars(expectedFlows, model.flows);
 
+            function pr(n, l) {
+                console.log(n + ':');
+                _.map(l, function (v) {console.log('    ' + v.name)});
+            }
+            //pr('initial', model.initials);
+            //pr('flows', model.flows);
+            //pr('stocks', model.stocks);
+
             test.done();
         });
     };
