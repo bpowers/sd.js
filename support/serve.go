@@ -1,6 +1,9 @@
 // Copyright 2011 Bobby Powers. All rights reserved.
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
+
+// For quickly serving any directory to a browser, since Chrome
+// doesn't like scripts on the local file system doing XHRs.
 package main
 
 import (
@@ -24,19 +27,21 @@ func init() {
 	}
 }
 
+// Opens the given address in a browser on Linux systems.
 func openInBrowser(addr string) {
-	// this is a bit hacky, but works fine for now
+	// this is a bit hacky, but make sure we have a hostname (and
+	// not just a port)
 	if addr[0] == ':' {
 		addr = "localhost" + addr
 	}
 	addr = "http://" + addr
 
+	// Simply exec xdg-open with the URL
 	if err := exec.Command("xdg-open", addr).Run(); err != nil {
 		log.Fatal("xdg-open: ", err.String())
 	}
 }
 
-// for quickly serving any directory to a browser
 func main() {
 	fmt.Printf("serving at %s\n", addr)
 
