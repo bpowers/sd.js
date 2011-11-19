@@ -2,3 +2,4 @@ serve
 *~
 _go_.*
 build/
+node_modules
