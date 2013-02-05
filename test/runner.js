@@ -4,6 +4,7 @@
 
 dataStore = {};
 
+
 // handle the cases of running in the browser or headless under node
 if (typeof module !== 'undefined' && module.exports) {
     // we're running in node
@@ -23,9 +24,7 @@ if (typeof module !== 'undefined' && module.exports) {
     $ = require('jquery');
     _ = require('underscore');
 
-    requirejs(['test/testsuite'], function(suite){
-        exports.suite = suite;
-    });
+    exports.suite = requirejs('test/testsuite');
 
 } else {
     // we're running in the browser
