@@ -233,6 +233,37 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
         });
     };
 
+    suite['var - equations'] = function(test){
+        dataStore.getFile('test/data/lynx-hares2.xml', function(err, data) {
+            var model;
+
+            test.ok(!err, 'read file');
+            if (err) {
+                test.done();
+                return;
+            }
+
+            // on node data is a byte array.  this forces it into a
+            // string.
+            const xmlString = '' + data;
+
+            model = sd.newModel(xmlString);
+            test.ok(model instanceof sd.Model && !sd.error(),
+                    'model an object');
+
+            function expect(name, eq) {
+                const modelEq = model.vars[name].equation();
+                test.ok(eq === modelEq, 'equation for ' + name +
+                        ' expected "' + eq + '" got "' + modelEq + '"')
+            }
+
+            // this is a stock, it needs to update next.
+            //expect('lynx', '');
+
+            test.done();
+        });
+    };
+
     suite.sort = function(test) {
         // wrap a list of primitive numbers in an object that provides
         // a lessThan method implementation.
