@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<xmile version="1.0" level="2" xmlns="http://www.systemdynamics.org/XMILE">
+    <header>
+        <smile version="1.0"/>
+        <vendor>isee systems</vendor>
+        <product version="9.0.3" lang="en">STELLA</product>
+        <name>lynx-hares.stm</name>
+        <copyright>(C) 2007 by isee systems, inc.</copyright>
+    </header>
+
+    <style>
+        <model color="red" background="white">
+            <font>9 pt Arial, sans-serif</font>
+        </model>
+        <flow>
+            <non_negative/>
+        </flow>
+    </style>
+
+    <simspecs method="RK4" time_units="yr">
+        <start>0</start>
+        <stop>60</stop>
+        <dt>0.125</dt>
+    </simspecs>
+
+    <model>
+        <stock name="Hares">
+            <eqn>5E4</eqn>
+            <inflow>hare_births</inflow>
+            <outflow>hare_deaths</outflow>
+            <display color="purple" x="285" y="81" nmpos="center"/>
+        </stock>
+        <flow name="hare_births">
+            <eqn>Hares*hare_birth_fraction</eqn>
+            <display color="purple" x="171" y="80" nmpos="top"/>
+        </flow>
+        <flow name="hare_deaths">
+            <eqn>Lynx*hares_killed_per_lynx</eqn>
+            <display color="purple" x="427" y="79" nmpos="top"/>
+        </flow>
+        <stock name="Lynx">
+            <eqn>1250</eqn>
+            <inflow>lynx_births</inflow>
+            <outflow>lynx_deaths</outflow>
+            <outflow>one_time_lynx_harvest</outflow>
+            <display x="367" y="268" nmpos="center"/>
+        </stock>
+        <flow name="lynx_births">
+            <eqn>Lynx*lynx_birth_fraction</eqn>
+            <display x="470" y="271" nmpos="right" nmoff="-30"/>
+        </flow>
+        <flow name="lynx_deaths">
+            <eqn>Lynx*lynx_death_fraction</eqn>
+            <display x="286" y="272" nmpos="top" nmoff="-30"/>
+        </flow>
+        <flow name="one_time_lynx_harvest">
+            <eqn>PULSE(size_of_1_time_lynx_harvest, 4, 1e3)</eqn>
+            <display x="297" y="339" nmpos="bottom" nmoff="30"/>
+        </flow>
+        <aux name="hare_birth_fraction">
+            <eqn>1.25</eqn>
+            <display color="purple" x="117" y="138" nmpos="left"/>
+        </aux>
+        <aux name="hare_density">
+            <eqn>Hares/area</eqn>
+            <display color="purple" x="255" y="272" nmpos="right" nmoff="-30"/>
+        </aux>
+        <aux name="area">
+            <eqn>1E3</eqn>
+            <display color="black" x="154" y="178"/>
+        </aux>
+        <aux name="lynx_birth_fraction">
+            <eqn>0.25</eqn>
+            <display x="525" y="308"/>
+        </aux>
+        <aux name="size_of_1_time_lynx_harvest">
+            <eqn>0</eqn>
+            <display x="165" y="357" nmpos="left"/>
+        </aux>
+        <aux name="lynx_death_fraction">
+            <eqn>hare_density</eqn>
+            <gf>
+                <xscale min="0" max="100"/>
+                <yscale min="0" max="1"/>
+                <ypts sep=",">.94,.66,.4,.35,.3,.25,.2,.15,.1,.07,.05</ypts>
+            </gf>
+            <display x="168" y="250" nmpos="left" nmoff="30"/>
+        </aux>
+        <aux name="hares_killed_per_lynx">
+            <eqn>hare_density</eqn>
+            <gf>
+                <xscale min="0" max="500"/>
+                <yscale min="0" max="1000"/>
+                <ypts sep=",">0,50,100,150,200,250,300,350,400,450,500</ypts>
+            </gf>
+            <display x="357" y="181" nmpos="bottom" nmoff="30"/>
+        </aux>
+
+        <display>
+            <connector uid="0" color="purple" x="195" y="157">
+                <from>hare_birth_fraction</from>
+                <to>hare_births</to>
+            </connector>
+            <connector uid="1" color="purple" x="228" y="19">
+                <from>Hares</from>
+                <to>hare_births</to>
+            </connector>
+            <connector uid="2" color="purple" x="313" y="142">
+                <from>Hares</from>
+                <to>hare_density</to>
+            </connector>
+            <connector uid="3" color="black" x="209" y="252">
+                <from>area</from>
+                <to>hare_density</to>
+                <dashed/>
+            </connector>
+            <connector uid="4" x="311" y="126">
+                <from>hare_density</from>
+                <to>hares_killed_per_lynx</to>
+            </connector>
+            <connector uid="5" x="272" y="278">
+                <from>hare_density</from>
+                <to>lynx_death_fraction</to>
+            </connector>
+            <connector uid="6" x="305" y="70">
+                <from>hares_killed_per_lynx</from>
+                <to>hare_deaths</to>
+            </connector>
+            <connector uid="7" x="230" y="247">
+                <from>lynx_death_fraction</from>
+                <to>lynx_deaths</to>
+            </connector>
+            <connector uid="8" x="324" y="259">
+                <from>Lynx</from>
+                <to>lynx_deaths</to>
+            </connector>
+            <connector uid="9" x="341" y="155">
+                <from>Lynx</from>
+                <to>hare_deaths</to>
+            </connector>
+            <connector uid="10" x="421" y="246">
+                <from>Lynx</from>
+                <to>lynx_births</to>
+            </connector>
+            <connector uid="11" x="450" y="361">
+                <from>lynx_birth_fraction</from>
+                <to>lynx_births</to>
+            </connector>
+            <connector uid="12" x="209" y="191">
+                <from>size_of_1_time_lynx_harvest</from>
+                <to>one_time_lynx_harvest</to>
+            </connector>
+            <cloud uid="13" color="purple" x="60" y="80">
+                <source>hare_births</source>
+            </cloud>
+            <cloud uid="14" color="purple" x="567" y="79">
+                <sink>hare_deaths</sink>
+            </cloud>
+            <cloud uid="15" x="572" y="271">
+                <source>lynx_births</source>
+            </cloud>
+            <cloud uid="16" x="207" y="272">
+                <sink>lynx_deaths</sink>
+            </cloud>
+            <cloud uid="17" x="207" y="339">
+                <sink>one_time_lynx_harvest</sink>
+            </cloud>
+        </display>
+    </model>
+
+    <macro filter="flow" name="non_negative">
+        <parm>flow</parm>
+        <parm>value</parm>
+        <eqn>IF value THEN MAX(flow, 0) ELSE flow</eqn>
+    </macro>
+</xmile>
