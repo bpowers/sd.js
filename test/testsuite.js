@@ -187,6 +187,52 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
         });
     };
 
+    suite['var - tables'] = function(test){
+        dataStore.getFile('test/data/lynx-hares2.xml', function(err, data) {
+            var model;
+
+            test.ok(!err, 'read file');
+            if (err) {
+                test.done();
+                return;
+            }
+
+            // on node data is a byte array.  this forces it into a
+            // string.
+            const xmlString = '' + data;
+
+            model = sd.newModel(xmlString);
+            test.ok(model instanceof sd.Model && !sd.error(),
+                    'model an object');
+
+            const tables = model.tables;
+
+            test.ok(Object.keys(tables).length === 2, 'tables len 2');
+
+            var table;
+            function expect(index, val) {
+                const result = util.lookup(table, index);
+                test.ok(result === val,
+                        'lookup expect result ' + result + ' === ' + val);
+            }
+            // we're not testing interpolation, that is tested below,
+            // we're testing that we're correctly parsing in Table
+            // definitions and constructing the x and y axis
+            // correctly.
+            table = tables['lynx_death_fraction'];
+            expect(0, .94);
+            expect(100, .05);
+            expect(50, .25);
+
+            table = tables['hares_killed_per_lynx'];
+            expect(0, 0);
+            expect(500, 500);
+            expect(250, 250);
+
+            test.done();
+        });
+    };
+
     suite.sort = function(test) {
         // wrap a list of primitive numbers in an object that provides
         // a lessThan method implementation.
