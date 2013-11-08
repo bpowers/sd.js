@@ -328,5 +328,35 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
         test.done();
     };
 
+    suite['var - equations 2'] = function(test){
+        dataStore.getFile('test/data/pop.xmile', function(err, data) {
+            var model;
+
+            test.ok(!err, 'read file');
+            if (err) {
+                test.done();
+                return;
+            }
+
+            // on node data is a byte array.  this forces it into a
+            // string.
+            const xmlString = '' + data;
+
+            model = sd.newModel(xmlString);
+            test.ok(model instanceof sd.Model && !sd.error(),
+                    'model an object');
+
+            function expect(name, eq) {
+                const modelEq = model.vars[name].equation();
+                test.ok(eq === modelEq, 'equation for ' + name +
+                        ' expected "' + eq + '" got "' + modelEq + '"')
+            }
+
+            expect('births', 'population * birth_rate');
+
+            test.done();
+        });
+    };
+
     return suite;
 });

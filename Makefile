@@ -8,12 +8,12 @@ build: build/sd.js
 
 build/sd.js: lib/*.js
 	mkdir -p build
-	r.js -o name=lib/sd out=build/sd.js baseUrl=. paths.requireLib=deps/require include=requireLib
+	node_modules/.bin/r.js -o name=lib/sd out=build/sd.js baseUrl=. paths.requireLib=deps/require include=requireLib
 
 clean:
 	rm -rf build
 
 check:
-	nodeunit test/runner.js
+	node_modules/.bin/nodeunit test/runner.js
 
 .PHONY: check all
