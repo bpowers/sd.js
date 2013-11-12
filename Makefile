@@ -8,7 +8,7 @@ build: build/sd.js
 
 build/sd.js: lib/*.js
 	mkdir -p build
-	node_modules/.bin/r.js -o name=lib/sd out=build/sd.js baseUrl=. paths.requireLib=deps/require include=requireLib
+	node_modules/.bin/r.js -o name=lib/sd out=build/sd.js baseUrl=. paths.requireLib=deps/require include=requireLib optimize=none
 
 clean:
 	rm -rf build
