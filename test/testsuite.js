@@ -83,18 +83,18 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
 
             test.ok(Object.keys(model.vars).length === 14, 'vars len 14');
 
-            expectedInitials = set('hares', 'lynx');
+            const expectedInitials = set('hares', 'lynx',
+                                         'size_of_1_time_lynx_harvest', 'hare_birth_fraction',
+                                         'area', 'lynx_birth_fraction');
             verifyVars(expectedInitials, model.initials);
 
-            expectedStocks = set('hares', 'lynx');
+            const expectedStocks = expectedInitials;
             verifyVars(expectedStocks, model.stocks);
 
             expectedFlows = set('hare_births', 'hare_deaths',
                                 'lynx_births', 'lynx_deaths',
                                 'one_time_lynx_harvest',
-                                'hare_birth_fraction', 'hare_density',
-                                'area', 'lynx_birth_fraction',
-                                'size_of_1_time_lynx_harvest',
+                                'hare_density',
                                 'lynx_death_fraction', 'hares_killed_per_lynx');
             verifyVars(expectedFlows, model.flows);
 
