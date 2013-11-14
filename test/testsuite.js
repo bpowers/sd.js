@@ -347,7 +347,7 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
                     'model an object');
 
             function expect(name, eq) {
-                const modelEq = model.vars[name].equation();
+                const modelEq = model.vars[name].eqn;
                 test.ok(eq === modelEq, 'equation for ' + name +
                         ' expected "' + eq + '" got "' + modelEq + '"')
             }
