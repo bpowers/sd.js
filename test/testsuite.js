@@ -40,6 +40,10 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
         testLex('5E4', [50000], [lex.NUMBER]);
         testLex('5e4', [50000], [lex.NUMBER]);
 
+        testLex('-3.222', [-3.222], [lex.NUMBER]);
+        //testLex('-3000.222', [-3000.222], [lex.NUMBER]);
+        //testLex('5.3e4', [53000], [lex.NUMBER]);
+
         testLex('pulse(size_of_1_time_lynx_harvest, 4, 1e3)',
                 ['pulse', '(', 'size_of_1_time_lynx_harvest', ',', 4, ',', 1000, ')'],
                 [lex.IDENT, lex.TOKEN, lex.IDENT, lex.TOKEN, lex.NUMBER,
