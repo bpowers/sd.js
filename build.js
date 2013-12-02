@@ -10,7 +10,7 @@
         mustache: 'vendor/mustache',
     },
     include: ['requireLib'],//, 'underscore', 'jquery', 'raphael', 'snapsvg', 'q', 'mustache'],
-    optimize: 'none',
+//    optimize: 'none',
     name: 'sd',
     out: 'build/sd.nakid.js',
 })
