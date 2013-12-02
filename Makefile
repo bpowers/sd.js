@@ -6,9 +6,10 @@ build: build/sd.js
 	cp test/data/lynx-hares2.xml build
 	cp examples/tester.html build/index.html
 
-build/sd.js: lib/*.js
+build/sd.js: lib/*.js build.js lib/vendor/*.js
 	mkdir -p build
 	node_modules/.bin/r.js -o build.js
+	cat lib/vendor/{mustache,q,snapsvg}.js build/sd.nakid.js >build/sd.js
 
 jsdeps:
 	mkdir -p libh/vendor
