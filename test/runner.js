@@ -22,7 +22,6 @@ if (typeof module !== 'undefined' && module.exports) {
     });
 
     DOMParser = require('xmldom').DOMParser;
-    $ = require('jquery');
 
     exports['suite'] = requirejs('test/testsuite');
 
