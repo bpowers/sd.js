@@ -67,6 +67,7 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
             // string.
             const xmlString = '' + data;
             model = sd.newModel('');
+
             test.ok(model === null && sd.error() === sd.errors.ERR_VERSION,
                     'error on bad model');
 
@@ -104,7 +105,9 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
 
             function pr(n, l) {
                 console.log(n + ':');
-                _.map(l, function (v) {console.log('    ' + v.name)});
+                var i;
+                for (i = 0; i < l.length; i++)
+                    console.log('    ' + l[i].name);
             }
             //pr('initial', model.initials);
             //pr('flows', model.flows);
@@ -139,7 +142,7 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
                     return;
                 }
                 const deps = model.vars[name].getDeps();
-                const depsLen = _.keys(deps).length;
+                const depsLen = Object.keys(deps).length;
 
                 test.ok(depsLen === depArray.length,
                         name +  ' expected len ' + depArray.length +
@@ -278,7 +281,11 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
             num.prototype.lessThan = function(that) {
                 return this.n < that.n
             };
-            return _.map(arguments, function(n) {return new num(n)});
+            var result = [];
+            var i;
+            for (i = 0; i < arguments.length; i++)
+                result.push(new num(arguments[i]));
+            return result;
         }
         // its not comprehensive, but its something.
         var toSort   = wrapNum(7, 5, 5, 7, 2, 1);

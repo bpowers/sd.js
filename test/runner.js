@@ -11,7 +11,7 @@ if (typeof module !== 'undefined' && module.exports) {
     var fs = require('fs');
     dataStore.getFile = function(path, cb) {
         fs.readFile(path, function(err, data) {
-            cb(err, data);
+            cb(err, data.toString());
         });
     }
 
@@ -21,10 +21,10 @@ if (typeof module !== 'undefined' && module.exports) {
         baseUrl: '.',
     });
 
+    DOMParser = require('xmldom').DOMParser;
     $ = require('jquery');
-    _ = require('underscore');
 
-    exports.suite = requirejs('test/testsuite');
+    exports['suite'] = requirejs('test/testsuite');
 
 } else {
     // we're running in the browser
