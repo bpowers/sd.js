@@ -28,17 +28,21 @@ if (typeof module !== 'undefined' && module.exports) {
 } else {
     // we're running in the browser
     dataStore.getFile = function(path, cb) {
-        $.ajax(path, {
-            'dataType': 'text',
-            'success': function(data) {
-                cb(null, data);
+        var req = new XMLHttpRequest();
+        req.onreadystatechange = function() {
+            if (req.readyState !== 4)
+                return;
+            if (req.status >= 200 && req.status < 300) {
+                cb(null, req.responseText);
             }
-        });
+        }
+        req.open('GET', path, true);
+        req.send();
     }
 
     require(['./testsuite'], function(suite){
         //run the tests when document is ready
-        $(function(){
+        window.addEventListener("load", function() {
             nodeunit.run({
                 'Engine Tests': suite
             });
