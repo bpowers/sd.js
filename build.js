@@ -1,7 +1,7 @@
 ({
     baseUrl: 'lib',
     include: ['sd'],
-    optimize: 'none',
+//    optimize: 'none',
     name: 'vendor/almond',
     wrap: {
         startFile: 'lib/build/start.frag.js',
