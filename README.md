@@ -69,7 +69,8 @@ node libraries:
 
 Now you should be able to run the unit tests and build the library:
 
-```[bpowers@fina sd.js]$ make check
+```
+[bpowers@fina sd.js]$ make check
 node_modules/.bin/nodeunit test/runner.js
 
 runner.js
