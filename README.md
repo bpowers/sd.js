@@ -56,6 +56,16 @@ detials.  `sd.js` is built on
 These permissive licences mean you can use and build upon `sd.js`
 without concern for royalties.
 
+Open Standards
+--------------
+
+`sd.js` is built on
+[XMILE](https://www.oasis-open.org/committees/tc_home.php?wg_abbrev=xmile),
+the emerging open standard for representing system dynamics models.
+When the standard is complete, `sd.js` will aim for full conformance,
+making it possible to use models created in desktop software platforms
+on the web, and models created or modified in `sd.js` on the desktop.
+
 Building
 --------
 
