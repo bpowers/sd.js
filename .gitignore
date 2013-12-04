@@ -2,4 +2,3 @@ serve
 *~
 /build
 node_modules
-/lib/runtime.js
