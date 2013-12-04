@@ -18,84 +18,86 @@
         </flow>
     </style>
 
-    <simspecs method="RK4" time_units="yr">
+    <sim_specs method="RK4" time_units="yr">
         <start>0</start>
         <stop>60</stop>
         <dt>0.125</dt>
-    </simspecs>
+    </sim_specs>
 
     <model>
-        <stock name="Hares">
-            <eqn>5E4</eqn>
-            <inflow>hare_births</inflow>
-            <outflow>hare_deaths</outflow>
-            <display color="purple" x="285" y="81" nmpos="center"/>
-        </stock>
-        <flow name="hare_births">
-            <eqn>Hares*hare_birth_fraction</eqn>
-            <display color="purple" x="171" y="80" nmpos="top"/>
-        </flow>
-        <flow name="hare_deaths">
-            <eqn>Lynx*hares_killed_per_lynx</eqn>
-            <display color="purple" x="427" y="79" nmpos="top"/>
-        </flow>
-        <stock name="Lynx">
-            <eqn>1250</eqn>
-            <inflow>lynx_births</inflow>
-            <outflow>lynx_deaths</outflow>
-            <outflow>one_time_lynx_harvest</outflow>
-            <display x="367" y="268" nmpos="center"/>
-        </stock>
-        <flow name="lynx_births">
-            <eqn>Lynx*lynx_birth_fraction</eqn>
-            <display x="470" y="271" nmpos="right" nmoff="-30"/>
-        </flow>
-        <flow name="lynx_deaths">
-            <eqn>Lynx*lynx_death_fraction</eqn>
-            <display x="286" y="272" nmpos="top" nmoff="-30"/>
-        </flow>
-        <flow name="one_time_lynx_harvest">
-            <eqn>PULSE(size_of_1_time_lynx_harvest, 4, 1e3)</eqn>
-            <display x="297" y="339" nmpos="bottom" nmoff="30"/>
-        </flow>
-        <aux name="hare_birth_fraction">
-            <eqn>1.25</eqn>
-            <display color="purple" x="117" y="138" nmpos="left"/>
-        </aux>
-        <aux name="hare_density">
-            <eqn>Hares/area</eqn>
-            <display color="purple" x="255" y="272" nmpos="right" nmoff="-30"/>
-        </aux>
-        <aux name="area">
-            <eqn>1E3</eqn>
-            <display color="black" x="154" y="178"/>
-        </aux>
-        <aux name="lynx_birth_fraction">
-            <eqn>0.25</eqn>
-            <display x="525" y="308"/>
-        </aux>
-        <aux name="size_of_1_time_lynx_harvest">
-            <eqn>0</eqn>
-            <display x="165" y="357" nmpos="left"/>
-        </aux>
-        <aux name="lynx_death_fraction">
-            <eqn>hare_density</eqn>
-            <gf>
-                <xscale min="0" max="100"/>
-                <yscale min="0" max="1"/>
-                <ypts sep=",">.94,.66,.4,.35,.3,.25,.2,.15,.1,.07,.05</ypts>
-            </gf>
-            <display x="168" y="250" nmpos="left" nmoff="30"/>
-        </aux>
-        <aux name="hares_killed_per_lynx">
-            <eqn>hare_density</eqn>
-            <gf>
-                <xscale min="0" max="500"/>
-                <yscale min="0" max="1000"/>
-                <ypts sep=",">0,50,100,150,200,250,300,350,400,450,500</ypts>
-            </gf>
-            <display x="357" y="181" nmpos="bottom" nmoff="30"/>
-        </aux>
+        <variables>
+            <stock name="Hares">
+                <eqn>5E4</eqn>
+                <inflow>hare_births</inflow>
+                <outflow>hare_deaths</outflow>
+                <display color="purple" x="285" y="81" nmpos="center"/>
+            </stock>
+            <flow name="hare_births">
+                <eqn>Hares*hare_birth_fraction</eqn>
+                <display color="purple" x="171" y="80" nmpos="top"/>
+            </flow>
+            <flow name="hare_deaths">
+                <eqn>Lynx*hares_killed_per_lynx</eqn>
+                <display color="purple" x="427" y="79" nmpos="top"/>
+            </flow>
+            <stock name="Lynx">
+                <eqn>1250</eqn>
+                <inflow>lynx_births</inflow>
+                <outflow>lynx_deaths</outflow>
+                <outflow>one_time_lynx_harvest</outflow>
+                <display x="367" y="268" nmpos="center"/>
+            </stock>
+            <flow name="lynx_births">
+                <eqn>Lynx*lynx_birth_fraction</eqn>
+                <display x="470" y="271" nmpos="right" nmoff="-30"/>
+            </flow>
+            <flow name="lynx_deaths">
+                <eqn>Lynx*lynx_death_fraction</eqn>
+                <display x="286" y="272" nmpos="top" nmoff="-30"/>
+            </flow>
+            <flow name="one_time_lynx_harvest">
+                <eqn>PULSE(size_of_1_time_lynx_harvest, 4, 1e3)</eqn>
+                <display x="297" y="339" nmpos="bottom" nmoff="30"/>
+            </flow>
+            <aux name="hare_birth_fraction">
+                <eqn>1.25</eqn>
+                <display color="purple" x="117" y="138" nmpos="left"/>
+            </aux>
+            <aux name="hare_density">
+                <eqn>Hares/area</eqn>
+                <display color="purple" x="255" y="272" nmpos="right" nmoff="-30"/>
+            </aux>
+            <aux name="area">
+                <eqn>1E3</eqn>
+                <display color="black" x="154" y="178"/>
+            </aux>
+            <aux name="lynx_birth_fraction">
+                <eqn>0.25</eqn>
+                <display x="525" y="308"/>
+            </aux>
+            <aux name="size_of_1_time_lynx_harvest">
+                <eqn>0</eqn>
+                <display x="165" y="357" nmpos="left"/>
+            </aux>
+            <aux name="lynx_death_fraction">
+                <eqn>hare_density</eqn>
+                <gf>
+                    <xscale min="0" max="100"/>
+                    <yscale min="0" max="1"/>
+                    <ypts sep=",">.94,.66,.4,.35,.3,.25,.2,.15,.1,.07,.05</ypts>
+                </gf>
+                <display x="168" y="250" nmpos="left" nmoff="30"/>
+            </aux>
+            <aux name="hares_killed_per_lynx">
+                <eqn>hare_density</eqn>
+                <gf>
+                    <xscale min="0" max="500"/>
+                    <yscale min="0" max="1000"/>
+                    <ypts sep=",">0,50,100,150,200,250,300,350,400,450,500</ypts>
+                </gf>
+                <display x="357" y="181" nmpos="bottom" nmoff="30"/>
+            </aux>
+        </variables>
 
         <display>
             <connector uid="0" color="purple" x="195" y="157">

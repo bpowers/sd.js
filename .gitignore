@@ -1,5 +1,5 @@
 serve
 *~
-_go_.*
-build/
+/build
 node_modules
+/lib/runtime.js

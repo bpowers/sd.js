@@ -38,7 +38,11 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
 
         // we do a .toLowerCase internally, so both of these work.
         testLex('5E4', [50000], [lex.NUMBER]);
-        testLex('5e4', [50000], [lex.NUMBER]);
+        testLex('5e10', [50000000000], [lex.NUMBER]);
+
+        testLex('-3.222', ['-', 3.222], [lex.TOKEN, lex.NUMBER]);
+        testLex('-3000.222', ['-', 3000.222], [lex.TOKEN, lex.NUMBER]);
+        testLex('5.3e4.', [53000], [lex.NUMBER]);
 
         testLex('pulse(size_of_1_time_lynx_harvest, 4, 1e3)',
                 ['pulse', '(', 'size_of_1_time_lynx_harvest', ',', 4, ',', 1000, ')'],
@@ -63,6 +67,7 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
             // string.
             const xmlString = '' + data;
             model = sd.newModel('');
+
             test.ok(model === null && sd.error() === sd.errors.ERR_VERSION,
                     'error on bad model');
 
@@ -83,24 +88,26 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
 
             test.ok(Object.keys(model.vars).length === 14, 'vars len 14');
 
-            expectedInitials = set('hares', 'lynx');
+            const expectedInitials = set('hares', 'lynx',
+                                         'size_of_1_time_lynx_harvest', 'hare_birth_fraction',
+                                         'area', 'lynx_birth_fraction');
             verifyVars(expectedInitials, model.initials);
 
-            expectedStocks = set('hares', 'lynx');
+            const expectedStocks = expectedInitials;
             verifyVars(expectedStocks, model.stocks);
 
             expectedFlows = set('hare_births', 'hare_deaths',
                                 'lynx_births', 'lynx_deaths',
                                 'one_time_lynx_harvest',
-                                'hare_birth_fraction', 'hare_density',
-                                'area', 'lynx_birth_fraction',
-                                'size_of_1_time_lynx_harvest',
+                                'hare_density',
                                 'lynx_death_fraction', 'hares_killed_per_lynx');
             verifyVars(expectedFlows, model.flows);
 
             function pr(n, l) {
                 console.log(n + ':');
-                _.map(l, function (v) {console.log('    ' + v.name)});
+                var i;
+                for (i = 0; i < l.length; i++)
+                    console.log('    ' + l[i].name);
             }
             //pr('initial', model.initials);
             //pr('flows', model.flows);
@@ -135,7 +142,7 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
                     return;
                 }
                 const deps = model.vars[name].getDeps();
-                const depsLen = _.keys(deps).length;
+                const depsLen = Object.keys(deps).length;
 
                 test.ok(depsLen === depArray.length,
                         name +  ' expected len ' + depArray.length +
@@ -274,7 +281,11 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
             num.prototype.lessThan = function(that) {
                 return this.n < that.n
             };
-            return _.map(arguments, function(n) {return new num(n)});
+            var result = [];
+            var i;
+            for (i = 0; i < arguments.length; i++)
+                result.push(new num(arguments[i]));
+            return result;
         }
         // its not comprehensive, but its something.
         var toSort   = wrapNum(7, 5, 5, 7, 2, 1);
@@ -326,6 +337,36 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
         expect(9, -5);
 
         test.done();
+    };
+
+    suite['var - equations 2'] = function(test){
+        dataStore.getFile('test/data/pop.xmile', function(err, data) {
+            var model;
+
+            test.ok(!err, 'read file');
+            if (err) {
+                test.done();
+                return;
+            }
+
+            // on node data is a byte array.  this forces it into a
+            // string.
+            const xmlString = '' + data;
+
+            model = sd.newModel(xmlString);
+            test.ok(model instanceof sd.Model && !sd.error(),
+                    'model an object');
+
+            function expect(name, eq) {
+                const modelEq = model.vars[name].eqn;
+                test.ok(eq === modelEq, 'equation for ' + name +
+                        ' expected "' + eq + '" got "' + modelEq + '"')
+            }
+
+            expect('births', 'population * birth_rate');
+
+            test.done();
+        });
     };
 
     return suite;
