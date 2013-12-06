@@ -8,6 +8,7 @@ WRAPPER = '''// Copyright 2013 Bobby Powers. All rights reserved.
 // license that can be found in the LICENSE file.
 
 define([], function() {
+    'use strict';
     var runtime = {};
     // quoted from '%s' file
     runtime.preamble = %s;

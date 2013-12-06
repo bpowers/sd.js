@@ -5,6 +5,8 @@
     "globals": {
         "define": false,
         "console": false,
-        "XMLHttpRequest": false
+        "postMessage": false,
+        "XMLHttpRequest": false,
+        "Float64Array": false
     }
 }
