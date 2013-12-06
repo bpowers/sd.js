@@ -75,7 +75,7 @@ development platform (patches welcome).  Once those are installed on
 your system, execute the following command to install the required
 node libraries:
 
-    [bpowers@fina sd.js]$ npm install requirejs nodeunit xmldom
+    [bpowers@fina sd.js]$ npm install requirejs nodeunit xmldom jshint
 
 Now you should be able to run the unit tests and build the library:
 
