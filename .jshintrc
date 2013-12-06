@@ -12,6 +12,7 @@
         "Worker": false,
         "window": false,
         "Q": false,
+        "DOMParser": false,
         "Float64Array": false
     }
 }
