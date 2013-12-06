@@ -7,6 +7,11 @@
         "console": false,
         "postMessage": false,
         "XMLHttpRequest": false,
+        "Mustache": false,
+        "Blob": false,
+        "Worker": false,
+        "window": false,
+        "Q": false,
         "Float64Array": false
     }
 }
