@@ -1,0 +1,10 @@
+{
+    "undef": true,
+    "unused": true,
+    "strict": true,
+    "globals": {
+        "define": false,
+        "console": false,
+        "XMLHttpRequest": false
+    }
+}

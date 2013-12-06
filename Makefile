@@ -13,6 +13,9 @@ build/sd.js: lib/*.js build.js lib/vendor/*.js lib/runtime.js
 	node_modules/.bin/r.js -o build.js
 	cat lib/vendor/{mustache,q,snapsvg}.js build/sd.nakid.js >build/sd.js
 
+hint: lib/runtime.js
+	node_modules/.bin/jshint --config .jshintrc lib/*.js
+
 jsdeps:
 	mkdir -p lib/vendor
 	curl -o lib/vendor/require.js    'http://requirejs.org/docs/release/2.1.9/comments/require.js'
@@ -24,4 +27,4 @@ clean:
 check:
 	node_modules/.bin/nodeunit test/runner.js
 
-.PHONY: check all
+.PHONY: check hint all
