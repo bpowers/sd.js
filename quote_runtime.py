@@ -28,7 +28,7 @@ def main():
     preamble = slurp(PREAMBLE)
     epilogue = slurp(EPILOGUE)
     print WRAPPER % (PREAMBLE, json.dumps(preamble),
-                     EPILOGUE, json.dumps(epologue))
+                     EPILOGUE, json.dumps(epilogue))
 
 if __name__ == '__main__':
     exit(main())
