@@ -2,7 +2,8 @@
 
 import json
 
-RUNTIME = 'lib/runtime_src.js'
+PREAMBLE = 'lib/runtime_src.js'
+EPILOGUE = 'lib/epilogue_src.js'
 WRAPPER = '''// Copyright 2013 Bobby Powers. All rights reserved.
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
@@ -10,8 +11,10 @@ WRAPPER = '''// Copyright 2013 Bobby Powers. All rights reserved.
 define([], function() {
     'use strict';
     var runtime = {};
-    // quoted from '%s' file
+    // unquoted source in '%s'
     runtime.preamble = %s;
+    // unquoted source in '%s'
+    runtime.epilogue = %s;
 
     return runtime;
 });
@@ -22,8 +25,10 @@ def slurp(file_name):
         return f.read().strip()
 
 def main():
-    src = slurp(RUNTIME)
-    print WRAPPER % (RUNTIME, json.dumps(src))
+    preamble = slurp(PREAMBLE)
+    epilogue = slurp(EPILOGUE)
+    print WRAPPER % (PREAMBLE, json.dumps(preamble),
+                     EPILOGUE, json.dumps(epologue))
 
 if __name__ == '__main__':
     exit(main())

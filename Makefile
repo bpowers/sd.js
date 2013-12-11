@@ -5,7 +5,7 @@ build: build/sd.js
 	cp test/data/lynx-hares2.xml build
 	cp examples/tester.html build/index.html
 
-lib/runtime.js: lib/runtime_src.js
+lib/runtime.js: lib/runtime_src.js lib/epilogue_src.js
 	python quote_runtime.py >$@
 
 build/sd.js: lib/*.js build.js lib/vendor/*.js lib/runtime.js
