@@ -72,6 +72,8 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
                     'error on bad model');
 
             model = sd.newModel(xmlString);
+            if (sd.error())
+                console.log('new model error: ' + sd.error());
             test.ok(model instanceof sd.Model && !sd.error(),
                     'model an object');
 
