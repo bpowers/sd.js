@@ -1,0 +1,6 @@
+#!/bin/bash
+
+MDL="$1"
+
+./emit_sim.js "$MDL" >worker.js
+~/src/v8/out/x64.debug/d8 --use-strict --harmony worker.js
