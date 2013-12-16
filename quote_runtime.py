@@ -2,7 +2,7 @@
 
 import json
 
-PREAMBLE = 'lib/runtime_src.js'
+PREAMBLE = 'lib/runtime_ugly.js'
 EPILOGUE = 'lib/epilogue_src.js'
 WRAPPER = '''// Copyright 2013 Bobby Powers. All rights reserved.
 // Use of this source code is governed by the MIT
