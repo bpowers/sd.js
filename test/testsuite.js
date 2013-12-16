@@ -63,15 +63,12 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
                 return;
             }
 
-            // on node data is a byte array.  this forces it into a
-            // string.
-            const xmlString = '' + data;
             model = sd.newModel('');
-
             test.ok(model === null && sd.error() === sd.errors.ERR_VERSION,
                     'error on bad model');
 
-            model = sd.newModel(xmlString);
+            const xml = (new DOMParser()).parseFromString(data, 'application/xml');
+            model = sd.newModel(xml);
             if (sd.error())
                 console.log('new model error: ' + sd.error());
             test.ok(model instanceof sd.Model && !sd.error(),
@@ -130,11 +127,9 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
                 return;
             }
 
-            // on node data is a byte array.  this forces it into a
-            // string.
-            const xmlString = '' + data;
+            const xml = (new DOMParser()).parseFromString(data, 'application/xml');
 
-            model = sd.newModel(xmlString);
+            model = sd.newModel(xml);
             test.ok(model instanceof sd.Model && !sd.error(),
                     'model an object');
 
@@ -177,11 +172,8 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
                 return;
             }
 
-            // on node data is a byte array.  this forces it into a
-            // string.
-            const xmlString = '' + data;
-
-            model = sd.newModel(xmlString);
+            const xml = (new DOMParser()).parseFromString(data, 'application/xml');
+            model = sd.newModel(xml);
             test.ok(model instanceof sd.Model && !sd.error(),
                     'model an object');
 
@@ -206,11 +198,8 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
                 return;
             }
 
-            // on node data is a byte array.  this forces it into a
-            // string.
-            const xmlString = '' + data;
-
-            model = sd.newModel(xmlString);
+            const xml = (new DOMParser()).parseFromString(data, 'application/xml');
+            model = sd.newModel(xml);
             test.ok(model instanceof sd.Model && !sd.error(),
                     'model an object');
 
@@ -252,11 +241,8 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
                 return;
             }
 
-            // on node data is a byte array.  this forces it into a
-            // string.
-            const xmlString = '' + data;
-
-            model = sd.newModel(xmlString);
+            const xml = (new DOMParser()).parseFromString(data, 'application/xml');
+            model = sd.newModel(xml);
             test.ok(model instanceof sd.Model && !sd.error(),
                     'model an object');
 
@@ -351,11 +337,8 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
                 return;
             }
 
-            // on node data is a byte array.  this forces it into a
-            // string.
-            const xmlString = '' + data;
-
-            model = sd.newModel(xmlString);
+            const xml = (new DOMParser()).parseFromString(data, 'application/xml');
+            model = sd.newModel(xml);
             test.ok(model instanceof sd.Model && !sd.error(),
                     'model an object');
 

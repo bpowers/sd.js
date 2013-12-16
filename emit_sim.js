@@ -13,7 +13,8 @@ if (argv.length < 3) {
 }
 
 fs.readFile(argv[2], function(err, data) {
-    var ctx = new sd.Project(data.toString());
+    var xml = (new DOMParser()).parseFromString(data.toString(), 'application/xml');
+    var ctx = new sd.Project(xml);
     var mdl = ctx.model();
     var sim = mdl.sim(true);
 });
