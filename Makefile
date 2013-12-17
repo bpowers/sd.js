@@ -2,8 +2,8 @@
 all: build
 
 build: build/sd.js
-	cp test/data/lynx-hares2.xml build
-	cp examples/tester.html build/index.html
+	@cp test/data/lynx-hares2.xml build
+	@cp examples/tester.html build/index.html
 
 lib/runtime_ugly.js: lib/runtime_src.js Makefile
 	cp lib/runtime_src.js $@
