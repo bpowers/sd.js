@@ -6,16 +6,16 @@ build: build/sd.js
 	@cp examples/tester.html build/index.html
 
 lib/runtime_ugly.js: lib/runtime_src.js Makefile
-	cp lib/runtime_src.js $@
+	@cp lib/runtime_src.js $@
 #	node_modules/.bin/uglifyjs lib/runtime_src.js -c -m -o $@
 
-lib/runtime.js: lib/runtime_ugly.js lib/epilogue_src.js
+lib/runtime.js: lib/runtime_ugly.js lib/epilogue_src.js lib/draw.css quote_runtime.py Makefile
 	python quote_runtime.py >$@
 
 build/sd.js: lib/*.js build.js lib/vendor/*.js lib/runtime.js
-	mkdir -p build
-	node_modules/.bin/r.js -o build.js
-	cat lib/vendor/{mustache,q,snapsvg}.js build/sd.nakid.js >build/sd.js
+	@mkdir -p build
+	@node_modules/.bin/r.js -o build.js
+	@cat lib/vendor/{mustache,q,snapsvg}.js build/sd.nakid.js >build/sd.js
 
 hint: lib/runtime.js
 	node_modules/.bin/jshint --config .jshintrc lib/*.js
