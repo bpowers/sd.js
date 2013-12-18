@@ -3,8 +3,9 @@
 <xmile version="1.0" level="2" xmlns="http://www.systemdynamics.org/XMILE">
     <header>
         <smile version="1.0"/>
-        <vendor>isee systems</vendor>
-        <product version="9.0.3" lang="en">STELLA</product>
+        <vendor>SDLabs</vendor>
+        <original-product version="9.0.3" lang="en">STELLA</original-product>
+	<product version="0.1">go-xmile</product>
         <name>lynx-hares.stm</name>
         <copyright>(C) 2007 by isee systems, inc.</copyright>
     </header>

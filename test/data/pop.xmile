@@ -4,8 +4,9 @@
         <smile version="1.0"></smile>
         <name></name>
         <uuid>d79f68be-1299-47eb-9603-acaef9948921</uuid>
-        <vendor>isee systems, inc.</vendor>
-        <product version="11.0.0" lang="en">Stella Modeler for iPad</product>
+        <vendor>SDLabs</vendor>
+        <original-product version="11.0.0" lang="en">Stella Modeler for iPad</original-product>
+	<product version="0.1">go-xmile</product>
     </header>
     <sim_specs time_units="Year">
         <start>1</start>

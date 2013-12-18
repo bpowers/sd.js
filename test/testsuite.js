@@ -86,7 +86,8 @@ define(['../lib/sd', '../lib/lex', '../lib/util'], function(sd, lex, util) {
                 }
             }
 
-            test.ok(Object.keys(model.vars).length === 14, 'vars len 14');
+            var len = Object.keys(model.vars).length;
+            test.ok(len === 14, 'vars len 14 (' + len + ')');
 
             const expectedInitials = set('hares', 'lynx',
                                          'size_of_1_time_lynx_harvest', 'hare_birth_fraction',
