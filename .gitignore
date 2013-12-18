@@ -8,3 +8,4 @@ node_modules
 /worker.js
 perf.data
 perf.data.old
+v8.log
