@@ -6,3 +6,5 @@ node_modules
 /lib/runtime.js
 /lib/runtime_ugly.js
 /worker.js
+perf.data
+perf.data.old
