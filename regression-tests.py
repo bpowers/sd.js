@@ -70,8 +70,13 @@ def compare(reference, simulated):
     steps = len(time)
     err = False
     for i in range(steps):
-        for n, series in reference.items():
-            n = e_name(n)
+        for ref_n, series in reference.items():
+            n = e_name(ref_n)
+            if len(reference[ref_n]) != len(simulated[n]):
+                log(ERROR, 'len mismatch for %s (%d vs %d)',
+                    n, len(reference[ref_n]), len(simulated[n]))
+                err = True
+                break
             ref = series[i]
             sim = simulated[n][i]
             if float(ref) == float(sim):
