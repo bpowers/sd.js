@@ -5,11 +5,11 @@ import json
 PREAMBLE = 'lib/runtime_ugly.js'
 EPILOGUE = 'lib/epilogue_src.js'
 DRAW_CSS = 'lib/draw.css'
-DRAW_WRAP = '''<style>
+DRAW_WRAP = '''<defs><style>
 /* <![CDATA[ */
 %s
 /* ]]> */
-</style>
+</style></defs>
 '''
 
 WRAPPER = '''// Copyright 2013 Bobby Powers. All rights reserved.
