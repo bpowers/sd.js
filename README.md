@@ -120,3 +120,6 @@ Uglifying file: /home/bpowers/p/sd.js/build/sd.nakid.js
 /home/bpowers/p/sd.js/lib/project.js
 /home/bpowers/p/sd.js/lib/sd.js
 ```
+
+The standalone sd.js library is now available at `build/sd.js`, and
+includes all the dependencies (Snap.svg, Mustache and Q).
