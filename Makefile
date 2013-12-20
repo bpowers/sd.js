@@ -29,6 +29,6 @@ clean:
 	rm -f lib/runtime.js
 
 check:
-	node_modules/.bin/nodeunit test/runner.js
+	@node_modules/.bin/nodeunit test/runner.js
 
 .PHONY: check hint all

@@ -81,7 +81,6 @@ Now you should be able to run the unit tests and build the library:
 
 ```
 [bpowers@fina sd.js]$ make check
-node_modules/.bin/nodeunit test/runner.js
 
 runner.js
 ✔ suite - identifierSet
@@ -98,23 +97,26 @@ runner.js
 OK: 134 assertions (101ms)
 
 [bpowers@fina sd.js]$ make
-mkdir -p build
-node_modules/.bin/r.js -o build.js
+python quote_runtime.py >lib/runtime.js
 
 Tracing dependencies for: vendor/almond
+Uglifying file: /home/bpowers/p/sd.js/build/sd.nakid.js
 
-/home/bpowers/tmp/sd.js/build/sd.nakid.js
+/home/bpowers/p/sd.js/build/sd.nakid.js
 ----------------
-/home/bpowers/tmp/sd.js/lib/vendor/almond.js
-/home/bpowers/tmp/sd.js/lib/common.js
-/home/bpowers/tmp/sd.js/lib/util.js
-/home/bpowers/tmp/sd.js/lib/lex.js
-/home/bpowers/tmp/sd.js/lib/vars.js
-/home/bpowers/tmp/sd.js/lib/draw.js
-/home/bpowers/tmp/sd.js/lib/runtime.js
-/home/bpowers/tmp/sd.js/lib/sim.js
-/home/bpowers/tmp/sd.js/lib/model.js
-/home/bpowers/tmp/sd.js/lib/sd.js
-
-cat lib/vendor/{mustache,q,snapsvg}.js build/sd.nakid.js >build/sd.js
+/home/bpowers/p/sd.js/lib/vendor/almond.js
+/home/bpowers/p/sd.js/lib/common.js
+/home/bpowers/p/sd.js/lib/util.js
+/home/bpowers/p/sd.js/lib/lex.js
+/home/bpowers/p/sd.js/lib/ast.js
+/home/bpowers/p/sd.js/lib/parse.js
+/home/bpowers/p/sd.js/lib/vars.js
+/home/bpowers/p/sd.js/lib/runtime.js
+/home/bpowers/p/sd.js/lib/draw.js
+/home/bpowers/p/sd.js/lib/sim.js
+/home/bpowers/p/sd.js/lib/model.js
+/home/bpowers/p/sd.js/lib/jxon.js
+/home/bpowers/p/sd.js/lib/compat.js
+/home/bpowers/p/sd.js/lib/project.js
+/home/bpowers/p/sd.js/lib/sd.js
 ```
