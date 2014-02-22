@@ -1,9 +1,9 @@
 
-all: build
+all: dist
 
-build: build/sd.js
-	@cp test/data/lynx-hares2.xml build
-	@cp examples/tester.html build/index.html
+dist: dist/sd.js
+	@cp test/data/lynx-hares2.xml dist
+	@cp examples/tester.html dist/index.html
 
 lib/runtime_ugly.js: lib/runtime_src.js Makefile
 	@cp lib/runtime_src.js $@
@@ -12,10 +12,10 @@ lib/runtime_ugly.js: lib/runtime_src.js Makefile
 lib/runtime.js: lib/runtime_ugly.js lib/epilogue_src.js lib/draw.css quote_runtime.py Makefile
 	python quote_runtime.py >$@
 
-build/sd.js: lib/*.js build.js lib/vendor/*.js lib/runtime.js
-	@mkdir -p build
+dist/sd.js: lib/*.js build.js lib/vendor/*.js lib/runtime.js
+	@mkdir -p dist
 	@node_modules/.bin/r.js -o build.js
-	@cat lib/vendor/{mustache,q,snapsvg}.js build/sd.nakid.js >build/sd.js
+	@cat lib/vendor/{mustache,q,snapsvg}.js dist/sd.nakid.js >dist/sd.js
 
 hint: lib/runtime.js
 	node_modules/.bin/jshint --config .jshintrc lib/*.js
@@ -25,10 +25,10 @@ jsdeps:
 	curl -o lib/vendor/require.js    'http://requirejs.org/docs/release/2.1.9/comments/require.js'
 
 clean:
-	rm -rf build
+	rm -rf dist
 	rm -f lib/runtime.js
 
 check:
 	@node_modules/.bin/nodeunit test/runner.js
 
-.PHONY: check hint all
+.PHONY: all dist hint jsdeps clean check

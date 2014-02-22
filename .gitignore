@@ -1,7 +1,7 @@
 serve
 *~
 /.d8_history
-/build
+/dist
 node_modules
 /lib/runtime.js
 /lib/runtime_ugly.js
