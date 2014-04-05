@@ -1,9 +1,7 @@
 
 all: dist
 
-dist: dist/sd.js
-	@cp test/data/lynx-hares2.xml dist
-	@cp examples/tester.html dist/index.html
+dist: dist/sd.min.js
 
 node_modules:
 	@npm install
@@ -22,7 +20,14 @@ lib/runtime.js: lib/runtime_ugly.js lib/epilogue_src.js lib/draw.css quote_runti
 dist/sd.js: lib/*.js build.js lib/vendor/*.js lib/runtime.js node_modules/.bin/r.js
 	@mkdir -p dist
 	@node_modules/.bin/r.js -o build.js
-	@cat lib/vendor/{mustache,q,snapsvg}.js dist/sd.nakid.js >dist/sd.js
+	@cat lib/vendor/{mustache,q,snapsvg}.js dist/sd.nodeps.js >$@
+	@rm dist/sd.nodeps.js
+
+dist/sd.min.js: dist/sd.js
+	@mkdir -p dist
+	@node_modules/.bin/r.js -o build_min.js
+	@cat lib/vendor/{mustache,q,snapsvg}.js dist/sd.nodeps.min.js >$@
+	@rm dist/sd.nodeps.min.js
 
 hint: lib/runtime.js
 	node_modules/.bin/jshint --config .jshintrc lib/*.js
