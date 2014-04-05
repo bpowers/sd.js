@@ -1,6 +1,6 @@
 {
   "name": "sd.js",
-  "version": "0.1.0",
+  "version": "0.1.3",
   "description": "system dynamics model simulation and visualization",
   "homepage": "http://sdlabs.io",
   "keywords": [
