@@ -1,19 +1,28 @@
 {
-    "name": "sd.js",
-    "version": "0.1.0",
-    "description": "system dynamics model simulation and visualization",
-    "keywords": ["sd", "system dynamics", "modeling", "simulation"],
-    "homepage": "http://sdlabs.io",
-    "license": "MIT",
-    "repository" : {
-        "type": "git",
-        "url" : "https://github.com/sdlabs/sd.js.git"
-    },
-    "dependencies": {},
-    "devDependencies": {
-        "requirejs": "~2.1.11"
-    },
-    "engines": {
-        "node": ">=0.10.24"
-    }
+  "name": "sd.js",
+  "version": "0.1.0",
+  "description": "system dynamics model simulation and visualization",
+  "homepage": "http://sdlabs.io",
+  "keywords": [
+    "sd",
+    "system dynamics",
+    "modeling",
+    "simulation"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sdlabs/sd.js.git"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "nodeunit": "~0.8.6",
+    "requirejs": "~2.1.11",
+    "xmldom": "0.1.19",
+    "jshint": "~2.5.0",
+    "uglify-js": "~2.4.13"
+  },
+  "engines": {
+    "node": ">=0.10.24"
+  }
 }

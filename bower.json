@@ -1,0 +1,26 @@
+{
+  "name": "sd.js",
+  "version": "0.1.0",
+  "description": "system dynamics model simulation and visualization",
+  "homepage": "http://sdlabs.io",
+  "authors": [
+    "Bobby Powers <bobbypowers@gmail.com>"
+  ],
+  "main": "dist/sd.min.js",
+  "keywords": [
+    "sd",
+    "system dynamics",
+    "modeling",
+    "simulation"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "demos",
+    "src"
+  ]
+  "dependencies": {}
+}
