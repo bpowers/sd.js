@@ -1407,6 +1407,9 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
     var CLOUD_WIDTH = 55;
     var ARROWHEAD_RADIUS = 4;
     var CLOUD_RADIUS = 8;
+    // FIXME(bp) this is a whack workaround, need to figure out a
+    // better way to decide when to inverse a connector curve
+    var INVERSE_FUZZ = 6;
     var MODULE_R = 5;
     var TEXT_ATTR = {
         'font-size': '12px',
@@ -1965,7 +1968,7 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
             while (spanθ < 0)
                 spanθ += 360;
             spanθ %= 360;
-            inv = spanθ <= 179;
+            inv = spanθ <= 180 - INVERSE_FUZZ;
 
             // FIXME(bp) this is an approximation, a bad one.
             if (toEnt instanceof DModule)
