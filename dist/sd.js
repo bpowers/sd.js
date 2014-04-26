@@ -510,7 +510,7 @@ define('common',[], function() {
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-define('util',['./common'], function(common) {
+define('util',[], function() {
     
 
     var util = {};
@@ -535,11 +535,9 @@ define('util',['./common'], function(common) {
         return s.replace(/\\n/g, '_').replace(/\s/g, '_').toLowerCase();
     };
 
-    var requiredSpecs = ['start', 'stop', 'dt', 'savestep'];
-
     /**
        Extracts the <simspecs> information into nice, usable, validated
-       object. Sets common.err on error.
+       object.
 
        @param simspecs DOM node
        @return A validated specs object on success, null on failure
@@ -759,7 +757,7 @@ define('util',['./common'], function(common) {
 
     util.isNaN = function isNaN(n) {
         return n !== n;
-    }
+    };
 
     return util;
 });
@@ -950,141 +948,7 @@ define('lex',['./common', './util'], function(common, util) {
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-define('ast',[], function() {
-    
-
-    function Ident(pos, name) {
-        this.name = name;
-        this._pos = pos;
-    }
-
-    function Constant(pos, value) {
-        this.value = value;
-        this._pos = pos;
-    }
-
-    function ParenExpr(lpos, x, rpos) {
-        this.x = x;
-        this._lPos = lPos;
-        this._rPos = rPos;
-    }
-
-    function CallExpr(fun, lParenPos, args, rParenPos) {
-        this.fun = fun;
-        this.args = args;
-        this._lParenPos = lParenPos;
-        this._rParenPos = rParenPos;
-    }
-
-    function UnaryExpr(opPos, op, x) {
-        this.op = op;
-        this.x = x;
-        this._opPos = opPos;
-    }
-
-    function BinaryExpr(x, opPos, op, y) {
-        this.x = x;
-        this.op = op;
-        this.y = y;
-        this._opPos = opPos;
-    }
-
-    function TernaryExpr(ifPos, cond, thenPos, a, elsePos, b) {
-        this.cond = cond;
-        this.a = a;
-        this.b = b;
-        this._ifPos = ifPos;
-        this._thenPos = thenPos;
-        this._elsePos = elsePos;
-    }
-
-    Ident.prototype.pos = function() { return this._pos; }
-    Constant.prototype.pos = function() { return this._pos; }
-    ParenExpr.prototype.pos = function() { return this._lPos; }
-    CallExpr.prototype.pos = function() { return this.fun.pos(); }
-    UnaryExpr.prototype.pos = function() { return this._opPos; }
-    BinaryExpr.prototype.pos = function() { return this.x.pos(); }
-    TernaryExpr.prototype.pos = function() { return this._ifPos; }
-
-    Ident.prototype.end = function() { return this._pos + this.name.length; }
-    Constant.prototype.end = function() { return this._pos + this.value.length; }
-    ParenExpr.prototype.end = function() { return this._rPos + 1; }
-    CallExpr.prototype.end = function() { return this._rParenPos + 1; }
-    UnaryExpr.prototype.end = function() { return this.x.end(); }
-    BinaryExpr.prototype.end = function() { return this.y.end(); }
-    TernaryExpr.prototype.end = function() { return this.b.end(); }
-
-    return {
-        'Ident': Ident,
-    };
-});
-
-// Copyright 2013 Bobby Powers. All rights reserved.
-// Use of this source code is governed by the MIT
-// license that can be found in the LICENSE file.
-
-define('parse',['./ast', './lex'], function(ast, lex) {
-    
-
-    function parse(eqn) {
-        var p = new Parser(eqn);
-        var ast = p.parse();
-        if (p.errs.length)
-            return [null, p.errs];
-        return [ast, null];
-    }
-
-    function Parser(eqn) {
-        this.lex = new lex.Scanner(eqn);
-        this.levels = [
-            binaryLevel(0, this, '^'),
-            binaryLevel(1, this, '*/'),
-            binaryLevel(2, this, '+-'),
-            this.factor,
-        ];
-    }
-    Parser.prototype.parse = function() {
-        return this.levels[0]();
-    };
-    Parser.prototype.factor = function() {
-        return null;
-    };
-    Parser.prototype.consumeAnyOf = function(ops) {
-        var peek = p.lex.peek();
-        if (!peek || peek.type !== lex.TOKEN)
-            return;
-        
-    };
-
-    function binaryLevel(n, p, ops) {
-        return function() {
-            if (!p.lex.peek())
-                return null;
-            var next = p.levels[n+1];
-            var lhs = next();
-            if (!lhs)
-                return;
-            var op;
-            for (op = p.consumeAnyOf(ops); op; op = p.consumeAnyOf(ops)) {
-                var rhs = next();
-                if (!rhs)
-                    return;
-                lhs = ast.BinaryExpr(lhs, 0, op, rhs);
-            }
-            return lhs;
-        };
-    }
-
-    return {
-        'parse': parse
-    };
-});
-
-// Copyright 2013 Bobby Powers. All rights reserved.
-// Use of this source code is governed by the MIT
-// license that can be found in the LICENSE file.
-
-define('vars',['./util', './common', './lex', './parse'], function(util, common, lex, parse) {
+define('vars',['./util', './common', './lex'], function(util, common, lex) {
     
 
     var Variable = function Variable(model, xmile) {
@@ -1146,7 +1010,7 @@ define('vars',['./util', './common', './lex', './parse'], function(util, common,
             } else if (tok.tok in v){
                 result.push("curr[" + v[tok.tok] + "]");
             } else {
-                result.push('globalCurr[this.ref["' + tok.tok + '"]]')
+                result.push('globalCurr[this.ref["' + tok.tok + '"]]');
             }
         }
         if (!result.length) {
@@ -1295,7 +1159,7 @@ define('vars',['./util', './common', './lex', './parse'], function(util, common,
             xmile.connect = [xmile.connect];
         this.refs = {};
         this._deps = {};
-        var i, conn, ref;
+        var i, ref;
         for (i = 0; i < xmile.connect.length; i++) {
             ref = new Reference(xmile.connect[i]);
             this.refs[ref.name] = ref;
@@ -1352,7 +1216,7 @@ define('vars',['./util', './common', './lex', './parse'], function(util, common,
     };
 
     var Reference = function Reference(xmile) {
-        this.xmile = xmile
+        this.xmile = xmile;
         this.name = util.eName(xmile['@to']);
         this.ptr = util.eName(xmile['@from']);
     };
@@ -1387,15 +1251,17 @@ define('runtime',[], function() {
     
     var runtime = {};
     // unquoted source in 'lib/runtime_ugly.js'
-    runtime.preamble = "/* jshint globalstrict: true, unused: false */\n/* global cmds: false, TIME: false, DEBUG: false */\n\n\nvar i32 = function i32(n) {\n    return n|0;\n};\n\nvar Simulation = function() {};\nSimulation.prototype.lookupOffset = function(id) {\n    //print(this.name + ': ' + id + ' resolving (' + this._shift + ')');\n    if (id === 'time')\n        return 0;\n    if (id[0] === '.')\n        id = id.substr(1);\n    if (id in this.offsets)\n        return this._shift + this.offsets[id];\n    var parts = id.split('.');\n    if (parts.length === 1 && id === \"\" && this.name in this.offsets)\n        return this._shift + this.offsets[this.name];\n    var nextSim = this.modules[parts[0]];\n    if (!nextSim)\n        return -1;\n    return nextSim.lookupOffset(parts.slice(1).join('.'));\n};\nSimulation.prototype.resolveAllSymbolicRefs = function() {\n    var n, ctx;\n    for (n in this.symRefs) {\n        if (this.symRefs[n][0] === '.')\n            ctx = main;\n        else\n            ctx = this.parent;\n        this.ref[n] = ctx.lookupOffset(this.symRefs[n]);\n        //print(this.name + ': ' + n + ' resolved to ' + this.ref[n]);\n    }\n    for (n in this.modules)\n        this.modules[n].resolveAllSymbolicRefs();\n};\nSimulation.prototype.varNames = function() {\n    var result = Object.keys(this.offsets).slice();\n    var ids;\n    for (v in this.modules) {\n        ids = this.modules[v].varNames().map(function(n) {\n            return v + '.' + n;\n        });\n        result = result.concat(ids);\n    }\n    if (this.name === 'main')\n        result.push('time');\n\n    return result;\n}\nSimulation.prototype.getNVars = function() {\n    var nVars = Object.keys(this.offsets).length;\n    var n;\n    for (n in this.modules)\n        nVars += this.modules[n].getNVars();\n    // if we're main, claim time\n    if (this.name === 'main')\n        nVars++;\n    return nVars;\n};\nSimulation.prototype.reset = function() {\n    var timespec = this.timespec;\n    var nSaveSteps = i32((timespec.stop - timespec.start)/timespec.savestep + 1);\n\n    this.stepNum = 0;\n\n    this.slab = new Float64Array(this.nVars*(nSaveSteps + 1));\n\n    var curr = this.curr();\n    curr[TIME] = timespec.start;\n    this.saveEvery = Math.max(1, i32(timespec.savestep/timespec.dt+0.5));\n\n    this.calcInitial(this.timespec.dt, curr);\n};\nSimulation.prototype.runTo = function(endTime) {\n    var dt = this.timespec.dt;\n\n    var curr = this.curr();\n    var next = this.slab.subarray((this.stepNum+1)*this.nVars,\n                                  (this.stepNum+2)*this.nVars);\n\n    while (curr[TIME] <= endTime) {\n        this.calcFlows(dt, curr);\n        this.calcStocks(dt, curr, next);\n\n        next[TIME] = curr[TIME] + dt;\n\n        if (this.stepNum++ % this.saveEvery !== 0) {\n            curr.set(next);\n        } else {\n            curr = next;\n            next = this.slab.subarray((i32(this.stepNum/this.saveEvery)+1)*this.nVars,\n                                      (i32(this.stepNum/this.saveEvery)+2)*this.nVars);\n        }\n    }\n};\nSimulation.prototype.runToEnd = function() {\n    return this.runTo(this.timespec.stop + 0.5*this.timespec.dt);\n};\nSimulation.prototype.curr = function() {\n    return this.slab.subarray((this.stepNum)*this.nVars,\n                              (this.stepNum+1)*this.nVars);\n};\nSimulation.prototype.setValue = function(name, value) {\n    var off = this.lookupOffset(name);\n    if (off === -1)\n        return;\n    this.curr()[off] = value;\n};\nSimulation.prototype.value = function(name) {\n    var off = this.lookupOffset(name);\n    if (off === -1)\n        return;\n    var saveNum = i32(this.stepNum/this.saveEvery);\n    var slabOff = this.nVars*saveNum;\n    return this.slab.subarray(slabOff, slabOff + this.nVars)[off];\n};\nSimulation.prototype.series = function(name) {\n    var saveNum = i32(this.stepNum/this.saveEvery);\n    var time = new Float64Array(saveNum);\n    var values = new Float64Array(saveNum);\n    var off = this.lookupOffset(name);\n    if (off === -1)\n        return;\n    //print(this.name + ': ' + name + ' resolved to ' + off);\n    var i, curr;\n    for (i=0; i < time.length; i++) {\n        curr = this.slab.subarray(i*this.nVars, (i+1)*this.nVars);\n        time[i] = curr[0];\n        values[i] = curr[off];\n    }\n    return {\n        'name': name,\n        'time': time,\n        'values': values,\n    };\n};\n\nfunction handleMessage(e) {\n    var id = e.data[0];\n    var cmd = e.data[1];\n    var args = e.data.slice(2);\n    var result;\n\n    if (cmds.hasOwnProperty(cmd))\n        result = cmds[cmd].apply(null, args);\n    else\n        result = [null, 'unknown command \"' + cmd + '\"'];\n\n    if (!Array.isArray(result))\n        result = [null, 'no result for [' + e.data.join(', ') + ']'];\n\n    // TODO(bp) look into transferrable objects\n    var msg = [id, result];\n    postMessage(msg);\n}\n\nvar desiredSeries = null;\n\nfunction initCmds(main) {\n    return {\n        'reset': function() {\n            main.reset();\n            return ['ok', null];\n        },\n        'set_val': function(name, val) {\n            main.setValue(name, val);\n            return ['ok', null];\n        },\n        'get_val': function() {\n            var result = {};\n            var i;\n            for (i=0; i < arguments.length; i++)\n                result[arguments[i]] = main.value(arguments[i]);\n            return [result, null];\n        },\n        'get_series': function() {\n            var result = {};\n            var i;\n            for (i=0; i<arguments.length; i++)\n                result[arguments[i]] = main.series(arguments[i]);\n            return [result, null];\n        },\n        'run_to': function(time) {\n            main.runTo(time);\n            return [main.value('time'), null];\n        },\n        'run_to_end': function() {\n            var result = {};\n            var i;\n            main.runToEnd();\n            if (desiredSeries) {\n                for (i = 0; i < desiredSeries.length; i++)\n                    result[desiredSeries[i]] = main.series(desiredSeries[i]);\n                return [result, null];\n            } else {\n                return [main.value('time'), null];\n            }\n        },\n        'set_desired_series': function(names) {\n            desiredSeries = names;\n            return ['ok', null];\n        },\n    };\n}\n\nfunction lookup(table, index) {\n    var size = table.x.length;\n    if (size === 0)\n        return NaN;\n\n    var x = table.x;\n    var y = table.y;\n\n    if (index <= x[0])\n        return y[0];\n    else if (index >= x[size - 1])\n        return y[size - 1];\n\n    // binary search seems to be the most appropriate choice here.\n    var low = 0;\n    var high = size;\n    var mid;\n    while (low < high) {\n        mid = Math.floor(low + (high - low)/2);\n        if (x[mid] < index) {\n            low = mid + 1;\n        } else {\n            high = mid;\n        }\n    }\n\n    var i = low;\n    if (x[i] === index) {\n        return y[i];\n    } else {\n        // slope = deltaY/deltaX\n        var slope = (y[i] - y[i-1]) / (x[i] - x[i-1]);\n        // y = m*x + b\n        return (index - x[i-1])*slope + y[i-1];\n    }\n}\n\nfunction max(a, b) {\n    a = +a;\n    b = +b;\n    return a > b ? a : b;\n}\n\nfunction min(a, b) {\n    a = +a;\n    b = +b;\n    return a < b ? a : b;\n}\n\nfunction pulse(dt, time, volume, firstPulse, interval) {\n    if (time < firstPulse)\n        return 0;\n    var nextPulse = firstPulse;\n    while (time >= nextPulse) {\n        if (time < nextPulse + dt)\n            return volume/dt;\n        else if (interval <= 0.0)\n            break;\n        else\n            nextPulse += interval;\n    }\n    return 0;\n}";
+    runtime.preamble = "/* jshint globalstrict: true, unused: false */\n/* global cmds: false, TIME: false, DEBUG: false, main: false */\n\n\nvar i32 = function i32(n) {\n    return n|0;\n};\n\nvar Simulation = function() {};\nSimulation.prototype.lookupOffset = function(id) {\n    //print(this.name + ': ' + id + ' resolving (' + this._shift + ')');\n    if (id === 'time')\n        return 0;\n    if (id[0] === '.')\n        id = id.substr(1);\n    if (id in this.offsets)\n        return this._shift + this.offsets[id];\n    var parts = id.split('.');\n    if (parts.length === 1 && id === \"\" && this.name in this.offsets)\n        return this._shift + this.offsets[this.name];\n    var nextSim = this.modules[parts[0]];\n    if (!nextSim)\n        return -1;\n    return nextSim.lookupOffset(parts.slice(1).join('.'));\n};\nSimulation.prototype.resolveAllSymbolicRefs = function() {\n    var n, ctx;\n    for (n in this.symRefs) {\n        if (this.symRefs[n][0] === '.')\n            ctx = main;\n        else\n            ctx = this.parent;\n        this.ref[n] = ctx.lookupOffset(this.symRefs[n]);\n        //print(this.name + ': ' + n + ' resolved to ' + this.ref[n]);\n    }\n    for (n in this.modules)\n        this.modules[n].resolveAllSymbolicRefs();\n};\nSimulation.prototype.varNames = function() {\n    var result = Object.keys(this.offsets).slice();\n    var ids;\n    var v, n;\n    for (v in this.modules) {\n        ids = [];\n        for (n in this.modules[v].varNames())\n            ids.push(v + '.' + n);\n        result = result.concat(ids);\n    }\n    if (this.name === 'main')\n        result.push('time');\n\n    return result;\n};\nSimulation.prototype.getNVars = function() {\n    var nVars = Object.keys(this.offsets).length;\n    var n;\n    for (n in this.modules)\n        nVars += this.modules[n].getNVars();\n    // if we're main, claim time\n    if (this.name === 'main')\n        nVars++;\n    return nVars;\n};\nSimulation.prototype.reset = function() {\n    var timespec = this.timespec;\n    var nSaveSteps = i32((timespec.stop - timespec.start)/timespec.savestep + 1);\n\n    this.stepNum = 0;\n\n    this.slab = new Float64Array(this.nVars*(nSaveSteps + 1));\n\n    var curr = this.curr();\n    curr[TIME] = timespec.start;\n    this.saveEvery = Math.max(1, i32(timespec.savestep/timespec.dt+0.5));\n\n    this.calcInitial(this.timespec.dt, curr);\n};\nSimulation.prototype.runTo = function(endTime) {\n    var dt = this.timespec.dt;\n\n    var curr = this.curr();\n    var next = this.slab.subarray((this.stepNum+1)*this.nVars,\n                                  (this.stepNum+2)*this.nVars);\n\n    while (curr[TIME] <= endTime) {\n        this.calcFlows(dt, curr);\n        this.calcStocks(dt, curr, next);\n\n        next[TIME] = curr[TIME] + dt;\n\n        if (this.stepNum++ % this.saveEvery !== 0) {\n            curr.set(next);\n        } else {\n            curr = next;\n            next = this.slab.subarray((i32(this.stepNum/this.saveEvery)+1)*this.nVars,\n                                      (i32(this.stepNum/this.saveEvery)+2)*this.nVars);\n        }\n    }\n};\nSimulation.prototype.runToEnd = function() {\n    return this.runTo(this.timespec.stop + 0.5*this.timespec.dt);\n};\nSimulation.prototype.curr = function() {\n    return this.slab.subarray((this.stepNum)*this.nVars,\n                              (this.stepNum+1)*this.nVars);\n};\nSimulation.prototype.setValue = function(name, value) {\n    var off = this.lookupOffset(name);\n    if (off === -1)\n        return;\n    this.curr()[off] = value;\n};\nSimulation.prototype.value = function(name) {\n    var off = this.lookupOffset(name);\n    if (off === -1)\n        return;\n    var saveNum = i32(this.stepNum/this.saveEvery);\n    var slabOff = this.nVars*saveNum;\n    return this.slab.subarray(slabOff, slabOff + this.nVars)[off];\n};\nSimulation.prototype.series = function(name) {\n    var saveNum = i32(this.stepNum/this.saveEvery);\n    var time = new Float64Array(saveNum);\n    var values = new Float64Array(saveNum);\n    var off = this.lookupOffset(name);\n    if (off === -1)\n        return;\n    //print(this.name + ': ' + name + ' resolved to ' + off);\n    var i, curr;\n    for (i=0; i < time.length; i++) {\n        curr = this.slab.subarray(i*this.nVars, (i+1)*this.nVars);\n        time[i] = curr[0];\n        values[i] = curr[off];\n    }\n    return {\n        'name': name,\n        'time': time,\n        'values': values,\n    };\n};\n\nfunction handleMessage(e) {\n    var id = e.data[0];\n    var cmd = e.data[1];\n    var args = e.data.slice(2);\n    var result;\n\n    if (cmds.hasOwnProperty(cmd))\n        result = cmds[cmd].apply(null, args);\n    else\n        result = [null, 'unknown command \"' + cmd + '\"'];\n\n    if (!Array.isArray(result))\n        result = [null, 'no result for [' + e.data.join(', ') + ']'];\n\n    // TODO(bp) look into transferrable objects\n    var msg = [id, result];\n    postMessage(msg);\n}\n\nvar desiredSeries = null;\n\nfunction initCmds(main) {\n    return {\n        'reset': function() {\n            main.reset();\n            return ['ok', null];\n        },\n        'set_val': function(name, val) {\n            main.setValue(name, val);\n            return ['ok', null];\n        },\n        'get_val': function() {\n            var result = {};\n            var i;\n            for (i=0; i < arguments.length; i++)\n                result[arguments[i]] = main.value(arguments[i]);\n            return [result, null];\n        },\n        'get_series': function() {\n            var result = {};\n            var i;\n            for (i=0; i<arguments.length; i++)\n                result[arguments[i]] = main.series(arguments[i]);\n            return [result, null];\n        },\n        'run_to': function(time) {\n            main.runTo(time);\n            return [main.value('time'), null];\n        },\n        'run_to_end': function() {\n            var result = {};\n            var i;\n            main.runToEnd();\n            if (desiredSeries) {\n                for (i = 0; i < desiredSeries.length; i++)\n                    result[desiredSeries[i]] = main.series(desiredSeries[i]);\n                return [result, null];\n            } else {\n                return [main.value('time'), null];\n            }\n        },\n        'set_desired_series': function(names) {\n            desiredSeries = names;\n            return ['ok', null];\n        },\n    };\n}\n\nfunction lookup(table, index) {\n    var size = table.x.length;\n    if (size === 0)\n        return NaN;\n\n    var x = table.x;\n    var y = table.y;\n\n    if (index <= x[0])\n        return y[0];\n    else if (index >= x[size - 1])\n        return y[size - 1];\n\n    // binary search seems to be the most appropriate choice here.\n    var low = 0;\n    var high = size;\n    var mid;\n    while (low < high) {\n        mid = Math.floor(low + (high - low)/2);\n        if (x[mid] < index) {\n            low = mid + 1;\n        } else {\n            high = mid;\n        }\n    }\n\n    var i = low;\n    if (x[i] === index) {\n        return y[i];\n    } else {\n        // slope = deltaY/deltaX\n        var slope = (y[i] - y[i-1]) / (x[i] - x[i-1]);\n        // y = m*x + b\n        return (index - x[i-1])*slope + y[i-1];\n    }\n}\n\nfunction max(a, b) {\n    a = +a;\n    b = +b;\n    return a > b ? a : b;\n}\n\nfunction min(a, b) {\n    a = +a;\n    b = +b;\n    return a < b ? a : b;\n}\n\nfunction pulse(dt, time, volume, firstPulse, interval) {\n    if (time < firstPulse)\n        return 0;\n    var nextPulse = firstPulse;\n    while (time >= nextPulse) {\n        if (time < nextPulse + dt)\n            return volume/dt;\n        else if (interval <= 0.0)\n            break;\n        else\n            nextPulse += interval;\n    }\n    return 0;\n}";
     // unquoted source in 'lib/epilogue_src.js'
-    runtime.epilogue = "/* global main: false, print: true, mainMapping: false */\n\nif (typeof console !== 'undefined')\n    print = console.log;\n\nmain.runToEnd();\nvar series = {};\nvar header = 'time\\t';\nvar vars = main.varNames();\nvar i, v;\nfor (i = 0; i < vars.length; i++) {\n    v = vars[i];\n    if (v === 'time')\n        continue;\n    header += v + '\\t';\n    series[v] = main.series(v);\n}\nprint(header.substr(0, header.length-1));\n\nvar nSteps = main.series('time').time.length;\nvar msg = '';\nfor (i = 0; i < nSteps; i++) {\n    msg = '';\n    for (v in series) {\n        if (msg === '')\n            msg += series[v].time[i] + '\\t';\n        msg += series[v].values[i] + '\\t';\n    }\n    print(msg.substr(0, msg.length-1));\n}";
+    runtime.epilogue = "/* global main: false, print: true */\n\nif (typeof console !== 'undefined')\n    print = console.log;\n\nmain.runToEnd();\nvar series = {};\nvar header = 'time\\t';\nvar vars = main.varNames();\nvar i, v;\nfor (i = 0; i < vars.length; i++) {\n    v = vars[i];\n    if (v === 'time')\n        continue;\n    header += v + '\\t';\n    series[v] = main.series(v);\n}\nprint(header.substr(0, header.length-1));\n\nvar nSteps = main.series('time').time.length;\nvar msg = '';\nfor (i = 0; i < nSteps; i++) {\n    msg = '';\n    for (v in series) {\n        if (msg === '')\n            msg += series[v].time[i] + '\\t';\n        msg += series[v].values[i] + '\\t';\n    }\n    print(msg.substr(0, msg.length-1));\n}";
     // unquoted source in 'lib/draw.css'
     runtime.drawCSS = "<defs><style>\n/* <![CDATA[ */\n.spark-axis {\n    stroke-width: 0.125;\n    stroke-linecap: round;\n    stroke: #999;\n    fill: none;\n}\n\n.spark-line {\n    stroke-width: 0.5;\n    stroke-linecap: round;\n    stroke: #2299dd;\n    fill: none;\n}\n\ntext {\n    font-size: 12px;\n    font-family: \"Open Sans\";\n    font-weight: 300;\n    text-anchor: middle;\n    white-space: nowrap;\n    vertical-align: middle;\n}\n\n.left-aligned {\n    text-anchor: start;\n}\n/* ]]> */\n</style></defs>\n";
 
     return runtime;
 });
 
+
+/* global navigator: false, document: false */
 
 define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
     
@@ -1451,14 +1317,12 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
         return {'x': x, 'y': y};
     };
 
-    var floatAttr = util.floatAttr;
-
     var SIDE_MAP = {
         0: 'right',
         1: 'bottom',
         2: 'left',
         3: 'top',
-    }
+    };
 
     var findSide = function findSide(element, defaultElement) {
         if (!defaultElement)
@@ -1477,7 +1341,7 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
             return SIDE_MAP[i];
         }
         return defaultElement;
-    }
+    };
 
     var cloudAt = function cloudAt(paper, x, y) {
         var scale = (AUX_RADIUS*2/CLOUD_WIDTH);
@@ -1654,7 +1518,7 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
                 })
             );
         } else {
-            var line = graph.node.querySelector('.spark-line')
+            var line = graph.node.querySelector('.spark-line');
             line.setAttribute('d', p);
             return graph;
         }
@@ -2035,7 +1899,7 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
         if (typeof svgElement === 'string') {
             if (svgElement.length > 0 && svgElement[0] === '#')
                 svgElement = svgElement.substr(1);
-            svg = document.getElementById(svgElement)
+            svg = document.getElementById(svgElement);
         } else {
             svg = svgElement;
         }
@@ -2051,14 +1915,14 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
         this._g.node.id = 'viewport';
         this.colorOverride = overrideColors;
 
-        //var zoom = floatAttr(view, 'zoom')/100.0;
+        //var zoom = util.floatAttr(view, 'zoom')/100.0;
         svg.setAttribute('preserveAspectRatio', 'xMinYMin');
         var tz = 'translateZ(0px)';
         svg.style['-webkit-transform'] = tz;
         svg.style['-moz-transform'] = tz;
         svg.style['-ms-transform'] = tz;
         svg.style['-o-transform'] = tz;
-        svg.style['transform'] = tz;
+        svg.style.transform = tz;
 
         var elems = [];
         var n, i;
@@ -2189,7 +2053,7 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
         this._g.node.style['-webkit-transform'] = matrix;
         this._g.node.style['-moz-transform'] = matrix;
         this._g.node.style['-ms-transform'] = matrix;
-        this._g.node.style['transform'] = matrix;
+        this._g.node.style.transform = matrix;
     };
     Drawing.prototype.visualize = function(data) {
         // FIXME(bp) hack for compat
@@ -2249,8 +2113,6 @@ define('sim',['./util', './vars', './runtime'], function(util, vars, runtime) {
 
     var SP = DEBUG ? '    ' : '';
     var NLSP = DEBUG ? '\n    ' : '';
-
-    var TIME_OFFSET = 0;
 
     var tmpl = "{{&preamble}}\n\n" +
         "var TIME = 0;\n\n" +
@@ -2372,7 +2234,7 @@ define('sim',['./util', './vars', './runtime'], function(util, vars, runtime) {
 
         // decide which run lists each variable has to be, based on
         // its type and const-ness
-        var v, off;
+        var n, v, off;
         for (n in model.vars) {
             v = model.vars[n];
             if (v instanceof vars.Module) {
@@ -2410,7 +2272,7 @@ define('sim',['./util', './vars', './runtime'], function(util, vars, runtime) {
         var tables = {};
 
         var ci = [], cf = [], cs = [];
-        var i, v, eqn;
+        var i, eqn;
         // FIXME(bp) some auxiliaries are referred to in stock intial
         // equations, they need to be promoted into initials.
         for (i = 0; i < run_initials.length; i++) {
@@ -2460,7 +2322,8 @@ define('sim',['./util', './vars', './runtime'], function(util, vars, runtime) {
                 additional = ' + 1';
             init.push('var off = Object.keys(this.offsets).length' + additional + ';');
         }
-        var modules = ['{'];
+        var mods = [];
+        mods.push('{');
         var ref;
         for (n in model.modules) {
             init.push('var ' + n + 'Refs = {');
@@ -2469,15 +2332,15 @@ define('sim',['./util', './vars', './runtime'], function(util, vars, runtime) {
             init.push('};');
             init.push('var ' + n + ' = new ' + util.titleCase(model.modules[n].modelName) + '("' + n + '", this, off, ' + n + 'Refs);');
             init.push('off += ' + n + '.nVars;');
-            modules.push('    "' + n + '": ' + n + ',');
+            mods.push('    "' + n + '": ' + n + ',');
         }
-        modules.push('}');
+        mods.push('}');
 
         return {
             'name': model.name,
             'className': util.titleCase(model.name),
             'isModule?': model.name !== 'main',
-            'modules': modules.join(NLSP),
+            'modules': mods.join(NLSP),
             'init': init.join(NLSP),
             'initialVals': JSON.stringify(initials, null, SP),
             'timespecVals': JSON.stringify(model.timespec, null, SP),
@@ -2626,12 +2489,12 @@ define('model',['./util', './vars', './common', './draw', './sim'], function(uti
             for (i = 0; i < defs.flow.length; i++) {
                 xmile = defs.flow[i];
                 if (xmile.gf) {
-                    aux = new vars.Table(this, xmile);
-                    this.tables[aux.name] = aux;
+                    flow = new vars.Table(this, xmile);
+                    this.tables[flow.name] = flow;
                 } else {
-                    aux = new vars.Variable(this, xmile);
+                    flow = new vars.Variable(this, xmile);
                 }
-                this.vars[aux.name] = aux;
+                this.vars[flow.name] = flow;
             }
         }
     };
@@ -2643,7 +2506,7 @@ define('model',['./util', './vars', './common', './draw', './sim'], function(uti
         var parts = id.split('.');
         var nextModel = this.project.models[this.modules[parts[0]].modelName];
         return nextModel.lookup(parts.slice(1).join('.'));
-    }
+    };
     Model.prototype.sim = function(isStandalone) {
         if (this.name === 'main')
             return new sim.Sim(this.project.main, isStandalone);
@@ -2667,9 +2530,9 @@ define('model',['./util', './vars', './common', './draw', './sim'], function(uti
 define('jxon',[], function() {
     
 
-    function isObject(v) {
+    /*function isObject(v) {
         return typeof v === 'object';
-    }
+    }*/
 
     function parseText(val) {
         val = val.trim();
@@ -2682,7 +2545,7 @@ define('jxon',[], function() {
         return val;
     }
 
-    function JXONBuild(parent) {
+    function jxonBuild(parent) {
         var result = true;
         var collectedText = '';
         var len = 0, i = 0;
@@ -2711,7 +2574,7 @@ define('jxon',[], function() {
                         len++;
                     }
                     prop = node.nodeName.toLowerCase();
-                    content = JXONBuild(node);
+                    content = jxonBuild(node);
                     if (result.hasOwnProperty(prop)) {
                         if (!(result[prop] instanceof Array))
                             result[prop] = [result[prop]];
@@ -2730,15 +2593,15 @@ define('jxon',[], function() {
                 result = parseText(collectedText);
         }
         return result;
-    };
-    function JXONUnbuild(obj) {
+    }
+    function jxonUnbuild(/*obj*/) {
 
-    };
+    }
 
     return {
         'JXON': {
-            'build':   JXONBuild,
-            'unbuild': JXONUnbuild,
+            'build':   jxonBuild,
+            'unbuild': jxonUnbuild,
         },
     };
 });
@@ -2827,8 +2690,6 @@ define('project',['./common', './util', './model', './vars', './jxon', './compat
 
     var JXON = jxon.JXON;
     var errors = common.errors;
-    var qs = util.qs;
-    var qsa = util.qsa;
 
     // TODO(bp) macro support/warnings
 
@@ -2881,7 +2742,7 @@ define('project',['./common', './util', './model', './vars', './jxon', './compat
 
         this.models = {};
 
-        var i, mdl;
+        var mdl;
         for (i=0; i < xmile.model.length; i++) {
             mdl = xmile.model[i];
             if (!mdl['@name'])
