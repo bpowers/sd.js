@@ -1450,6 +1450,32 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
 
     var floatAttr = util.floatAttr;
 
+    var SIDE_MAP = {
+        0: 'right',
+        1: 'bottom',
+        2: 'left',
+        3: 'top',
+    }
+
+    var findSide = function findSide(element, defaultElement) {
+        if (!defaultElement)
+            defaultElement = 'bottom';
+        var θ, i, side;
+        if ('@label_side' in element) {
+            side = element['@label_side'].toLowerCase();
+            // FIXME(bp) handle center 'side' case
+            if (side === 'center')
+                return defaultElement;
+            return side;
+        }
+        if ('@label_angle' in element) {
+            θ = (element['@label_angle'] + 45) % 360;
+            i = (θ/90)|0;
+            return SIDE_MAP[i];
+        }
+        return defaultElement;
+    }
+
     var cloudAt = function cloudAt(paper, x, y) {
         var scale = (AUX_RADIUS*2/CLOUD_WIDTH);
         var t = 'matrix(' + scale + ', 0, 0, ' + scale + ', ' +
@@ -1642,7 +1668,7 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
         this.w = 45;
         this.h = 35;
         this.color = this.drawing.colorOverride ? COLOR_AUX : element['@color'] || COLOR_AUX;
-        this.labelSide = element['@label_side'] || 'top';
+        this.labelSide = findSide(element);
     };
     DStock.prototype.init = function() {
         // we are a stock, and need to inform all the flows into and
@@ -1710,7 +1736,7 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
         this.w = 55;
         this.h = 45;
         this.color = this.drawing.colorOverride ? COLOR_AUX : element['@color'] || COLOR_AUX;
-        this.labelSide = element['@label_side'] || 'top';
+        this.labelSide = findSide(element);
     };
     DModule.prototype.init = function() {
     };
@@ -1752,7 +1778,7 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
         this.cx = element['@x'];
         this.cy = element['@y'];
         this.color = this.drawing.colorOverride ? COLOR_AUX : element['@color'] || COLOR_AUX;
-        this.labelSide = element['@label_side'] || 'bottom';
+        this.labelSide = findSide(element);
     };
     DAux.prototype.init = function() {};
     DAux.prototype.draw = function() {
@@ -1788,7 +1814,7 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
         this.to = null;
         this.from = null;
         this.color = this.drawing.colorOverride ? COLOR_AUX : element['@color'] || COLOR_AUX;
-        this.labelSide = element['@label_side'] || 'bottom';
+        this.labelSide = findSide(element);
     };
     DFlow.prototype.init = function() {};
     DFlow.prototype.draw = function() {
