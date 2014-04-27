@@ -5,15 +5,22 @@ ifneq ($V, 1)
 MAKEFLAGS = -s
 endif
 
+VENDOR_JS     := bower_components/hammerjs/hammer.js lib/vendor/mustache.js lib/vendor/q.js lib/vendor/snapsvg.js
+VENDOR_MIN_JS := bower_components/hammerjs/hammer.min.js lib/vendor/mustache.js lib/vendor/q.js lib/vendor/snapsvg.js
+
 all: dist
 
 dist: dist/sd.js dist/sd.min.js
+
+bower_components:
+	bower install
+	touch $@
 
 node_modules:
 	npm install
 	touch $@
 
-node_modules/.bin/r.js: package.json node_modules
+node_modules/.bin/r.js: package.json node_modules bower_components
 	touch $@
 
 lib/runtime_ugly.js: lib/runtime_src.js Makefile
@@ -23,16 +30,15 @@ lib/runtime_ugly.js: lib/runtime_src.js Makefile
 lib/runtime.js: lib/runtime_ugly.js lib/epilogue_src.js lib/draw.css quote_runtime.py Makefile
 	python quote_runtime.py >$@
 
-dist/sd.js: lib/*.js build.js lib/vendor/*.js lib/runtime.js node_modules/.bin/r.js
+dist/sd.js: node_modules/.bin/r.js build.js lib/*.js lib/runtime.js $(VENDOR_JS)
 	mkdir -p dist
 	node_modules/.bin/r.js -o build.js
-	cat lib/vendor/{mustache,q,snapsvg}.js dist/sd.nodeps.js >$@
+	cat $(VENDOR_JS) dist/sd.nodeps.js >$@
 
-dist/sd.min.js:
+dist/sd.min.js: node_modules/.bin/r.js build_min.js lib/*.js lib/runtime.js $(VENDOR_JS)
 	mkdir -p dist
 	node_modules/.bin/r.js -o build_min.js
-	cat lib/vendor/{mustache,q,snapsvg}.js dist/sd.nodeps.min.js >$@
-	rm dist/sd.nodeps.min.js
+	cat $(VENDOR_MIN_JS) dist/sd.nodeps.min.js >$@
 
 hint: lib/runtime.js
 	node_modules/.bin/jshint --config .jshintrc lib/*.js

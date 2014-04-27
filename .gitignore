@@ -10,3 +10,4 @@ perf.data.old
 v8.log
 /bower_components
 /dist/sd.nodeps.js
+/dist/sd.nodeps.min.js
