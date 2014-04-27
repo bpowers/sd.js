@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 DOMParser = require('xmldom').DOMParser;
-Mustache = require('./lib/vendor/mustache');
+Mustache = require('./node_modules/mustache/mustache');
 
 var fs = require('fs');
-var sd = require('./build/sd.nakid').sd;
+var sd = require('./dist/sd.nodeps').sd;
 
 var argv = process.argv;
 if (argv.length < 3) {

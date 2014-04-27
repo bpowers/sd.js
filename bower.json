@@ -22,5 +22,10 @@
     "demos",
     "src"
   ],
-  "dependencies": {}
+  "dependencies": {},
+  "devDependencies": {
+    "hammerjs": "~1.1.2",
+    "almond": "~0.2.9",
+    "q": "~2.0.0"
+  }
 }
