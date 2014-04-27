@@ -5,8 +5,8 @@ ifneq ($V, 1)
 MAKEFLAGS = -s
 endif
 
-HAMMER_JS     := bower_components/hammerjs/hammer.js bower_components/hammerjs/plugins/hammer.showtouches.js bower_components/hammerjs/plugins/hammer.fakemultitouch.js
-HAMMER_MIN_JS := bower_components/hammerjs/hammer.js bower_components/hammerjs/plugins/hammer.showtouches.js bower_components/hammerjs/plugins/hammer.fakemultitouch.js
+HAMMER_JS     := bower_components/hammerjs/hammer.js #bower_components/hammerjs/plugins/hammer.showtouches.js bower_components/hammerjs/plugins/hammer.fakemultitouch.js
+HAMMER_MIN_JS := bower_components/hammerjs/hammer.min.js #bower_components/hammerjs/plugins/hammer.showtouches.js bower_components/hammerjs/plugins/hammer.fakemultitouch.js
 
 VENDOR_JS     := $(HAMMER_JS) lib/vendor/mustache.js lib/vendor/q.js lib/vendor/snapsvg.js
 VENDOR_MIN_JS := $(HAMMER_MIN_JS) lib/vendor/mustache.js lib/vendor/q.js lib/vendor/snapsvg.js

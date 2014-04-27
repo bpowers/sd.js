@@ -2162,221 +2162,7 @@ if(typeof define == 'function' && define.amd) {
     window.Hammer = Hammer;
 }
 
-})(window);(function(Hammer) {
-    'use strict';
-
-    /**
-     * show all touch on the screen by placing elements at there pageX and pageY
-     *
-     * @usage
-     * call `Hammer.plugins.showTouches()` before creating an instance to enable the plugin for all
-     * instances. You can also do this later, but then you'll have to enable this per instance by setting
-     * the option `show_touches` to `true`
-     */
-    Hammer.plugins.showTouches = function() {
-        // only possible with the pointerEvents css property supported
-        if(!testStyle('pointerEvents')) {
-            return;
-        }
-
-        // the circles under your fingers
-        var templateStyle = [
-            'position: absolute;',
-            'z-index: 9999;',
-            'height: 14px;',
-            'width: 14px;',
-            'top: 0;',
-            'left: 0;',
-            'pointer-events: none;', // makes the element click-thru
-            'border: solid 2px #777;',
-            'background: rgba(255,255,255,.7);',
-            'border-radius: 20px;',
-            'margin-top: -9px;',
-            'margin-left: -9px;'
-        ].join('');
-
-        // define position property
-        var positionStyleProp = 'lefttop';
-        if(testStyle('transform')) { positionStyleProp = 'transform'; }
-        if(testStyle('MozTransform')) { positionStyleProp = 'MozTransform'; }
-        if(testStyle('webkitTransform')) { positionStyleProp = 'webkitTransform'; }
-
-        // elements by identifier
-        var touchElements = {};
-        var touchesIndex = {};
-
-        /**
-         * check if a style property exists
-         * @param {String} prop
-         * @param {HTMLElement} [el=document.body]
-         * @returns {Boolean}
-         */
-        function testStyle(prop, el) {
-            return (prop in (el || document.body).style);
-        }
-
-        /**
-         * remove unused touch elements
-         */
-        function removeUnusedElements() {
-            // remove unused touch elements
-            for(var key in touchElements) {
-                if(touchElements.hasOwnProperty(key) && !touchesIndex[key]) {
-                    document.body.removeChild(touchElements[key]);
-                    delete touchElements[key];
-                }
-            }
-        }
-
-        /**
-         * set position of an element with top/left or css transform
-         * @param {HTMLElement} el
-         * @param {Number} x
-         * @param {Number} y
-         */
-        function setPosition(el, x, y) {
-            if(positionStyleProp == 'lefttop') {
-                el.style.left = x + 'px';
-                el.style.top = y + 'px';
-            } else {
-                el.style[positionStyleProp] = 'translate(' + x + 'px, ' + y + 'px)';
-            }
-        }
-
-        Hammer.detection.register({
-            name: 'showTouches',
-            priority: 0,
-            handler: function(ev) {
-                touchesIndex = {};
-
-                // clear old elements when not using a mouse
-                if(ev.pointerType != Hammer.POINTER_MOUSE) {
-                    removeUnusedElements();
-                    return;
-                }
-
-                // place touches by index
-                for(var t = 0, len = ev.touches.length; t < len; t++) {
-                    var touch = ev.touches[t];
-                    var id = touch.identifier;
-                    touchesIndex[id] = touch;
-
-                    // new touch element
-                    if(!touchElements[id]) {
-                        var template = document.createElement('div');
-                        template.setAttribute('style', templateStyle);
-                        document.body.appendChild(template);
-
-                        touchElements[id] = template;
-                    }
-                    setPosition(touchElements[id], touch.pageX, touch.pageY);
-                }
-                removeUnusedElements();
-            }
-        });
-    };
-})(window.Hammer);
-(function(Hammer) {
-    'use strict';
-
-    /**
-     * enable multitouch on the desktop by pressing the shiftkey
-     * the other touch goes in the opposite direction so the center keeps at its place
-     * it's recommended to enable Hammer.debug.showTouches for this one
-     *
-     * @usage
-     * just call `Hammer.plugins.fakeMultitouch()` and you're done.
-     */
-    Hammer.plugins.fakeMultitouch = function() {
-        // no need to fake it if it already is possible!
-        var maxTouchPoints = navigator.maxTouchPoints || navigator.msMaxTouchPoints;
-        if(Hammer.HAS_TOUCHEVENTS || (Hammer.HAS_POINTEREVENTS && maxTouchPoints > 1)) {
-            return;
-        }
-
-        // keeps the start position to keep it centered
-        var startPos = false;
-
-        /**
-         * overwrites Hammer.event.getTouchList.
-         * @method getTouchList
-         * @param {Event} ev
-         * @param {String} eventType
-         * @return {Array} Touches
-         */
-        Hammer.event.getTouchList = function(ev, eventType) {
-            var touches = [];
-            var changedTouches = [];
-
-            // reset on start of a new touch
-            if(eventType == Hammer.EVENT_START) {
-                startPos = false;
-            }
-
-            // when the shift key is pressed, multitouch is possible on desktop
-            // why shift? because ctrl and alt are taken by osx and linux
-            if(ev.shiftKey) {
-                // on touchstart we store the position of the mouse for multitouch
-                if(!startPos) {
-                    startPos = {
-                        pageX: ev.pageX,
-                        pageY: ev.pageY,
-                        clientX: ev.clientX,
-                        clientY: ev.clientY
-                    };
-
-                    // new touch came up
-                    touches.trigger = Hammer.EVENT_TOUCH;
-                }
-
-                var distanceX = startPos.pageX - ev.pageX;
-                var distanceY = startPos.pageY - ev.pageY;
-
-                // fake second touch in the opposite direction
-                touches.push({
-                    identifier: 1,
-                    pageX: startPos.pageX - distanceX - 50,
-                    pageY: startPos.pageY - distanceY + 50,
-                    clientX: startPos.clientX - distanceX - 50,
-                    clientY: startPos.clientY - distanceY + 50,
-                    target: ev.target
-                }, {
-                    identifier: 2,
-                    pageX: startPos.pageX + distanceX + 50,
-                    pageY: startPos.pageY + distanceY - 50,
-                    clientX: startPos.clientX + distanceX + 50,
-                    clientY: startPos.clientY + distanceY - 50,
-                    target: ev.target
-                });
-
-                changedTouches = touches;
-            } else {
-                touches.push({
-                    identifier: 1,
-                    pageX: ev.pageX,
-                    pageY: ev.pageY,
-                    clientX: ev.clientX,
-                    clientY: ev.clientY,
-                    target: ev.target
-                });
-
-                // we came from multitouch, trigger a release event
-                // and use the changed touches from the multitouch
-                if(startPos) {
-                    touches.trigger = Hammer.EVENT_RELEASE;
-                // use the touches as changedTouches, because we are in a move
-                }  else {
-                    changedTouches = touches;
-                }
-                startPos = false;
-            }
-
-            ev.touches = touches;
-            ev.changedTouches = changedTouches;
-            return touches;
-        };
-    };
-})(window.Hammer);// Copyright (c) 2009 Chris Wanstrath (Ruby)
+})(window);// Copyright (c) 2009 Chris Wanstrath (Ruby)
 // Copyright (c) 2010 Jan Lehnardt (JavaScript)
 // Use of mustache.js is governed by the MIT
 // license.
@@ -3672,6 +3458,7 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
         'aux': 4,
         'connector': 5,
     };
+    var MIN_SCALE = .2;
     var Z_MAX = 6;
     var IS_CHROME = typeof navigator !== 'undefined' && navigator.userAgent.match(/Chrome/);
 
@@ -4358,8 +4145,7 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
         // pieces to construct a transformation matrix from
         this._t = {
             'scale': 1,
-            'offX': 0,
-            'offY': 0,
+            'dscale': 0,
             'x': 0,
             'y': 0,
             'dx': 0,
@@ -4369,10 +4155,14 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
         var _this = this;
 
         //Hammer.plugins.showTouches();
-        Hammer.plugins.fakeMultitouch();
+        //Hammer.plugins.fakeMultitouch();
         var hammer = Hammer(svg, {
             preventDefault: true,
             gesture: true,
+        });
+        hammer.on('dragstart', function() {
+            var drawing = _this;
+            drawing.normalizeTransform();
         });
         hammer.on('drag', function(e) {
             var drawing = _this;
@@ -4382,26 +4172,22 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
         });
         hammer.on('dragend', function(e) {
             var drawing = _this;
-            drawing._t.x += drawing._t.dx;
-            drawing._t.y += drawing._t.dy;
-            drawing._t.offX += drawing._t.x;
-            drawing._t.offY += drawing._t.y;
-            drawing._t.dx = 0;
-            drawing._t.dy = 0;
+            drawing.normalizeTransform();
             drawing.transform();
         });
         hammer.on('transformstart', function(e) {
             var drawing = _this;
-            drawing.transStart = {scale: drawing._t.scale};
+            drawing.normalizeTransform();
         });
         hammer.on('pinch', function(e) {
             var drawing = _this;
-            drawing._t.scale = drawing.transStart.scale + (e.gesture.scale - 1);
+            drawing.applyDScaleAt(e.gesture.scale-1, e.gesture.center);
             drawing.transform();
         });
         hammer.on('transformend', function(e) {
             var drawing = _this;
-            drawing.transStart = null;
+            drawing.normalizeTransform();
+            drawing.transform();
         });
 
         if (!enableMousewheel)
@@ -4410,11 +4196,8 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
         svg.onmousewheel = function(e) {
             var drawing = _this;
             var delta = e.wheelDelta/120;
-            //var w = $(drawing._selector).width();
-            //var h = $(drawing._selector).height();
-            drawing._t.scale += 0.2*delta;
-            //drawing._t.x += drawing._t.offX + (1-drawing._t.scale)*w/10;
-            //drawing._t.y += drawing._t.offY + (1-drawing._t.scale)*w/10;
+            drawing.applyDScaleAt(.2*delta, e);
+            drawing.normalizeTransform();
             drawing.transform();
         };
 
@@ -4422,14 +4205,18 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
         svg.onDOMMouseScroll = function(e) {
             var drawing = _this;
             var delta = -e.detail/3;
-            //var w = $(drawing._selector).width();
-            //var h = $(drawing._selector).height();
-            drawing._t.scale += 0.2*delta;
-            //drawing._t.x = drawing._t.offX + (1-drawing._t.scale)*w/10;
-            //drawing._t.y = drawing._t.offY + (1-drawing._t.scale)*w/10;
+            drawing.applyDScaleAt(.2*delta, e);
+            drawing.normalizeTransform();
             drawing.transform();
         };
 
+    };
+    Drawing.prototype.applyDScaleAt = function(dscale, e) {
+        this._t.dscale = dscale;
+        if (this._t.scale + this._t.dscale < MIN_SCALE)
+                this._t.dscale = MIN_SCALE - this._t.scale;
+        this._t.dx = -(e.pageX - this._t.x)*(this._t.dscale)/this._t.scale;
+        this._t.dy = -(e.pageY - this._t.y)*(this._t.dscale)/this._t.scale;
     };
     Drawing.prototype.transform = function(scale, x, y) {
         if (arguments.length === 3) {
@@ -4437,14 +4224,25 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
             this._t.x = x;
             this._t.y = y;
         }
-        var matrix = 'translateZ(0px) matrix(' + this._t.scale + ',0,0,' + this._t.scale +
-            ',' + (this._t.x + this._t.dx) +
-            ',' + (this._t.y + this._t.dy) + ')';
-        //this._g.node.setAttribute('transform', matrix);
+        var x = this._t.x + this._t.dx;
+        var y = this._t.y + this._t.dy;
+        var scale = this._t.scale + this._t.dscale;
+        var matrix = 'translateZ(0px) matrix(' + scale + ',0,0,' + scale +
+            ',' + x + ',' + y + ')';
         this._g.node.style['-webkit-transform'] = matrix;
         this._g.node.style['-moz-transform'] = matrix;
         this._g.node.style['-ms-transform'] = matrix;
         this._g.node.style.transform = matrix;
+    };
+    Drawing.prototype.normalizeTransform = function() {
+        this._t.x += this._t.dx;
+        this._t.y += this._t.dy;
+        this._t.scale += this._t.dscale;
+        if (this._t.scale < MIN_SCALE)
+            this._t.scale = MIN_SCALE;
+        this._t.dx = 0;
+        this._t.dy = 0;
+        this._t.dscale = 0;
     };
     Drawing.prototype.visualize = function(data) {
         // FIXME(bp) hack for compat
