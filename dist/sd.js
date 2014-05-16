@@ -4193,23 +4193,13 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
         if (!enableMousewheel)
             return;
 
-        svg.onmousewheel = function(e) {
+        svg.onwheel = function(e) {
             var drawing = _this;
-            var delta = e.wheelDelta/120;
-            drawing.applyDScaleAt(.2*delta, e);
+            var delta = -e.deltaY/20;
+            drawing.applyDScaleAt(delta, e);
             drawing.normalizeTransform();
             drawing.transform();
         };
-
-        // firefox is special.
-        svg.onDOMMouseScroll = function(e) {
-            var drawing = _this;
-            var delta = -e.detail/3;
-            drawing.applyDScaleAt(.2*delta, e);
-            drawing.normalizeTransform();
-            drawing.transform();
-        };
-
     };
     Drawing.prototype.applyDScaleAt = function(dscale, e) {
         this._t.dscale = dscale;
