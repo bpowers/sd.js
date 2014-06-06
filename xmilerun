@@ -4,4 +4,4 @@ set -e
 MDL="$1"
 
 ./emit_sim.js "$MDL" >worker.js
-time ~/src/v8/out/x64.release/d8 --use-strict --harmony worker.js
+time ~/src/v8/out/native/d8 --use-strict --harmony worker.js
