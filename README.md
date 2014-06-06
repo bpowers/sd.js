@@ -72,12 +72,8 @@ Building
 Python, Make, node.js and npm are required to build `sd.js`, as are
 some standard unix utilities.  Windows is not supported as a
 development platform (patches welcome).  Once those are installed on
-your system, execute the following command to install the required
-node libraries:
-
-    [bpowers@fina sd.js]$ npm install requirejs nodeunit xmldom jshint uglify-js
-
-Now you should be able to run the unit tests and build the library:
+your system, you can simply run make to download the required
+dependencies and run the unit tests:
 
 ```
 [bpowers@fina sd.js]$ make check
