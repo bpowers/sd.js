@@ -19,11 +19,11 @@ bower_components:
 	bower install
 	touch $@
 
-node_modules:
+node_modules: package.json
 	npm install
 	touch $@
 
-node_modules/.bin/r.js: package.json node_modules bower_components
+node_modules/.bin/r.js: node_modules bower_components
 	touch $@
 
 lib/runtime_ugly.js: lib/runtime_src.js Makefile
@@ -54,7 +54,7 @@ clean:
 	rm -rf dist
 	rm -f lib/runtime.js
 
-check:
+check: lib/runtime.js node_modules bower_components
 	node_modules/.bin/nodeunit test/runner.js
 
 .PHONY: all dist hint jsdeps clean check
