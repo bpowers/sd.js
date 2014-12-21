@@ -3263,6 +3263,12 @@ define('vars',['./util', './common', './lex'], function(util, common, lex) {
         this.name = util.eName(xmile['@name']);
         this.x = [];
         this.y = [];
+        this.ok = true;
+
+        if (!xmile.gf.ypts) {
+            this.ok = false;
+            return;
+        }
 
         var ypts, sep;
         if (typeof xmile.gf.ypts === 'object') {
@@ -4650,12 +4656,16 @@ define('model',['./util', './vars', './common', './draw', './sim'], function(uti
         if (defs.aux) {
             for (i = 0; i < defs.aux.length; i++) {
                 xmile = defs.aux[i];
+                aux = null;
                 if (xmile.gf) {
                     aux = new vars.Table(this, xmile);
-                    this.tables[aux.name] = aux;
-                } else {
-                    aux = new vars.Variable(this, xmile);
+                    if (aux.ok)
+                        this.tables[aux.name] = aux;
+                    else
+                        aux = null;
                 }
+                if (!aux)
+                    aux = new vars.Variable(this, xmile);
                 this.vars[aux.name] = aux;
             }
         }
@@ -4664,12 +4674,16 @@ define('model',['./util', './vars', './common', './draw', './sim'], function(uti
         if (defs.flow) {
             for (i = 0; i < defs.flow.length; i++) {
                 xmile = defs.flow[i];
+                flow = null;
                 if (xmile.gf) {
                     flow = new vars.Table(this, xmile);
-                    this.tables[flow.name] = flow;
-                } else {
-                    flow = new vars.Variable(this, xmile);
+                    if (flow.ok)
+                        this.tables[flow.name] = flow;
+                    else
+                        flow = null;
                 }
+                if (!flow)
+                    flow = new vars.Variable(this, xmile);
                 this.vars[flow.name] = flow;
             }
         }
