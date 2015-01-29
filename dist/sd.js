@@ -3119,7 +3119,10 @@ define('vars',['./util', './common', './lex'], function(util, common, lex) {
 
         this.model = model;
         this.xmile = xmile;
-        var eqn = xmile.eqn.toString().toLowerCase();
+
+        var eqn = '';
+        if (xmile.eqn)
+            eqn = xmile.eqn.toString().toLowerCase();
         this.eqn = eqn;
         this.name = util.eName(xmile['@name']);
 
@@ -3210,7 +3213,9 @@ define('vars',['./util', './common', './lex'], function(util, common, lex) {
     var Stock = function Stock(model, xmile) {
         this.model = model;
         this.xmile = xmile;
-        var eqn = xmile.eqn.toString().toLowerCase();
+        var eqn = '';
+        if (xmile.eqn)
+            eqn = xmile.eqn.toString().toLowerCase();
         this.name = util.eName(xmile['@name']);
         this.initial = eqn;
         this.eqn = eqn;
@@ -3258,7 +3263,9 @@ define('vars',['./util', './common', './lex'], function(util, common, lex) {
     var Table = function Table(model, xmile) {
         this.model = model;
         this.xmile = xmile;
-        var eqn = xmile.eqn.toString().toLowerCase();
+        var eqn = '';
+        if (eqn)
+            eqn = xmile.eqn.toString().toLowerCase();
         this.eqn = eqn;
         this.name = util.eName(xmile['@name']);
         this.x = [];
@@ -3422,7 +3429,7 @@ define('runtime',[], function() {
     // unquoted source in 'lib/epilogue_src.js'
     runtime.epilogue = "/* global main: false, print: true */\n\nif (typeof console !== 'undefined')\n    print = console.log;\n\nmain.runToEnd();\nvar series = {};\nvar header = 'time\\t';\nvar vars = main.varNames();\nvar i, v;\nfor (i = 0; i < vars.length; i++) {\n    v = vars[i];\n    if (v === 'time')\n        continue;\n    header += v + '\\t';\n    series[v] = main.series(v);\n}\nprint(header.substr(0, header.length-1));\n\nvar nSteps = main.series('time').time.length;\nvar msg = '';\nfor (i = 0; i < nSteps; i++) {\n    msg = '';\n    for (v in series) {\n        if (msg === '')\n            msg += series[v].time[i] + '\\t';\n        msg += series[v].values[i] + '\\t';\n    }\n    print(msg.substr(0, msg.length-1));\n}";
     // unquoted source in 'lib/draw.css'
-    runtime.drawCSS = "<defs><style>\n/* <![CDATA[ */\n.spark-axis {\n    stroke-width: 0.125;\n    stroke-linecap: round;\n    stroke: #999;\n    fill: none;\n}\n\n.spark-line {\n    stroke-width: 0.5;\n    stroke-linecap: round;\n    stroke: #2299dd;\n    fill: none;\n}\n\ntext {\n    font-size: 12px;\n    font-family: \"Open Sans\";\n    font-weight: 300;\n    text-anchor: middle;\n    white-space: nowrap;\n    vertical-align: middle;\n}\n\n.left-aligned {\n    text-anchor: start;\n}\n/* ]]> */\n</style></defs>\n";
+    runtime.drawCSS = "<defs><style>\n/* <![CDATA[ */\n.spark-axis {\n    stroke-width: 0.125;\n    stroke-linecap: round;\n    stroke: #999;\n    fill: none;\n}\n\n.spark-line {\n    stroke-width: 0.5;\n    stroke-linecap: round;\n    stroke: #2299dd;\n    fill: none;\n}\n\ntext {\n    font-size: 12px;\n    font-family: \"Open Sans\";\n    font-weight: 300;\n    text-anchor: middle;\n    white-space: nowrap;\n    vertical-align: middle;\n}\n\n.left-aligned {\n    text-anchor: start;\n}\n\n.right-aligned {\n    text-anchor: end;\n}\n/* ]]> */\n</style></defs>\n";
 
     return runtime;
 });
@@ -3445,7 +3452,7 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
     var INVERSE_FUZZ = 6;
     var MODULE_R = 5;
     var TEXT_ATTR = {
-        'font-size': '12px',
+        'font-size': '10px',
         'font-family': 'Open Sans',
         'font-weight': '300',
         'text-anchor': 'middle',
@@ -3492,15 +3499,15 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
         3: 'top',
     };
 
-    var findSide = function findSide(element, defaultElement) {
-        if (!defaultElement)
-            defaultElement = 'bottom';
+    var findSide = function findSide(element, defaultSide) {
+        if (!defaultSide)
+            defaultSide = 'bottom';
         var θ, i, side;
         if ('@label_side' in element) {
             side = element['@label_side'].toLowerCase();
             // FIXME(bp) handle center 'side' case
             if (side === 'center')
-                return defaultElement;
+                return defaultSide;
             return side;
         }
         if ('@label_angle' in element) {
@@ -3508,7 +3515,7 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
             i = (θ/90)|0;
             return SIDE_MAP[i];
         }
-        return defaultElement;
+        return defaultSide;
     };
 
     var cloudAt = function cloudAt(paper, x, y) {
@@ -3600,11 +3607,8 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
                 // TODO(bp) fix vertical centering
             }
             if (i > 0) {
-                if (side === 'left')
-                    spans[i].setAttribute('x', x - maxW/2);
-                else
-                    spans[i].setAttribute('x', x);
-                spans[i].setAttribute('dy', 0.7*maxH);
+                spans[i].setAttribute('x', x);
+                spans[i].setAttribute('dy', 0.9*maxH);
             }
         }
         var off;
@@ -3624,16 +3628,18 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
             else
                 off = -maxH/4;
 
+            lbl.node.classList.add('right-aligned');
+            lbl.node.setAttribute('style', lbl.node.getAttribute('style').replace('middle', 'right'));
             lbl.attr({
                 y: y - off,
-                x: x - maxW/2
+                x: x,
             });
             break;
         case 'right':
             lbl.node.classList.add('left-aligned');
             lbl.node.setAttribute('style', lbl.node.getAttribute('style').replace('middle', 'left'));
             lbl.attr({
-                y: y - (spans.length-2)*(maxH/2)
+                y: y - (spans.length-2)*(maxH/2),
             });
             break;
         }
@@ -3700,10 +3706,20 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
 
         this.cx = element['@x'];
         this.cy = element['@y'];
-        this.w = 45;
-        this.h = 35;
+        if (element['@width']) {
+            this.cx += .5*element['@width'];
+            this.w = element['@width'];
+        } else {
+            this.w = 45;
+        }
+        if (element['@height']) {
+            this.cy += .5*element['@height'];
+            this.h = element['@height'];
+        } else {
+            this.h = 35;
+        }
         this.color = this.drawing.colorOverride ? COLOR_AUX : element['@color'] || COLOR_AUX;
-        this.labelSide = findSide(element);
+        this.labelSide = findSide(element, 'top');
     };
     DStock.prototype.init = function() {
         // we are a stock, and need to inform all the flows into and
@@ -3812,6 +3828,18 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
 
         this.cx = element['@x'];
         this.cy = element['@y'];
+        if (element['@width']) {
+            this.cx += .5*element['@width'];
+            this.r = element['@width']/2;
+        } else {
+            this.r = AUX_RADIUS;
+        }
+        if (element['@height']) {
+            this.cy += .5*element['@height'];
+            this.r = element['@height']/2;
+        } else {
+            this.r = AUX_RADIUS;
+        }
         this.color = this.drawing.colorOverride ? COLOR_AUX : element['@color'] || COLOR_AUX;
         this.labelSide = findSide(element);
     };
@@ -3819,7 +3847,7 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
     DAux.prototype.draw = function() {
         var paper = this.drawing.paper;
         this.set = this.drawing.group(
-            paper.circle(this.cx, this.cy, AUX_RADIUS).attr({
+            paper.circle(this.cx, this.cy, this.r).attr({
                 'fill': 'white',
                 'stroke-width': STROKE,
                 'stroke': this.color,
@@ -4029,6 +4057,8 @@ define('draw',['./util', './vars', './runtime'], function(util, vars, runtime) {
             θ = slope2*180/Math.PI;//(slope1+slope2)/2;
             if (inv)
                 θ += 180;
+        } else {
+            θ = endθ;
         }
 
         this.set = this.drawing.group(

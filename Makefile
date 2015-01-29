@@ -5,6 +5,8 @@ ifneq ($V, 1)
 MAKEFLAGS = -s
 endif
 
+PYTHON := python2
+
 HAMMER_JS     := bower_components/hammerjs/hammer.js #bower_components/hammerjs/plugins/hammer.showtouches.js bower_components/hammerjs/plugins/hammer.fakemultitouch.js
 HAMMER_MIN_JS := bower_components/hammerjs/hammer.min.js #bower_components/hammerjs/plugins/hammer.showtouches.js bower_components/hammerjs/plugins/hammer.fakemultitouch.js
 
@@ -31,7 +33,7 @@ lib/runtime_ugly.js: lib/runtime_src.js Makefile
 #	node_modules/.bin/uglifyjs lib/runtime_src.js -c -m -o $@
 
 lib/runtime.js: lib/runtime_ugly.js lib/epilogue_src.js lib/draw.css quote_runtime.py Makefile
-	python quote_runtime.py >$@
+	$(PYTHON) quote_runtime.py >$@
 
 dist/sd.js: node_modules/.bin/r.js build.js lib/*.js lib/runtime.js $(VENDOR_JS)
 	mkdir -p dist

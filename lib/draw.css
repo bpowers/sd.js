@@ -24,3 +24,7 @@ text {
 .left-aligned {
     text-anchor: start;
 }
+
+.right-aligned {
+    text-anchor: end;
+}
