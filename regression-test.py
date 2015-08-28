@@ -147,7 +147,9 @@ def compare(reference, simulated, display_limit=-1):
             if n not in simulated:
                 if n in IGNORABLE_COLS:
                     continue
-                log(ERROR, 'missing column %s in second file', n)
+                if display_limit >= 0 and displayed < display_limit:
+                    log(ERROR, 'missing column %s in second file', n)
+                    displayed += 1
                 break
             if len(reference[n]) != len(simulated[n]):
                 if display_limit >= 0 and displayed < display_limit:
