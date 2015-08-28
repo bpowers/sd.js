@@ -21,10 +21,14 @@ while (( $# > 0 )); do
     esac
 done
 
+pushd "`dirname $0`" >/dev/null
+SDJS_DIR="`pwd -P`"
+popd >/dev/null
+
 
 OUT=`mktemp --suffix=.js`
 
-node emit_sim.js "$model" >"$OUT"
+node "$SDJS_DIR/emit_sim.js" "$model" >"$OUT"
 #time ~/src/v8/out/native/d8 --use-strict --harmony worker.js
 node "$OUT"
 

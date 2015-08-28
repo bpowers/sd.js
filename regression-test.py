@@ -194,7 +194,7 @@ def main():
     # test-models has directories that are 2-levels deep
     for outer in os.listdir(args.DIR):
         outer_path = os.path.join(args.DIR, outer)
-        if outer_path.startswith('.') or not os.path.isdir(outer_path):
+        if outer.startswith('.') or not os.path.isdir(outer_path):
             continue
 
         for inner in os.listdir(outer_path):
