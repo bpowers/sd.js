@@ -13,6 +13,10 @@ HAMMER_MIN_JS := bower_components/hammerjs/hammer.min.js #bower_components/hamme
 VENDOR_JS     := $(HAMMER_JS) lib/vendor/mustache.js lib/vendor/q.js lib/vendor/snapsvg.js
 VENDOR_MIN_JS := $(HAMMER_MIN_JS) lib/vendor/mustache.js lib/vendor/q.js lib/vendor/snapsvg.js
 
+RTEST_DIR     := test/test-models
+RTEST_FILE    := test/test-models/LICENSE
+REXE          := mdl.js
+
 all: dist
 
 dist: dist/sd.js dist/sd.min.js
@@ -56,7 +60,14 @@ clean:
 	rm -rf dist
 	rm -f lib/runtime.js
 
+$(RTEST_FILE): $(RTEST_DIR) .gitmodules
+	@echo "  GIT   $<"
+	git submodule update --init
+	touch $@
+
 check: lib/runtime.js node_modules bower_components
 	node_modules/.bin/nodeunit test/runner.js
+	./regression-test.py ./$(REXE) $(RTEST_DIR)
+
 
 .PHONY: all dist hint jsdeps clean check
