@@ -4949,11 +4949,6 @@ define('project',['./common', './util', './model', './vars', './jxon', './compat
                 xmile = compat[n].translate(xmile);
         }
 
-        if (xmile.header.smile['@version'] !== 1) {
-            common.err = errors.ERR_VERSION;
-            this.valid = false;
-            return;
-        }
         this.xmile = xmile;
         if (typeof xmile.header.name === 'string')
             this.name = xmile.header.name;
