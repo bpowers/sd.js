@@ -6,8 +6,6 @@
 // string here (one of the sd.ERR_* ones defined directly below)
 export var err: string;
 
-
-
 export class Errors {
 	static ERR_VERSION: string = 'bad xml or unknown smile version';
 	static ERR_BAD_TIME: string = 'bad time (control) data';

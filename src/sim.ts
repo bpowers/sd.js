@@ -3,7 +3,10 @@
 // license that can be found in the LICENSE file.
 
 /// <reference path="../bower_components/DefinitelyTyped/q/Q.d.ts" />
+/// <amd-dependency path="../bower_components/q/q" />
+
 /// <reference path="../bower_components/DefinitelyTyped/mustache/mustache.d.ts" />
+/// <amd-dependency path="../bower_components/mustache.js/mustache" />
 
 'use strict';
 
@@ -11,8 +14,6 @@ import util = require('./util');
 import type = require('./type');
 import vars = require('./vars');
 import runtime = require('./runtime');
-
-import Q = require('q');
 
 // whether we map names -> offsets in a Float64Array, or use names
 // as object property lookups.  With DEBUG = true, equations are

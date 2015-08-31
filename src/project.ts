@@ -79,7 +79,7 @@ export class Project implements type.Project {
 		this.valid = true;
 	}
 
-	model(name: string): any {
+	model(name?: string): any {
 		if (!name)
 			name = 'main';
 		return this.models[name];
