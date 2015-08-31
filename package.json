@@ -16,6 +16,10 @@
     "type": "git",
     "url": "https://github.com/sdlabs/sd.js.git"
   },
+  "bin": {
+    "emit_sim.js": "./bin/emit_sim.js",
+    "mdl.js": "./bin/mdl.js"
+  },
   "dependencies": {},
   "devDependencies": {
     "bower": "*",
