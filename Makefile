@@ -15,7 +15,7 @@ RT_SRCS  = $(wildcard runtime/*.ts)
 LIB      = sd.js
 LIB_MIN  = sd.min.js
 
-TARGETS  = $(LIB)
+TARGETS  = $(LIB) $(LIB_MIN)
 # make sure we recompile when the Makefile (and associated
 # CFLAGS/LDFLAGS change) or any project files are changed.
 CONFIG   = Makefile $(TSC) $(BOWER) $(TSLINT) $(REQUIRE) build.js
