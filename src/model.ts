@@ -133,8 +133,9 @@ export class Model implements type.Model {
 		if (this.name === 'main') {
 			mod = this.project.main;
 		} else {
-			mod = new vars.Module(this.project, null, 'main', this.name);
-	}
+			mod = null; // new vars.Module(this.project, null, 'main', this.name);
+			console.log('FIXME: sim of non-main model');
+		}
 		return new sim.Sim(mod, isStandalone);
 	}
 

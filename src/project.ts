@@ -4,11 +4,12 @@
 
 import common = require('./common');
 import type = require('./type');
-import util = require('./util');
-import model = require('./model');
-import vars = require('./vars');
 import jxon = require('./jxon');
 import compat = require('./compat');
+
+import {normalizeTimespec} from './util';
+import {Model} from './model';
+import {Module} from './vars';
 
 'use strict';
 
@@ -26,7 +27,7 @@ export class Project implements type.Project {
 		common.err = null;
 
 		if (!xmileDoc || xmileDoc.getElementsByTagName('parsererror').length !== 0) {
-			common.err = common.errors.ERR_VERSION;
+			common.err = common.Errors.ERR_VERSION;
 			this.valid = false;
 			return;
 		}
@@ -64,7 +65,7 @@ export class Project implements type.Project {
 			this.valid = false;
 			return;
 		}
-		util.normalizeTimespec(this.timespec);
+		normalizeTimespec(this.timespec);
 
 		this.models = {};
 
@@ -72,9 +73,9 @@ export class Project implements type.Project {
 			let mdl = xmile.model[i];
 			if (!mdl['@name'])
 				mdl['@name'] = 'main';
-			this.models[mdl['@name']] = new model.Model(this, mdl);
+			this.models[mdl['@name']] = new Model(this, mdl);
 		}
-		this.main = new vars.Module(this, null, {'@name': 'main'});
+		this.main = new Module(this, null, {'@name': 'main'});
 		this.valid = true;
 	}
 

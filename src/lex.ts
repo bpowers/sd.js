@@ -3,9 +3,9 @@
 // license that can be found in the LICENSE file.
 'use strict';
 
-import builtins from './common';
-import StringSet from './type';
-import set from './util';
+import {builtins} from './common';
+import {StringSet} from './type';
+import {set} from './util';
 
 // constants, sort of...
 export const enum TokenType {
@@ -79,6 +79,11 @@ export class Scanner {
 		this._peek = this.text[0];
 		this._line = 0;
 		this._lineStart = 0;
+	}
+
+	get peek(): Token {
+		// FIXME: obviously wrong
+		return this.getToken();
 	}
 
 	_getChar(): string {
@@ -197,11 +202,11 @@ export class Scanner {
  * @param str An equation string, to be parsed by our lexer.
  * @return A set of all identifiers.
  */
-export function identifierSet(str: string): type.StringSet {
+export function identifierSet(str: string): StringSet {
 	'use strict';
 
 	let scanner = new Scanner(str);
-	let result: type.StringSet = {};
+	let result: StringSet = {};
 	let commentDepth = 0;
 	let tok: Token;
 	while ((tok = scanner.getToken())) {

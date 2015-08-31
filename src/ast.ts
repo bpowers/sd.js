@@ -4,9 +4,9 @@
 
 'use strict';
 
-import SourceLoc from './lex';
+import {SourceLoc} from './lex';
 
-interface Node {
+export interface Node {
 	pos: SourceLoc;
 	end: SourceLoc; // the char after this token
 }
@@ -21,7 +21,7 @@ export class Ident implements Node {
 	}
 
 	get pos(): SourceLoc { return this._pos; }
-	get end(): SourceLoc { return this._pos + this.name.length; }
+	get end(): SourceLoc { return this._pos.off(this.name.length); }
 }
 
 export class Constant implements Node {
@@ -68,8 +68,8 @@ export class CallExpr implements Node {
 		this._rParenPos = rParenPos;
 	}
 
-	get pos(): SourceLoc { return this.fun.pos(); }
-	get end(): SourceLoc { return this._rParenPos + 1; }
+	get pos(): SourceLoc { return this.fun.pos; }
+	get end(): SourceLoc { return this._rParenPos.off(1); }
 }
 
 export class UnaryExpr implements Node {
@@ -77,14 +77,14 @@ export class UnaryExpr implements Node {
 	x: Node;
 	_opPos: SourceLoc;
 
-	constructor(opPos, op, x) {
+	constructor(opPos: SourceLoc, op: string, x: Node) {
 		this.op = op;
 		this.x = x;
 		this._opPos = opPos;
 	}
 
 	get pos(): SourceLoc { return this._opPos; }
-	get end(): SourceLoc { return this.x.end(); }
+	get end(): SourceLoc { return this.x.end; }
 }
 
 export class BinaryExpr implements Node {
@@ -100,8 +100,8 @@ export class BinaryExpr implements Node {
 		this._opPos = opPos;
 	}
 
-	get pos(): SourceLoc { return this.x.pos(); }
-	get end(): SourceLoc { return this.y.end(); }
+	get pos(): SourceLoc { return this.l.pos; }
+	get end(): SourceLoc { return this.r.end; }
 }
 
 export class IfExpr implements Node {
@@ -122,5 +122,5 @@ export class IfExpr implements Node {
 	}
 
 	get pos(): SourceLoc { return this._ifPos; }
-	get end(): SourceLoc { return this.b.end(); }
+	get end(): SourceLoc { return this.f.end; }
 }

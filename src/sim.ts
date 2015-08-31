@@ -148,7 +148,8 @@ export class Sim {
 			return;
 		}
 		let blob = new Blob([source], {type: 'text/javascript'});
-		this.worker = new Worker(window.URL.createObjectURL(blob));
+		// TSFIXME: fixed in 1.6
+		this.worker = new Worker((<any>window).URL.createObjectURL(blob));
 		blob = null;
 		source = null;
 		let _this = this;

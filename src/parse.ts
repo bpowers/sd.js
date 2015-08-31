@@ -1,62 +1,66 @@
-// Copyright 2013 Bobby Powers. All rights reserved.
+// Copyright 2015 Bobby Powers. All rights reserved.
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-define(['./ast', './lex'], function(ast, lex) {
-    'use strict';
+'use strict';
 
-    function parse(eqn) {
-        var p = new Parser(eqn);
-        var ast = p.parse();
-        if (p.errs.length)
-            return [null, p.errs];
-        return [ast, null];
-    }
+import {Node, BinaryExpr} from './ast';
+import {Scanner, Token, SourceLoc, TokenType} from './lex';
 
-    function Parser(eqn) {
-        this.lex = new lex.Scanner(eqn);
-        this.levels = [
-            binaryLevel(0, this, '^'),
-            binaryLevel(1, this, '*/'),
-            binaryLevel(2, this, '+-'),
-            this.factor,
-        ];
-    }
-    Parser.prototype.parse = function() {
-        return this.levels[0]();
-    };
-    Parser.prototype.factor = function() {
-        return null;
-    };
-    Parser.prototype.consumeAnyOf = function(ops) {
-        var peek = this.lex.peek();
-        if (!peek || peek.type !== lex.TOKEN)
-            return;
-        if (ops.indexOf(peek.tok) > -1)
-            return this.lex.getToken();
-        return;
-    };
+export function parse(eqn: string): [Node, any] {
+	'use strict';
+	let p = new Parser(eqn);
+	let ast = p.parse();
+	if (p.errs.length)
+		return [null, p.errs];
+	return [ast, null];
+}
 
-    function binaryLevel(n, p, ops) {
-        return function() {
-            if (!p.lex.peek())
-                return null;
-            var next = p.levels[n+1];
-            var lhs = next();
-            if (!lhs)
-                return;
-            var op;
-            for (op = p.consumeAnyOf(ops); op; op = p.consumeAnyOf(ops)) {
-                var rhs = next();
-                if (!rhs)
-                    return;
-                lhs = ast.BinaryExpr(lhs, 0, op, rhs);
-            }
-            return lhs;
-        };
-    }
+function binaryLevel(n: number, p: Parser, ops: string): ()=>Node {
+	'use strict';
+	return function(): Node {
+		if (!p.lex.peek)
+			return null;
+		let next = p.levels[n+1];
+		let lhs = next();
+		if (!lhs)
+			return null;
+		for (let op = p.consumeAnyOf(ops); op; op = p.consumeAnyOf(ops)) {
+			let rhs = next();
+			if (!rhs)
+				return null;
+			lhs = new BinaryExpr(lhs, new SourceLoc(0, 0), <string>op.tok, rhs);
+		}
+		return lhs;
+	};
+}
 
-    return {
-        'parse': parse,
-    };
-});
+class Parser {
+	lex: Scanner;
+	errs: string[];
+	levels: {[i: number]: ()=>Node};
+
+	constructor(eqn: string) {
+		this.lex = new Scanner(eqn);
+		this.levels = [
+			binaryLevel(0, this, '^'),
+			binaryLevel(1, this, '*/'),
+			binaryLevel(2, this, '+-'),
+			this.factor,
+		];
+	}
+	parse(): Node {
+		return this.levels[0]();
+	};
+	factor(): Node {
+		return null;
+	};
+	consumeAnyOf(ops: string): Token {
+		let peek = this.lex.peek;
+		if (!peek || peek.type !== TokenType.TOKEN)
+			return;
+		if (ops.indexOf(<string>peek.tok) > -1)
+			return this.lex.getToken();
+		return;
+	};
+}
