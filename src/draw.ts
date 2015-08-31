@@ -59,7 +59,7 @@ const MIN_SCALE = .2;
 const Z_MAX = 6;
 const IS_CHROME = typeof navigator !== 'undefined' && navigator.userAgent.match(/Chrome/);
 
-function addClass(o: any, newClass: string): void {
+function addCSSClass(o: any, newClass: string): void {
 	'use strict';
 	let existingClass = o.getAttribute('class');
 	if (existingClass) {
@@ -194,7 +194,7 @@ function label(
 		lines = linesAttr;
 	}
 	let spans = lbl.node.getElementsByTagName('tspan');
-	const maxH = Number.MIN_VALUE, maxW = Number.MIN_VALUE;
+	let maxH = Number.MIN_VALUE, maxW = Number.MIN_VALUE;
 	if (IS_CHROME) {
 		// FIXME(bp) this is way faster as it avoids forced
 		// layouts & node creation + deletion, but it only works
@@ -306,7 +306,7 @@ function sparkline(
 	}
 	let pAxis = 'M' + (x) + ',' + (y + h - h*(0-yMin)/ySpan) + 'L' + (x+w) + ',' + (y + h - h*(0-yMin)/ySpan);
 	if (!graph) {
-		return paper.g(
+		return paper.group(
 			paper.path(pAxis).attr({
 				'class': 'spark-axis',
 				'stroke-width': 0.125,
@@ -630,7 +630,7 @@ class DFlow implements Ent {
 		let paper = this.drawing.paper;
 		const cx = this.cx;
 		const cy = this.cy;
-		let pts = this.e.pts.pt;
+		let pts: Array<{[n: string]: number}> = this.e.pts.pt;
 		if (pts.length < 2) {
 			console.log('ERROR: too few points for flow: ' + JSON.stringify(this));
 			return;
@@ -1107,8 +1107,8 @@ export class Drawing {
 		}
 	}
 
-	group(): Snap.Element {
-		let g = this.paper.g.apply(this.paper, arguments);
+	group(...args: any[]): Snap.Element {
+		let g = this.paper.g.apply(this.paper, args);
 		this._g.append(g);
 		return g;
 	}
