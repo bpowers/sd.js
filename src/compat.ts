@@ -12,17 +12,22 @@ const VERSION = '0.1';
 
 const VAR_TYPES = util.set('module', 'stock', 'aux', 'flow');
 
-export namespace isee {
-	'use strict';
+// FIXME: remove 'any'
+export interface Vendor {
+	match(xmile: any): boolean;
+	translate(xmile: any): boolean;
+}
 
-	export function match(xmile: any): boolean {
+class Isee {
+	// FIXME: remove 'any'
+	match(xmile: any): boolean {
 		'use strict';
 
 		return (/isee/i).test(xmile.header.vendor);
 	}
 
 	// FIXME: remove 'any'
-	export function translate(xmile: any): any {
+	translate(xmile: any): any {
 		'use strict';
 
 		for (let i = 0; i < xmile.model.length; i++) {
@@ -72,3 +77,7 @@ export namespace isee {
 		return xmile;
 	}
 }
+
+export const vendors: {[name: string]: Vendor} = {
+	'isee': new Isee(),
+};

@@ -6,9 +6,11 @@
 // string here (one of the sd.ERR_* ones defined directly below)
 export var err: string;
 
-export const errors: {[index: string]: string} = {
-	ERR_VERSION: "bad xml or unknown smile version",
-	ERR_BAD_TIME: "bad time (control) data",
+
+
+export class errors {
+	static ERR_VERSION = "bad xml or unknown smile version";
+	static ERR_BAD_TIME = "bad time (control) data";
 };
 
 interface Properties {

@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 
 import common = require('./common');
+import type = require('./type');
 import util = require('./util');
 import model = require('./model');
 import vars = require('./vars');
@@ -11,20 +12,21 @@ import compat = require('./compat');
 
 'use strict';
 
-let errors = common.errors;
-
 // TODO(bp) macro support/warnings
 
-export class Project {
+export class Project implements type.Project {
+	name: string;
+	main: type.Module;
 	valid: boolean;
 	xmile: any;
-	timespec: any;
+	timespec: type.TimeSpec;
+	models: type.ModelSet;
 
 	constructor(xmileDoc: any) {
 		common.err = null;
 
 		if (!xmileDoc || xmileDoc.getElementsByTagName('parsererror').length !== 0) {
-			common.err = errors.ERR_VERSION;
+			common.err = common.errors.ERR_VERSION;
 			this.valid = false;
 			return;
 		}
@@ -32,18 +34,21 @@ export class Project {
 		// in Chrome/Firefox, item 0 is xmile.  Under node's XML DOM
 		// item 0 is the <xml> prefix.  And I guess there could be
 		// text nodes in there, so just explictly look for xmile
-		let i: number;
-		for (i = 0; i < xmileDoc.childNodes.length &&
-			xmileDoc.childNodes.item(i).tagName !== 'xmile'; i++);
+		let iNode: number;
+		for (iNode = 0; iNode < xmileDoc.childNodes.length &&
+			xmileDoc.childNodes.item(iNode).tagName !== 'xmile'; iNode++);
 
-		let xmile = jxon.build(xmileDoc.childNodes.item(i));
+		let xmile = jxon.build(xmileDoc.childNodes.item(iNode));
 
 		if (!(xmile.model instanceof Array))
 			xmile.model = [xmile.model];
 
-		for (let n in compat) {
-			if (compat[n].match(xmile))
-				xmile = compat[n].translate(xmile);
+		for (let v in compat.vendors) {
+			if (!compat.vendors.hasOwnProperty(v))
+				continue;
+
+			if (compat.vendors[v].match(xmile))
+				xmile = compat.vendors[v].translate(xmile);
 		}
 
 		this.xmile = xmile;

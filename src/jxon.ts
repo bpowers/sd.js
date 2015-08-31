@@ -56,7 +56,7 @@ export function build(parent: any): any {
 					hasAttrs = true;
 				}
 				let prop = node.nodeName.toLowerCase();
-				let content = jxonBuild(node);
+				let content = build(node);
 				if (result.hasOwnProperty(prop)) {
 					if (!(result[prop] instanceof Array))
 						result[prop] = [result[prop]];

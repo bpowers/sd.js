@@ -18,6 +18,8 @@ WRAPPER = '''// Copyright 2015 Bobby Powers. All rights reserved.
 
 'use strict';
 
+/* tslint:disable: max-line-length */
+
 // unquoted source in '%s'
 export const preamble = %s;
 

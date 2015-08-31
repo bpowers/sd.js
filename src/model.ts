@@ -14,17 +14,25 @@ import sim = require('./sim');
 
 const VAR_TYPES = util.set('module', 'stock', 'aux', 'flow');
 
-export class Model {
+export class Model implements type.Model {
 	// TODO: remove any
-	project: type.Project;
-	xmile: any;
 	name: string;
+	valid: boolean;
+	xmile: any;
+	modules: type.ModuleMap;
+	tables: type.TableMap;
+	project: type.Project;
+	vars: type.VariableSet;
+
 	_timespec: type.TimeSpec;
 
-	constructor(project: type.Project, xmile) {
+	constructor(project: type.Project, xmile: any) {
 		this.project = project;
 		this.xmile = xmile;
 		this.name = util.eName(xmile['@name']);
+		this.vars     = {};
+		this.tables   = {};
+		this.modules  = {};
 		this._parseVars(xmile.variables);
 		if (xmile.sim_specs) {
 			this._timespec = xmile.sim_specs;
@@ -48,10 +56,6 @@ export class Model {
 	 * Validates & figures out all necessary variable information.
 	 */
 	_parseVars(defs: any): void {
-		this.vars     = {};
-		this.tables   = {};
-		this.modules  = {};
-
 		// JXON doesn't have the capacity to know when we really want
 		// things to be lists, this is a workaround.
 		for (let type in VAR_TYPES) {
@@ -72,7 +76,7 @@ export class Model {
 		}
 
 		if (defs.stock) {
-			for (i = 0; i < defs.stock.length; i++) {
+			for (let i = 0; i < defs.stock.length; i++) {
 				let xmile = defs.stock[i];
 				let stock = new vars.Stock(this, xmile);
 				this.vars[stock.name] = stock;
@@ -80,15 +84,14 @@ export class Model {
 		}
 
 		if (defs.aux) {
-			for (i = 0; i < defs.aux.length; i++) {
+			for (let i = 0; i < defs.aux.length; i++) {
 				let xmile = defs.aux[i];
-				let aux = null;
+				let aux: type.Variable = null;
 				if (xmile.gf) {
-					aux = new vars.Table(this, xmile);
-					if (aux.ok) {
-						this.tables[aux.name] = aux;
-					} else {
-						aux = null;
+					let table = new vars.Table(this, xmile);
+					if (table.ok) {
+						this.tables[aux.name] = table;
+						aux = table;
 					}
 				}
 				if (!aux)
@@ -98,15 +101,14 @@ export class Model {
 		}
 
 		if (defs.flow) {
-			for (i = 0; i < defs.flow.length; i++) {
+			for (let i = 0; i < defs.flow.length; i++) {
 				let xmile = defs.flow[i];
-				let flow = null;
+				let flow: type.Variable = null;
 				if (xmile.gf) {
-					flow = new vars.Table(this, xmile);
-					if (flow.ok) {
-						this.tables[flow.name] = flow;
-					} else {
-						flow = null;
+					let table = new vars.Table(this, xmile);
+					if (table.ok) {
+						this.tables[flow.name] = table;
+						flow = table;
 					}
 				}
 				if (!flow)
@@ -116,7 +118,7 @@ export class Model {
 		}
 	}
 
-	lookup(id: string): vars.Variable {
+	lookup(id: string): type.Variable {
 		if (id[0] === '.')
 			id = id.substr(1);
 		if (id in this.vars)
@@ -127,11 +129,13 @@ export class Model {
 	}
 
 	sim(isStandalone: boolean): sim.Sim {
+		let mod: type.Module;
 		if (this.name === 'main') {
-			return new sim.Sim(this.project.main, isStandalone);
+			mod = this.project.main;
 		} else {
-			return new sim.Sim(new vars.Module(this.project, null, 'main', this.name), isStandalone);
-		}
+			mod = new vars.Module(this.project, null, 'main', this.name);
+	}
+		return new sim.Sim(mod, isStandalone);
 	}
 
 	drawing(svgElementID: string, overrideColors: boolean, enableMousewheel: boolean): draw.Drawing {

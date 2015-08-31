@@ -58,6 +58,7 @@ build-rt: $(RT_SRCS) $(CONFIG)
 	touch $@
 
 $(RUNTIME): build-rt ./build-runtime.py
+	@echo "  RT    $@"
 	./build-runtime.py >$@
 
 $(LIB): build.js build $(RUNTIME) $(REQUIRE) $(ALMOND)

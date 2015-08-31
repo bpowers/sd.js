@@ -36,19 +36,31 @@ export interface RefSet {
 
 export interface Model {
 	name: string;
-	timespec: TimeSpec;
-	modules: Module[];
-	tables: Table[];
+	valid: boolean;
+	modules: ModuleMap;
+	tables: TableMap;
 	project: Project;
-	referencedModels: Model[];
 	vars: VariableSet;
+
+	timespec: TimeSpec;
+
 	lookup(name: string): Variable;
 }
 
+export interface ModuleMap {
+	[name: string]: Module;
+}
+
+export interface TableMap {
+	[name: string]: Table;
+}
+
 export interface Project {
+	name: string;
 	main: Module;
 	timespec: TimeSpec;
 	model(name?: string): Model;
+	models: ModelSet;
 }
 
 export interface Offsets {
@@ -61,6 +73,10 @@ export interface ModelDef {
 }
 
 export interface ModelSet {
+	[name: string]: Model;
+}
+
+export interface ModelDefSet {
 	[name: string]: ModelDef;
 }
 
@@ -85,7 +101,7 @@ export interface Variable {
 export interface Module extends Variable {
 	modelName: string;
 	refs: RefSet;
-	referencedModels(all?: ModelSet): ModelSet;
+	referencedModels(all?: ModelDefSet): ModelDefSet;
 }
 
 export interface Reference extends Variable {

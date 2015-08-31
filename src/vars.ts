@@ -23,7 +23,6 @@ export class Variable implements type.Variable {
 
 	_deps: type.StringSet;
 	_allDeps: type.StringSet;
-	refs: type.VariableSet;
 
 	constructor(model?: type.Model, xmile?: any) {
 		// for subclasses, when instantiated for their prototypes
@@ -321,7 +320,7 @@ export class Module extends Variable implements type.Module {
 		return allDeps;
 	}
 
-	referencedModels(all?: type.ModelSet): type.ModelSet {
+	referencedModels(all?: type.ModelDefSet): type.ModelDefSet {
 		if (!all)
 			all = {};
 		let mdl = this.project.model(this.modelName);
