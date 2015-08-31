@@ -3,9 +3,9 @@
 // license that can be found in the LICENSE file.
 'use strict';
 
-import common = require('./common');
-import type = require('./type');
-import util = require('./util');
+import builtins from './common';
+import StringSet from './type';
+import set from './util';
 
 // constants, sort of...
 export const enum TokenType {
@@ -19,7 +19,7 @@ export const enum TokenType {
 // the equations, especially for the macros
 
 // these are words reserved by SMILE
-export const reservedWords = util.set('if', 'then', 'else');
+export const reservedWords = set('if', 'then', 'else');
 
 function isWhitespace(ch: string): boolean {
 	'use strict';
@@ -34,13 +34,17 @@ function isIdentifierStart(ch: string): boolean {
 	return (/[\w_]/).test(ch);
 }
 
-class SourceLoc {
+export class SourceLoc {
 	line: number;
 	pos: number;
 
 	constructor(line: number, pos: number) {
 		this.line = line;
 		this.pos = pos;
+	}
+
+	off(n: number): SourceLoc {
+		return new SourceLoc(this.line, this.pos+n);
 	}
 }
 
@@ -208,7 +212,7 @@ export function identifierSet(str: string): type.StringSet {
 		} else if (commentDepth > 0) {
 			// if inside of a {} delimited comment, skip the token
 			continue;
-		} else if (tok.type === TokenType.IDENT && !(tok.tok in common.builtins)) {
+		} else if (tok.type === TokenType.IDENT && !(tok.tok in builtins)) {
 			result[tok.tok] = true;
 		}
 	}
