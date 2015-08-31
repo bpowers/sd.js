@@ -8,6 +8,7 @@
 'use strict';
 
 import util = require('./util');
+import type = require('./type');
 import vars = require('./vars');
 import runtime = require('./runtime');
 
@@ -91,7 +92,7 @@ export class TemplateContext {
 	calcS: string;
 	offsets: string;
 
-	constructor(model: vars.IModel, mods: any, init: any, initials: any, tables: any, runtimeOffsets: any, ci: any, cf: any, cs: any) {
+	constructor(model: type.Model, mods: any, init: any, initials: any, tables: any, runtimeOffsets: any, ci: any, cf: any, cs: any) {
 		this.name = model.name;
 		this.className = util.titleCase(model.name);
 		this.isModule = model.name !== 'main';
@@ -108,19 +109,22 @@ export class TemplateContext {
 }
 
 export class Sim {
-	project: vars.IProject;
+	root: type.Module;
+	project: type.Project;
 	seq: number;
 	promised: any;
 	idSeq: any;
+	worker: Worker;
 
-	constructor(root: vars.IModel, isStandalone: boolean) {
+	constructor(root: type.Module, isStandalone: boolean) {
+		this.root = root;
 		this.project = root.project;
 		this.seq = 1; // message id sequence
 		this.promised = {}; // callback storage, keyed by message id
 		this.idSeq = {}; // variable offset sequence.  Time is always offset 0
 
 		let models = root.referencedModels();
-		let compiledModels = [];
+		let compiledModels: TemplateContext[] = [];
 		for (let n in models) {
 			if (!models.hasOwnProperty(n))
 				continue;
@@ -164,10 +168,10 @@ export class Sim {
 		});
 	}
 
-	_process(model: IModel, modules): TemplateContext {
-		let run_initials = [];
-		let run_flows = [];
-		let run_stocks = [];
+	_process(model: type.Model, modules: type.Module[]): TemplateContext {
+		let run_initials: type.Variable[] = [];
+		let run_flows: type.Variable[] = [];
+		let run_stocks: type.Variable[] = [];
 
 		function isRef(n: string): boolean {
 			for (let i = 0; i < modules.length; i++) {
@@ -177,13 +181,13 @@ export class Sim {
 			return false;
 		}
 
-		let offsets = {};
-		let runtimeOffsets = {};
+		let offsets: type.Offsets = {};
+		let runtimeOffsets: type.Offsets = {};
 
 		// decide which run lists each variable has to be, based on
 		// its type and const-ness
 		for (let n in model.vars) {
-			if (!models.hasOwnProperty(n))
+			if (!model.vars.hasOwnProperty(n))
 				continue;
 
 			let v = model.vars[n];
@@ -219,10 +223,10 @@ export class Sim {
 		util.sort(run_initials);
 		util.sort(run_flows);
 
-		let initials = {};
-		let tables = {};
+		let initials: {[name: string]: number} = {};
+		let tables: {[name: string]: type.Table} = {};
 
-		let ci = [], cf = [], cs = [];
+		let ci: string[] = [], cf: string[] = [], cs: string[] = [];
 		// FIXME(bp) some auxiliaries are referred to in stock intial
 		// equations, they need to be promoted into initials.
 		for (let i = 0; i < run_initials.length; i++) {
@@ -273,14 +277,14 @@ export class Sim {
 			};
 		}
 		let additional = '';
-		let init = [];
+		let init: string[] = [];
 		if (Object.keys(model.modules).length) {
 			// +1 for implicit time
 			if (model.name === 'main')
 				additional = ' + 1';
 			init.push('var off = Object.keys(this.offsets).length' + additional + ';');
 		}
-		let mods = [];
+		let mods: string[] = [];
 		mods.push('{');
 		for (let n in model.modules) {
 			if (!model.modules.hasOwnProperty(n))
@@ -306,15 +310,12 @@ export class Sim {
 		return this.idSeq[modelName]++;
 	}
 
-	_post() {
+	// FIXME: any?
+	_post(...args: any[]): Q.Promise<any> {
 		let id = this.seq++;
-		let args = [id];
-		for (let i = 0; i < arguments.length; i++)
-			args.push(arguments[i]);
-
 		let deferred = Q.defer();
 		this.promised[id] = deferred;
-		this.worker.postMessage(args);
+		this.worker.postMessage([id].concat(args));
 		return deferred.promise;
 	}
 
@@ -323,33 +324,33 @@ export class Sim {
 		this.worker = null;
 	}
 
-	reset() {
+	reset(): any {
 		return this._post('reset');
 	}
 
-	setValue(name: string, val: number) {
+	setValue(name: string, val: number): any {
 		return this._post('set_val', name, val);
 	}
 
-	value(...names: string[]) {
+	value(...names: string[]): any {
 		let args = ['get_val'].concat(names);
 		return this._post.apply(this, args);
 	}
 
-	series(...names: string[]) {
+	series(...names: string[]): any {
 		let args = ['get_series'].concat(names);
 		return this._post.apply(this, args);
 	}
 
-	runTo(time: number) {
+	runTo(time: number): any {
 		return this._post('run_to', time);
 	}
 
-	runToEnd() {
+	runToEnd(): any {
 		return this._post('run_to_end');
 	}
 
-	setDesiredSeries(names: string[]) {
+	setDesiredSeries(names: string[]): any {
 		return this._post('set_desired_series', names);
 	}
 }

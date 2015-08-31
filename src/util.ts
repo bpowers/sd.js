@@ -4,7 +4,7 @@
 
 'use strict';
 
-import common = require('./common');
+import type = require('./type');
 
 export function titleCase(str: string): string {
 	'use strict';
@@ -55,7 +55,7 @@ export function normalizeTimespec(specs: any): void {
  */
 export function set(...args: string[]): any {
 	'use strict';
-	let result: common.StringSet = {};
+	let result: type.StringSet = {};
 	for (let i = 0; i < args.length; ++i)
 		result[args[i]] = true;
 	return result;

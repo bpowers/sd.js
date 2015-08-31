@@ -4,6 +4,7 @@
 'use strict';
 
 import common = require('./common');
+import type = require('./type');
 import util = require('./util');
 
 // constants, sort of...
@@ -192,11 +193,11 @@ export class Scanner {
  * @param str An equation string, to be parsed by our lexer.
  * @return A set of all identifiers.
  */
-export function identifierSet(str: string): common.StringSet {
+export function identifierSet(str: string): type.StringSet {
 	'use strict';
 
 	let scanner = new Scanner(str);
-	let result: common.StringSet = {};
+	let result: type.StringSet = {};
 	let commentDepth = 0;
 	let tok: Token;
 	while ((tok = scanner.getToken())) {

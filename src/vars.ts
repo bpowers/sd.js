@@ -10,52 +10,22 @@ declare function isFinite(n: string|number): boolean;
 import common = require('./common');
 import util = require('./util');
 import lex = require('./lex');
+import type = require('./type');
 
-export interface VariableSet {
-	[name: string]: Variable;
-}
-
-export interface IModel {
-	name: string;
-	modules: any;
-	project: IProject;
-	referencedModels: IModel[];
-	vars: VariableSet;
-	lookup(name: string): Variable;
-}
-
-export interface IProject {
-	main: Module;
-	model(name?: string): IModel;
-}
-
-export interface Offsets {
-	[name: string]: string;
-}
-
-export interface IModelDef {
-	model: IModel;
-	modules: Variable[];
-}
-
-export interface ModelSet {
-	[name: string]: IModelDef;
-}
-
-export class Variable {
+export class Variable implements type.Variable {
 	xmile: any;
 	name: string;
 	eqn: string;
 
-	model: IModel;
-	parent: IModel;
-	project: IProject;
+	model: type.Model;
+	parent: type.Model;
+	project: type.Project;
 
-	_deps: common.StringSet;
-	_allDeps: common.StringSet;
-	refs: VariableSet;
+	_deps: type.StringSet;
+	_allDeps: type.StringSet;
+	refs: type.VariableSet;
 
-	constructor(model?: IModel, xmile?: any) {
+	constructor(model?: type.Model, xmile?: any) {
 		// for subclasses, when instantiated for their prototypes
 		if (arguments.length === 0)
 			return;
@@ -78,7 +48,7 @@ export class Variable {
 	initialEquation(): string {
 		return this.eqn;
 	};
-	code(v: Offsets): string {
+	code(v: type.Offsets): string {
 		if (this.isConst())
 			return "this.initials['" + util.eName(this.name) + "']";
 		let scanner = new lex.Scanner(this.eqn);
@@ -131,10 +101,10 @@ export class Variable {
 		return result.join(' ');
 	}
 
-	getDeps(): common.StringSet {
+	getDeps(): type.StringSet {
 		if (this._allDeps)
 			return this._allDeps;
-		let allDeps: common.StringSet = {};
+		let allDeps: type.StringSet = {};
 		for (let n in this._deps) {
 			if (n in allDeps)
 				continue;
@@ -166,7 +136,7 @@ export class Stock extends Variable {
 	outflows: string[];
 	initial: string;
 
-	constructor(model: IModel, xmile: any) {
+	constructor(model: type.Model, xmile: any) {
 		super();
 
 		this.model = model;
@@ -205,7 +175,7 @@ export class Stock extends Variable {
 		return this.initial;
 	}
 
-	code(v: Offsets): string {
+	code(v: type.Offsets): string {
 		let eqn = "curr[" + v[this.name] + "] + (";
 		if (this.inflows.length > 0)
 			eqn += this.inflows.map(function(s: string): string { return "curr[" + v[s] + "]"; }).join('+');
@@ -225,7 +195,7 @@ export class Table extends Variable {
 	y: number[];
 	ok: boolean;
 
-	constructor(model: IModel, xmile: any) {
+	constructor(model: type.Model, xmile: any) {
 		super();
 
 		this.model = model;
@@ -283,7 +253,7 @@ export class Table extends Variable {
 		this._deps = lex.identifierSet(eqn);
 	}
 
-	code(v: Offsets): string {
+	code(v: type.Offsets): string {
 		if (!this.eqn)
 			return null;
 		let index = super.code(v);
@@ -291,10 +261,11 @@ export class Table extends Variable {
 	}
 }
 
-export class Module extends Variable {
+export class Module extends Variable implements type.Module {
 	modelName: string;
+	refs: type.RefSet;
 
-	constructor(project: IProject, parent: IModel, xmile: any) {
+	constructor(project: type.Project, parent: type.Model, xmile: any) {
 		super();
 
 		this.project = project;
@@ -314,10 +285,10 @@ export class Module extends Variable {
 			this._deps[ref.ptr] = true;
 		}
 	}
-	getDeps(): common.StringSet {
+	getDeps(): type.StringSet {
 		if (this._allDeps)
 			return this._allDeps;
-		let allDeps: common.StringSet = {};
+		let allDeps: type.StringSet = {};
 		for (let n in this._deps) {
 			if (!this._deps.hasOwnProperty(n))
 				continue;
@@ -325,7 +296,7 @@ export class Module extends Variable {
 			if (n in allDeps)
 				continue;
 
-			let context: IModel;
+			let context: type.Model;
 			if (n[0] === '.') {
 				context = this.project.model(this.project.main.modelName);
 				n = n.substr(1);
@@ -350,7 +321,7 @@ export class Module extends Variable {
 		return allDeps;
 	}
 
-	referencedModels(all: ModelSet): ModelSet {
+	referencedModels(all?: type.ModelSet): type.ModelSet {
 		if (!all)
 			all = {};
 		let mdl = this.project.model(this.modelName);
@@ -371,7 +342,7 @@ export class Module extends Variable {
 	}
 }
 
-export class Reference extends Variable {
+export class Reference extends Variable implements type.Reference {
 	ptr: string;
 
 	constructor(xmile: any) {
@@ -381,7 +352,7 @@ export class Reference extends Variable {
 		this.ptr = util.eName(xmile['@from']);
 	}
 
-	code(v: Offsets): string {
+	code(v: type.Offsets): string {
 		return 'curr["' + this.ptr + '"]';
 	}
 

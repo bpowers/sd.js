@@ -5,28 +5,23 @@
 'use strict';
 
 import common = require('./common');
+import type = require('./type');
 import util = require('./util');
 import vars = require('./vars');
 import draw = require('./draw');
 import sim = require('./sim');
 
 
-interface TimeSpec {
-	start: number;
-	stop: number;
-	dt: number;
-	savestep: number;
-}
 const VAR_TYPES = util.set('module', 'stock', 'aux', 'flow');
 
 export class Model {
 	// TODO: remove any
-	project: any;
+	project: type.Project;
 	xmile: any;
 	name: string;
-	_timespec: TimeSpec;
+	_timespec: type.TimeSpec;
 
-	constructor(project: IProject, xmile) {
+	constructor(project: type.Project, xmile) {
 		this.project = project;
 		this.xmile = xmile;
 		this.name = util.eName(xmile['@name']);
@@ -41,7 +36,7 @@ export class Model {
 		return;
 	}
 
-	get timespec(): TimeSpec {
+	get timespec(): type.TimeSpec {
 		if (this._timespec) {
 			return this._timespec;
 		} else {

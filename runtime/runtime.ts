@@ -10,6 +10,7 @@ function i32(n: number): number {
 	return n|0;
 }
 
+// copied from src/i.ts
 interface Table {
 	x: number[];
 	y: number[];

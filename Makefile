@@ -45,7 +45,7 @@ bower_components: $(BOWER) bower.json
 $(ALMOND): bower_components
 	touch -c $@
 
-build: $(LIB_SRCS) $(CONFIG)
+build: $(LIB_SRCS) $(CONFIG) bower_components
 	@echo "  TS    $@"
 	$(TSLINT) -c .tslint.json $(LIB_SRCS)
 	$(TSC) $(TSFLAGS) -m amd --outDir build $(LIB_SRCS)

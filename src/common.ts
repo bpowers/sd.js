@@ -30,7 +30,3 @@ export const reserved = {
 	'then': true,
 	'else': true,
 };
-
-export interface StringSet {
-	[name: string]: boolean;
-}
