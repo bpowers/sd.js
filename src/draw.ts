@@ -302,6 +302,9 @@ interface Ent {
 	cy: number;
 	set: Snap.Element;
 
+	to: string;
+	from: string;
+
 	init(): void;
 	draw(): void;
 	drawLabel(): void;
@@ -321,7 +324,11 @@ class DStock implements Ent {
 	color: string;
 	labelSide: string;
 
+	to: string;
+	from: string;
+
 	set: Snap.Element;
+	graph: Snap.Element;
 
 	constructor(drawing: Drawing, element: any) {
 		this.drawing = drawing;
@@ -351,7 +358,7 @@ class DStock implements Ent {
 		// we are a stock, and need to inform all the flows into and
 		// out of us that they, in fact, flow in and out of us.
 
-		let mEnt = this.drawing.model.vars[this.name];
+		let mEnt = <vars.Stock>this.drawing.model.vars[this.name];
 
 		for (let i = 0; i < mEnt.inflows.length; i++) {
 			let n = mEnt.inflows[i];
@@ -406,7 +413,25 @@ class DStock implements Ent {
 }
 
 class DModule implements Ent {
-	constructor(drawing, element) {
+	drawing: Drawing;
+	e: any;
+	name: string;
+	dName: string;
+
+	cx: number;
+	cy: number;
+	w: number;
+	h: number;
+	color: string;
+	labelSide: string;
+
+	to: string;
+	from: string;
+
+	set: Snap.Element;
+	graph: Snap.Element;
+
+	constructor(drawing: Drawing, element: any) {
 		this.drawing = drawing;
 		this.e = element;
 		this.name = eName(element['@name']);
@@ -455,7 +480,26 @@ class DModule implements Ent {
 }
 
 class DAux implements Ent {
-	constructor(drawing, element) {
+	drawing: Drawing;
+	e: any;
+	name: string;
+	dName: string;
+
+	cx: number;
+	cy: number;
+	w: number;
+	h: number;
+	r: number;
+	color: string;
+	labelSide: string;
+
+	to: string;
+	from: string;
+
+	set: Snap.Element;
+	graph: Snap.Element;
+
+	constructor(drawing: Drawing, element: any) {
 		this.drawing = drawing;
 		this.e = element;
 		this.name = eName(element['@name']);
@@ -508,7 +552,25 @@ class DAux implements Ent {
 }
 
 class DFlow implements Ent {
-	constructor(drawing, element) {
+	drawing: Drawing;
+	e: any;
+	name: string;
+	dName: string;
+
+	cx: number;
+	cy: number;
+	w: number;
+	h: number;
+	color: string;
+	labelSide: string;
+
+	to: string;
+	from: string;
+
+	set: Snap.Element;
+	graph: Snap.Element;
+
+	constructor(drawing: Drawing, element: any) {
 		this.drawing = drawing;
 		this.e = element;
 		this.name = eName(element['@name']);
@@ -533,12 +595,11 @@ class DFlow implements Ent {
 			return;
 		}
 		var spath = '';
-		var j;
-		for (j = 0; j < pts.length; j++)
+		for (let j = 0; j < pts.length; j++)
 			spath += (j === 0 ? 'M' : 'L') + pts[j]['@x'] + ',' + pts[j]['@y'];
 
-		var from_cloud;
-		var cloud;
+		let from_cloud: Snap.Element;
+		let cloud: Snap.Element;
 		this.set = this.drawing.group();
 		if (!this.from) {
 			cloud = cloudAt(paper, pts[0]['@x'], pts[0]['@y']);
@@ -546,8 +607,8 @@ class DFlow implements Ent {
 			// length, just later the cloud above the pipe
 			from_cloud = cloud;
 		}
-		var x, y, prevX, prevY;
 		if (!this.to) {
+			let x: number, y: number, prevX: number, prevY: number;
 			x = pts[pts.length-1]['@x'];
 			y = pts[pts.length-1]['@y'];
 			prevX = pts[pts.length-2]['@x'];
@@ -565,14 +626,14 @@ class DFlow implements Ent {
 		}
 		// recalcualte path after cloud intersection
 		spath = '';
-		var dx, dy, θ, arrowθ, lastPt;
-		for (j = 0; j < pts.length; j++) {
-			x = pts[j]['@x'];
-			y = pts[j]['@y'];
+		let arrowθ: number;
+		for (let j = 0; j < pts.length; j++) {
+			let x = pts[j]['@x'];
+			let y = pts[j]['@y'];
 			if (j === pts.length-1) {
-				dx = x - pts[j-1]['@x'];
-				dy = y - pts[j-1]['@y'];
-				θ = Math.atan2(dy, dx) * 180/Math.PI;
+				let dx = x - pts[j-1]['@x'];
+				let dy = y - pts[j-1]['@y'];
+				let θ = Math.atan2(dy, dx) * 180/Math.PI;
 				if (θ < 0)
 					θ += 360;
 				if (θ >= 315 || θ < 45) {
@@ -597,7 +658,7 @@ class DFlow implements Ent {
 			'fill': 'none',
 		}));
 
-		lastPt = last(pts);
+		let lastPt = last(pts);
 		this.set.add(arrowhead(paper, lastPt['@x'], lastPt['@y'], ARROWHEAD_RADIUS*2).attr({
 			'transform': 'rotate(' + (arrowθ) + ',' + lastPt['@x'] + ',' + lastPt['@y'] + ')',
 			'stroke': this.color,
@@ -636,6 +697,22 @@ class DFlow implements Ent {
 }
 
 class DConnector implements Ent {
+	drawing: Drawing;
+	e: any;
+	name: string;
+
+	cx: number;
+	cy: number;
+	w: number;
+	h: number;
+	color: string;
+	labelSide: string;
+
+	to: string;
+	from: string;
+
+	set: Snap.Element;
+
 	constructor(drawing: Drawing, element: any) {
 		this.drawing = drawing;
 		this.e = element;
@@ -646,58 +723,57 @@ class DConnector implements Ent {
 	init(): void {}
 
 	draw(): void {
-		var paper = this.drawing.paper;
-		var cx = this.e['@x'];
-		var cy = this.e['@y'];
-		var fromEnt = this.drawing.named_ents[eName(this.e.from)];
+		let paper = this.drawing.paper;
+		const cx = this.e['@x'];
+		const cy = this.e['@y'];
+		let fromEnt = this.drawing.named_ents[eName(this.e.from)];
 		if (!fromEnt)
 			return;
-		var fx = fromEnt.cx;
-		var fy = fromEnt.cy;
-		var toEnt = this.drawing.named_ents[eName(this.e.to)];
+		let fx = fromEnt.cx;
+		let fy = fromEnt.cy;
+		let toEnt = this.drawing.named_ents[eName(this.e.to)];
 		if (!toEnt)
 			return;
-		var tx = toEnt.cx;
-		var ty = toEnt.cy;
-		var circ = circleFromPoints(pt(cx, cy), pt(fx, fy), pt(tx, ty));
-		var spath = '';
-		var inv = 0;
+		let tx = toEnt.cx;
+		let ty = toEnt.cy;
+		let circ = circleFromPoints(pt(cx, cy), pt(fx, fy), pt(tx, ty));
+		let spath = '';
+		let inv = 0;
 		spath += 'M' + cx + ',' + cy;
-		var dx, dy, startθ, endθ, spanθ, internalθ;
 
-		var r;
+		let r: number, endθ: number;
 		if (circ) {
-			dx = fx - circ.x;
-			dy = fy - circ.y;
-			startθ = Math.atan2(dy, dx) * 180/Math.PI;
+			let dx = fx - circ.x;
+			let dy = fy - circ.y;
+			let startθ = Math.atan2(dy, dx) * 180/Math.PI;
 			dx = tx - circ.x;
 			dy = ty - circ.y;
-			endθ = Math.atan2(dy, dx) * 180/Math.PI;
-			spanθ = endθ - startθ;
+			let endθ = Math.atan2(dy, dx) * 180/Math.PI;
+			let spanθ = endθ - startθ;
 			while (spanθ < 0)
 				spanθ += 360;
 			spanθ %= 360;
-			inv = spanθ <= 180 - INVERSE_FUZZ;
+			inv = +(spanθ <= 180 - INVERSE_FUZZ);
 
 			// FIXME(bp) this is an approximation, a bad one.
 			if (toEnt instanceof DModule)
 				r = 25;
 			else
 				r = AUX_RADIUS;
-			internalθ = Math.tan(r/circ.r)*180/Math.PI;
+			let internalθ = Math.tan(r/circ.r)*180/Math.PI;
 			tx = circ.x + circ.r*Math.cos((endθ + (inv ? -1 : 1)*internalθ)/180*Math.PI);
 			ty = circ.y + circ.r*Math.sin((endθ + (inv ? -1 : 1)*internalθ)/180*Math.PI);
 
 			spath += 'A' + circ.r + ',' + circ.r + ' 0 0,' + (inv ? '1' : '0') + ' ' + tx + ',' + ty;
 		} else {
-			dx = tx - fx;
-			dy = ty - fy;
+			let dx = tx - fx;
+			let dy = ty - fy;
 			endθ = Math.atan2(dy, dx) * 180/Math.PI;
 			// TODO(bp) subtract AUX_RADIUS from path
 			spath += 'L' + tx + ',' + ty;
 		}
 
-		var θ = 0;
+		let θ = 0;
 		if (circ) {
 			// from center of to aux
 			//var slope1 = (i.y - ty)/(i.x - tx);
