@@ -15,18 +15,30 @@ import runtime = require('./runtime');
 
 import {dName, eName, isNaN} from "./util";
 
-var AUX_RADIUS = 9;
-var LABEL_PAD = 6;
-var STROKE = 1;
-var CLOUD_PATH = 'M 25.731189,3.8741489 C 21.525742,3.8741489 18.07553,7.4486396 17.497605,12.06118 C 16.385384,10.910965 14.996889,10.217536 13.45908,10.217535 C 9.8781481,10.217535 6.9473481,13.959873 6.9473482,18.560807 C 6.9473482,19.228828 7.0507906,19.875499 7.166493,20.498196 C 3.850265,21.890233 1.5000346,25.3185 1.5000346,29.310191 C 1.5000346,34.243794 5.1009986,38.27659 9.6710049,38.715902 C 9.6186538,39.029349 9.6083922,39.33212 9.6083922,39.653348 C 9.6083922,45.134228 17.378069,49.59028 26.983444,49.590279 C 36.58882,49.590279 44.389805,45.134229 44.389803,39.653348 C 44.389803,39.35324 44.341646,39.071755 44.295883,38.778399 C 44.369863,38.780301 44.440617,38.778399 44.515029,38.778399 C 49.470875,38.778399 53.499966,34.536825 53.499965,29.310191 C 53.499965,24.377592 49.928977,20.313927 45.360301,19.873232 C 45.432415,19.39158 45.485527,18.91118 45.485527,18.404567 C 45.485527,13.821862 42.394553,10.092543 38.598118,10.092543 C 36.825927,10.092543 35.215888,10.918252 33.996078,12.248669 C 33.491655,7.5434856 29.994502,3.8741489 25.731189,3.8741489 z';
-var CLOUD_WIDTH = 55;
-var ARROWHEAD_RADIUS = 4;
-var CLOUD_RADIUS = 8;
+const AUX_RADIUS = 9;
+const LABEL_PAD = 6;
+const STROKE = 1;
+const CLOUD_PATH = 'M 25.731189,3.8741489 C 21.525742,3.8741489 18.07553,7.4486396 17.497605,'+
+	'12.06118 C 16.385384,10.910965 14.996889,10.217536 13.45908,10.217535 C 9.8781481,'+
+	'10.217535 6.9473481,13.959873 6.9473482,18.560807 C 6.9473482,19.228828 7.0507906,'+
+	'19.875499 7.166493,20.498196 C 3.850265,21.890233 1.5000346,25.3185 1.5000346,29.310191'+
+	' C 1.5000346,34.243794 5.1009986,38.27659 9.6710049,38.715902 C 9.6186538,39.029349 '+
+	'9.6083922,39.33212 9.6083922,39.653348 C 9.6083922,45.134228 17.378069,49.59028 '+
+	'26.983444,49.590279 C 36.58882,49.590279 44.389805,45.134229 44.389803,39.653348 C '+
+	'44.389803,39.35324 44.341646,39.071755 44.295883,38.778399 C 44.369863,38.780301 '+
+	'44.440617,38.778399 44.515029,38.778399 C 49.470875,38.778399 53.499966,34.536825 '+
+	'53.499965,29.310191 C 53.499965,24.377592 49.928977,20.313927 45.360301,19.873232 C '+
+	'45.432415,19.39158 45.485527,18.91118 45.485527,18.404567 C 45.485527,13.821862 '+
+	'42.394553,10.092543 38.598118,10.092543 C 36.825927,10.092543 35.215888,10.918252 '+
+	'33.996078,12.248669 C 33.491655,7.5434856 29.994502,3.8741489 25.731189,3.8741489 z';
+const CLOUD_WIDTH = 55;
+const ARROWHEAD_RADIUS = 4;
+const CLOUD_RADIUS = 8;
 // FIXME(bp) this is a whack workaround, need to figure out a
 // better way to decide when to inverse a connector curve
-var INVERSE_FUZZ = 6;
-var MODULE_R = 5;
-var TEXT_ATTR: {[attr:string]:string|number|boolean|any} = {
+const INVERSE_FUZZ = 6;
+const MODULE_R = 5;
+const TEXT_ATTR: {[attr: string]: string|number|boolean|any} = {
 	'font-size': '10px',
 	'font-family': 'Open Sans',
 	'font-weight': '300',
@@ -34,36 +46,41 @@ var TEXT_ATTR: {[attr:string]:string|number|boolean|any} = {
 	'white-space': 'nowrap',
 	'vertical-align': 'middle',
 };
-var COLOR_CONN = 'gray';
-var COLOR_AUX = 'black';
-var Z_ORDER: {[n:string]:number} = {
+const COLOR_CONN = 'gray';
+const COLOR_AUX = 'black';
+const Z_ORDER: {[n: string]: number} = {
 	'flow': 1,
 	'module': 2,
 	'stock': 3,
 	'aux': 4,
 	'connector': 5,
 };
-var MIN_SCALE = .2;
-var Z_MAX = 6;
-var IS_CHROME = typeof navigator !== 'undefined' && navigator.userAgent.match(/Chrome/);
+const MIN_SCALE = .2;
+const Z_MAX = 6;
+const IS_CHROME = typeof navigator !== 'undefined' && navigator.userAgent.match(/Chrome/);
 
-var addCSSClass = function addClass(o: any, newClass: string): void {
-	var existingClass = o.getAttribute('class');
-	if (existingClass)
+function addClass(o: any, newClass: string): void {
+	'use strict';
+	let existingClass = o.getAttribute('class');
+	if (existingClass) {
 		o.setAttribute('class', existingClass + ' ' + newClass);
-	else
+	} else {
 		o.setAttribute('class', newClass);
+	}
 };
 
 function hasKey(o: any, k: string): boolean {
+	'use strict';
 	return o.hasOwnProperty(k);
 };
 
 function isZero(n: number): boolean {
+	'use strict';
 	return Math.abs(n) < 0.0000001;
 };
 
 function square(n: number): number {
+	'use strict';
 	return Math.pow(n, 2);
 };
 
@@ -77,17 +94,20 @@ interface Circle extends Point {
 }
 
 function pt(x: number, y: number): Point {
+	'use strict';
 	return {'x': x, 'y': y};
 };
 
-var SIDE_MAP: {[index: number]: string} = {
+const SIDE_MAP: {[index: number]: string} = {
 	0: 'right',
 	1: 'bottom',
 	2: 'left',
 	3: 'top',
 };
 
-var findSide = function findSide(element: any, defaultSide = 'bottom'): string {
+function findSide(element: any, defaultSide = 'bottom'): string {
+	'use strict';
+
 	if ('@label_side' in element) {
 		let side = element['@label_side'].toLowerCase();
 		// FIXME(bp) handle center 'side' case
@@ -103,31 +123,33 @@ var findSide = function findSide(element: any, defaultSide = 'bottom'): string {
 	return defaultSide;
 };
 
-var cloudAt = function cloudAt(paper: Snap.Paper, x: number, y: number): Snap.Element {
+function cloudAt(paper: Snap.Paper, x: number, y: number): Snap.Element {
+	'use strict';
 	const scale = (AUX_RADIUS*2/CLOUD_WIDTH);
 	let t = 'matrix(' + scale + ', 0, 0, ' + scale + ', ' +
 		(x - AUX_RADIUS) + ', ' + (y - AUX_RADIUS) + ')';
 	return paper.path(CLOUD_PATH).attr({
 		'fill': '#ffffff',
-		'stroke':'#6388dc',
+		'stroke': '#6388dc',
 		'stroke-width': 2,
 		'stroke-linejoin': 'round',
 		'stroke-miterlimit': 4,
 	}).transform(t);
 };
 
-var circleFromPoints = function(p1: Point, p2: Point, p3: Point): Circle {
-	var off = square(p2.x) + square(p2.y);
-	var bc = (square(p1.x) + square(p1.y) - off)/2;
-	var cd = (off - square(p3.x) - square(p3.y))/2;
-	var det = (p1.x - p2.x)*(p2.y - p3.y) - (p2.x - p3.x)*(p1.y - p2.y);
+function circleFromPoints(p1: Point, p2: Point, p3: Point): Circle {
+	'use strict';
+	const off = square(p2.x) + square(p2.y);
+	const bc = (square(p1.x) + square(p1.y) - off)/2;
+	const cd = (off - square(p3.x) - square(p3.y))/2;
+	const det = (p1.x - p2.x)*(p2.y - p3.y) - (p2.x - p3.x)*(p1.y - p2.y);
 	if (isZero(det)) {
 		console.log('blerg');
 		return;
 	}
-	var idet = 1/det;
-	var cx = (bc*(p2.y - p3.y) - cd*(p1.y - p2.y))*idet;
-	var cy = (cd*(p1.x - p2.x) - bc*(p2.x - p3.x))*idet;
+	const idet = 1/det;
+	const cx = (bc*(p2.y - p3.y) - cd*(p1.y - p2.y))*idet;
+	const cy = (cd*(p1.x - p2.x) - bc*(p2.x - p3.x))*idet;
 	return {
 		'x': cx,
 		'y': cy,
@@ -135,7 +157,11 @@ var circleFromPoints = function(p1: Point, p2: Point, p3: Point): Circle {
 	};
 };
 
-var label = function label(paper: Snap.Paper, cx: number, cy: number, side: string, text: string, rw = AUX_RADIUS, rh = AUX_RADIUS): Snap.Element {
+function label(
+	paper: Snap.Paper, cx: number, cy: number, side: string, text: string,
+	rw = AUX_RADIUS, rh = AUX_RADIUS): Snap.Element {
+
+	'use strict';
 	let x: number, y: number;
 	switch (side) {
 	case 'top':
@@ -154,6 +180,9 @@ var label = function label(paper: Snap.Paper, cx: number, cy: number, side: stri
 		x = cx + rw + LABEL_PAD;
 		y = cy;
 		break;
+	default:
+		// FIXME
+		console.log('unknown case ' + side);
 	}
 
 	let lbl = paper.text(x, y, text.split('\n')).attr(TEXT_ATTR);
@@ -164,8 +193,8 @@ var label = function label(paper: Snap.Paper, cx: number, cy: number, side: stri
 	} else {
 		lines = linesAttr;
 	}
-	var spans = lbl.node.getElementsByTagName('tspan');
-	var maxH = Number.MIN_VALUE, maxW = Number.MIN_VALUE;
+	let spans = lbl.node.getElementsByTagName('tspan');
+	const maxH = Number.MIN_VALUE, maxW = Number.MIN_VALUE;
 	if (IS_CHROME) {
 		// FIXME(bp) this is way faster as it avoids forced
 		// layouts & node creation + deletion, but it only works
@@ -178,7 +207,7 @@ var label = function label(paper: Snap.Paper, cx: number, cy: number, side: stri
 			// from SVGLocatable in the spec, but
 			// apparently does in the Chrome
 			// implementation)
-			let span: any = spans[i]
+			let span: any = spans[i];
 			let bb = span.getBBox();
 			if (bb.height > maxH)
 				maxH = bb.height;
@@ -217,10 +246,11 @@ var label = function label(paper: Snap.Paper, cx: number, cy: number, side: stri
 		// kind of gross, but I'm not sure what the correct metric
 		// would be.  I think middle-align isn't working right or
 		// something.
-		if (spans.length > 1)
+		if (spans.length > 1) {
 			off = (spans.length-2)*(maxH/2);
-		else
+		} else {
 			off = -maxH/4;
+		}
 
 		addCSSClass(lbl.node, 'right-aligned');
 		lbl.node.setAttribute('style', lbl.node.getAttribute('style').replace('middle', 'right'));
@@ -236,21 +266,29 @@ var label = function label(paper: Snap.Paper, cx: number, cy: number, side: stri
 			y: y - (spans.length-2)*(maxH/2),
 		});
 		break;
+	default:
+		console.log('unknown case ' + side);
 	}
 	return lbl;
 };
 
 function last<T>(arr: Array<T>): T {
+	'use strict';
 	return arr[arr.length-1];
 };
 
 function arrowhead(paper: Snap.Paper, x: number, y: number, r: number): Snap.Element {
-	var head = 'M' + x + ',' + y + 'L' + (x-r) + ',' + (y + r/2) +
+	'use strict';
+	const head = 'M' + x + ',' + y + 'L' + (x-r) + ',' + (y + r/2) +
 		'A' + r*3 + ',' + r*3 + ' 0 0,1 ' + (x-r) + ',' + (y - r/2) + 'z';
 	return paper.path(head);
 };
 
-function sparkline(paper: Snap.Paper, cx: number, cy: number, w: number, h: number, time: number[], values: number[], graph?: Snap.Element): Snap.Element {
+function sparkline(
+	paper: Snap.Paper, cx: number, cy: number, w: number, h: number,
+	time: number[], values: number[], graph?: Snap.Element): Snap.Element {
+
+	'use strict';
 	const x = cx - w/2;
 	const y = cy - h/2;
 	const xMin = time[0];
@@ -396,17 +434,18 @@ class DStock implements Ent {
 	}
 
 	drawLabel(): void {
-		var paper = this.drawing.paper;
-		var w = this.w;
-		var h = this.h;
+		let paper = this.drawing.paper;
+		const w = this.w;
+		const h = this.h;
 		this.set.add(label(paper, this.cx, this.cy, this.labelSide, this.dName, w/2, h/2));
 	}
 
 	visualize(time: number[], values: number[]): void {
-		var hadGraph = !!this.graph;
-		this.graph = sparkline(this.drawing.paper,
-				       this.cx, this.cy, this.w-4, this.h-4,
-				       time, values, this.graph);
+		const hadGraph = !!this.graph;
+		this.graph = sparkline(
+			this.drawing.paper,
+			this.cx, this.cy, this.w-4, this.h-4,
+			time, values, this.graph);
 		if (!hadGraph)
 			this.set.add(this.graph);
 	}
@@ -445,12 +484,12 @@ class DModule implements Ent {
 		this.labelSide = findSide(element);
 	}
 
-	init() {}
+	init(): void {}
 
 	draw(): void {
-		var paper = this.drawing.paper;
-		var w = this.w;
-		var h = this.h;
+		let paper = this.drawing.paper;
+		const w = this.w;
+		const h = this.h;
 
 		// FIXME: the ceil calls are for Stella Modeler compatability.
 		this.set = this.drawing.group(
@@ -463,17 +502,18 @@ class DModule implements Ent {
 	}
 
 	drawLabel(): void {
-		var paper = this.drawing.paper;
-		var w = this.w;
-		var h = this.h;
+		let paper = this.drawing.paper;
+		const w = this.w;
+		const h = this.h;
 		this.set.add(label(paper, this.cx, this.cy, this.labelSide, this.dName, w/2, h/2));
 	}
 
 	visualize(time: number[], values: number[]): void {
-		var hadGraph = !!this.graph;
-		this.graph = sparkline(this.drawing.paper,
-				       this.cx, this.cy, this.w-6, this.h-6,
-				       time, values, this.graph);
+		const hadGraph = !!this.graph;
+		this.graph = sparkline(
+			this.drawing.paper,
+			this.cx, this.cy, this.w-6, this.h-6,
+			time, values, this.graph);
 		if (!hadGraph)
 			this.set.add(this.graph);
 	}
@@ -526,7 +566,7 @@ class DAux implements Ent {
 	init(): void {}
 
 	draw(): void {
-		var paper = this.drawing.paper;
+		let paper = this.drawing.paper;
 		this.set = this.drawing.group(
 			paper.circle(this.cx, this.cy, this.r).attr({
 				'fill': 'white',
@@ -537,15 +577,16 @@ class DAux implements Ent {
 	}
 
 	drawLabel(): void {
-		var paper = this.drawing.paper;
+		let paper = this.drawing.paper;
 		this.set.add(label(paper, this.cx, this.cy, this.labelSide, this.dName));
 	}
 
-	visualize(time: number[], values: number[]) {
-		var hadGraph = !!this.graph;
-		this.graph = sparkline(this.drawing.paper,
-				       this.cx, this.cy, AUX_RADIUS, AUX_RADIUS,
-				       time, values, this.graph);
+	visualize(time: number[], values: number[]): void {
+		const hadGraph = !!this.graph;
+		this.graph = sparkline(
+			this.drawing.paper,
+			this.cx, this.cy, AUX_RADIUS, AUX_RADIUS,
+			time, values, this.graph);
 		if (!hadGraph)
 			this.set.add(this.graph);
 	}
@@ -586,15 +627,15 @@ class DFlow implements Ent {
 	init(): void {}
 
 	draw(): void {
-		var paper = this.drawing.paper;
-		var cx = this.cx;
-		var cy = this.cy;
-		var pts = this.e.pts.pt;
+		let paper = this.drawing.paper;
+		const cx = this.cx;
+		const cy = this.cy;
+		let pts = this.e.pts.pt;
 		if (pts.length < 2) {
 			console.log('ERROR: too few points for flow: ' + JSON.stringify(this));
 			return;
 		}
-		var spath = '';
+		let spath = '';
 		for (let j = 0; j < pts.length; j++)
 			spath += (j === 0 ? 'M' : 'L') + pts[j]['@x'] + ',' + pts[j]['@y'];
 
@@ -682,15 +723,16 @@ class DFlow implements Ent {
 	}
 
 	drawLabel(): void {
-		var paper = this.drawing.paper;
+		let paper = this.drawing.paper;
 		this.set.add(label(paper, this.cx, this.cy, this.labelSide, this.dName));
 	}
 
 	visualize(time: number[], values: number[]): void {
-		var hadGraph = !!this.graph;
-		this.graph = sparkline(this.drawing.paper,
-				       this.cx, this.cy, AUX_RADIUS, AUX_RADIUS,
-				       time, values, this.graph);
+		let hadGraph = !!this.graph;
+		this.graph = sparkline(
+			this.drawing.paper,
+			this.cx, this.cy, AUX_RADIUS, AUX_RADIUS,
+			time, values, this.graph);
 		if (!hadGraph)
 			this.set.add(this.graph);
 	}
@@ -748,7 +790,7 @@ class DConnector implements Ent {
 			let startθ = Math.atan2(dy, dx) * 180/Math.PI;
 			dx = tx - circ.x;
 			dy = ty - circ.y;
-			let endθ = Math.atan2(dy, dx) * 180/Math.PI;
+			endθ = Math.atan2(dy, dx) * 180/Math.PI;
 			let spanθ = endθ - startθ;
 			while (spanθ < 0)
 				spanθ += 360;
@@ -756,10 +798,11 @@ class DConnector implements Ent {
 			inv = +(spanθ <= 180 - INVERSE_FUZZ);
 
 			// FIXME(bp) this is an approximation, a bad one.
-			if (toEnt instanceof DModule)
+			if (toEnt instanceof DModule) {
 				r = 25;
-			else
+			} else {
 				r = AUX_RADIUS;
+			}
 			let internalθ = Math.tan(r/circ.r)*180/Math.PI;
 			tx = circ.x + circ.r*Math.cos((endθ + (inv ? -1 : 1)*internalθ)/180*Math.PI);
 			ty = circ.y + circ.r*Math.sin((endθ + (inv ? -1 : 1)*internalθ)/180*Math.PI);
@@ -776,10 +819,10 @@ class DConnector implements Ent {
 		let θ = 0;
 		if (circ) {
 			// from center of to aux
-			//var slope1 = (i.y - ty)/(i.x - tx);
+			// let slope1 = (i.y - ty)/(i.x - tx);
 			// inverse from center of circ
-			var slope2 = -Math.atan2((tx - circ.x), (ty - circ.y));
-			θ = slope2*180/Math.PI;//(slope1+slope2)/2;
+			const slope2 = -Math.atan2((tx - circ.x), (ty - circ.y));
+			θ = slope2*180/Math.PI; // (slope1+slope2)/2;
 			if (inv)
 				θ += 180;
 		} else {
@@ -792,7 +835,7 @@ class DConnector implements Ent {
 				'stroke': this.color,
 				'fill': 'none',
 			}),
-			paper.circle(cx, cy, 2).attr({'stroke-width':0, fill:'#c83639'}),
+			paper.circle(cx, cy, 2).attr({'stroke-width': 0, fill: '#c83639'}),
 			arrowhead(paper, tx, ty, ARROWHEAD_RADIUS).attr({
 				'transform': 'rotate(' + (θ) + ',' + tx + ',' + ty + ')',
 				'stroke': this.color,
@@ -808,7 +851,7 @@ class DConnector implements Ent {
 	visualize(): void {}
 }
 
-var DTypes: {[n: string]: EntStatic} = {
+const DTypes: {[n: string]: EntStatic} = {
 	'stock': DStock,
 	'flow': DFlow,
 	'aux': DAux,
@@ -826,8 +869,8 @@ interface Transform {
 }
 
 /**
-   Drawing represents a stock-and-flow diagram of a SD model.
-*/
+ *  Drawing represents a stock-and-flow diagram of a SD model.
+ */
 export class Drawing {
 	model: type.Model;
 	xmile: any;
@@ -836,7 +879,7 @@ export class Drawing {
 	_g: any;
 	_t: Transform;
 	d_ents: Ent[];
-	named_ents: {[n:string]: Ent};
+	named_ents: {[n: string]: Ent};
 	z_ents: Ent[][];
 
 	constructor(model: type.Model, xmile: any, svgElement: string|HTMLElement, overrideColors: any, enableMousewheel: boolean) {
@@ -863,12 +906,12 @@ export class Drawing {
 			element.innerHTML += runtime.drawCSS;
 		}
 		// FIXME: not needed?
-		//this._selector = svgElement;
+		// this._selector = svgElement;
 		this._g = this.paper.g();
 		this._g.node.id = 'viewport';
 		this.colorOverride = overrideColors;
 
-		//var zoom = util.floatAttr(view, 'zoom')/100.0;
+		// var zoom = util.floatAttr(view, 'zoom')/100.0;
 		element.setAttribute('preserveAspectRatio', 'xMinYMin');
 		{
 			let tz = 'translateZ(0px)';
@@ -942,10 +985,10 @@ export class Drawing {
 			dy: 0,
 		};
 
-		var _this = this;
+		let _this = this;
 
-		//Hammer.plugins.showTouches();
-		//Hammer.plugins.fakeMultitouch();
+		// Hammer.plugins.showTouches();
+		// Hammer.plugins.fakeMultitouch();
 		/*
 		var hammer = new Hammer(element, {
 			preventDefault: true,
@@ -985,9 +1028,9 @@ export class Drawing {
 		if (!enableMousewheel)
 			return;
 
-		svg.onwheel = function(e) {
-			var drawing = _this;
-			var delta = -e.deltaY/20;
+		svg.onwheel = function(e: any): void {
+			let drawing = _this;
+			let delta = -e.deltaY/20;
 			drawing.applyDScaleAt(delta, e);
 			drawing.normalizeTransform();
 			drawing.transform();
@@ -1002,16 +1045,16 @@ export class Drawing {
 		this._t.dy = -(e.pageY - this._t.y)*(this._t.dscale)/this._t.scale;
 	}
 
-	transform(scale?: number, x?: number, y?: number) {
+	transform(scale?: number, x?: number, y?: number): void {
 		if (arguments.length === 3) {
 			this._t.scale = scale;
 			this._t.x = x;
 			this._t.y = y;
 		}
-		var x = this._t.x + this._t.dx;
-		var y = this._t.y + this._t.dy;
-		var scale = this._t.scale + this._t.dscale;
-		var matrix = 'translateZ(0px) matrix(' + scale + ',0,0,' + scale +
+		x = this._t.x + this._t.dx;
+		y = this._t.y + this._t.dy;
+		scale = this._t.scale + this._t.dscale;
+		let matrix = 'translateZ(0px) matrix(' + scale + ',0,0,' + scale +
 			',' + x + ',' + y + ')';
 		this._g.node.style['-webkit-transform'] = matrix;
 		this._g.node.style['-moz-transform'] = matrix;
@@ -1039,7 +1082,7 @@ export class Drawing {
 				for (let n in result) {
 					if (!result.hasOwnProperty(n))
 						continue;
-					let data = result[n];
+					data = result[n];
 					let dEnt = d.named_ents[n];
 					if (!dEnt) {
 						console.log('sim data for non-drawn ' + n);
@@ -1053,7 +1096,7 @@ export class Drawing {
 			for (let n in result) {
 				if (!result.hasOwnProperty(n))
 					continue;
-				let data = result[n];
+				data = result[n];
 				let dEnt = this.named_ents[n];
 				if (!dEnt) {
 					console.log('sim data for non-drawn ' + n);
@@ -1062,10 +1105,10 @@ export class Drawing {
 				dEnt.visualize(data.time, data.values);
 			}
 		}
-	};
+	}
 
-	group = function() {
-		var g = this.paper.g.apply(this.paper, arguments);
+	group(): Snap.Element {
+		let g = this.paper.g.apply(this.paper, arguments);
 		this._g.append(g);
 		return g;
 	}

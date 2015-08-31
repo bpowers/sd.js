@@ -47,6 +47,10 @@ export interface Model {
 	lookup(name: string): Variable;
 }
 
+export interface ModelSet {
+	[name: string]: Model;
+}
+
 export interface ModuleMap {
 	[name: string]: Module;
 }
@@ -59,8 +63,8 @@ export interface Project {
 	name: string;
 	main: Module;
 	timespec: TimeSpec;
-	model(name?: string): Model;
 	models: ModelSet;
+	model(name?: string): Model;
 }
 
 export interface Offsets {
@@ -70,10 +74,6 @@ export interface Offsets {
 export interface ModelDef {
 	model: Model;
 	modules: Module[];
-}
-
-export interface ModelSet {
-	[name: string]: Model;
 }
 
 export interface ModelDefSet {

@@ -8,9 +8,9 @@ export var err: string;
 
 
 
-export class errors {
-	static ERR_VERSION = "bad xml or unknown smile version";
-	static ERR_BAD_TIME = "bad time (control) data";
+export class Errors {
+	static ERR_VERSION: string = 'bad xml or unknown smile version';
+	static ERR_BAD_TIME: string = 'bad time (control) data';
 };
 
 interface Properties {
