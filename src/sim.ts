@@ -26,61 +26,68 @@ let DEBUG = true;
 const SP = DEBUG ? '    ' : '';
 const NLSP = DEBUG ? '\n    ' : '';
 
-const tmpl = "{{&preamble}}\n\n" +
-	"var TIME = 0;\n\n" +
-	"{{#models}}\n" +
-	"var {{&className}} = function {{&className}}(name, parent, offset, symRefs) {\n" +
-	"    this.name = name;\n" +
-	"    this.parent = parent;\n" +
+const tmpl = `{{&preamble}}
+
+var TIME = 0;
+
+{{#models}}
+var {{&className}} = function {{&className}}(name, parent, offset, symRefs) {
+	this.name = name;
+	this.parent = parent;
 	// if we are a module, record the offset in the curr & next
 	// arrays we should be writing at
-	"    this._shift = i32(offset);\n" +
-	"    {{&init}}\n" +
-	"    this.modules = {{&modules}};\n" +
+	this._shift = i32(offset);
+	{{&init}}
+	this.modules = {{&modules}};
 	// symbolic references, which will get resolved into integer
 	// offsets in the ref map after all Simulation objects have
 	// been initialized.
-	"    this.symRefs = symRefs || {};\n" +
-	"    this.ref = {};\n" +
-	"    this.nVars = this.getNVars();\n" +
-	"    if (name === 'main')\n" +
-	"	this.reset();\n" +
-	"};\n" +
-	"{{&className}}.prototype = new Simulation();\n" +
-	"{{&className}}.prototype.initials = {{&initialVals}};\n" +
-	"{{&className}}.prototype.timespec = {{&timespecVals}};\n" +
-	"{{&className}}.prototype.offsets = {{&offsets}};\n" +
-	"{{&className}}.prototype.tables = {{&tableVals}};\n" +
-	"{{&className}}.prototype.calcInitial = function(dt, curr) {\n" +
-	"    dt = +dt;\n" +
-	"{{#isModule}}\n" +
-	"    var globalCurr = curr;\n" +
-	"    curr = curr.subarray(this._shift, this._shift + this.nVars);\n" +
-	"{{/isModule}}\n" +
-	"    {{&calcI}}\n" +
-	"};\n" +
-	"{{&className}}.prototype.calcFlows = function(dt, curr) {\n" +
-	"    dt = +dt;\n" +
-	"{{#isModule}}\n" +
-	"    var globalCurr = curr;\n" +
-	"    curr = curr.subarray(this._shift, this._shift + this.nVars);\n" +
-	"{{/isModule}}\n" +
-	"    {{&calcF}}\n" +
-	"};\n" +
-	"{{&className}}.prototype.calcStocks = function(dt, curr, next) {\n" +
-	"    dt = +dt;\n" +
-	"{{#isModule}}\n" +
-	"    var globalCurr = curr;\n" +
-	"    curr = curr.subarray(this._shift, this._shift + this.nVars);\n" +
-	"    next = next.subarray(this._shift, this._shift + this.nVars);\n" +
-	"{{/isModule}}\n" +
-	"    {{&calcS}}\n" +
-	"};\n\n" +
-	"{{/models}}\n" +
-	"var main = new {{&mainClassName}}('main');\n" +
-	"main.resolveAllSymbolicRefs();\n\n" +
-	"var cmds = initCmds(main);\n\n" +
-	"{{&epilogue}}\n";
+	this.symRefs = symRefs || {};
+	this.ref = {};
+	this.nVars = this.getNVars();
+	if (name === 'main')
+		this.reset();
+};
+
+{{&className}}.prototype = new Simulation();
+{{&className}}.prototype.initials = {{&initialVals}};
+{{&className}}.prototype.timespec = {{&timespecVals}};
+{{&className}}.prototype.offsets = {{&offsets}};
+{{&className}}.prototype.tables = {{&tableVals}};
+{{&className}}.prototype.calcInitial = function(dt, curr) {
+	dt = +dt;
+{{#isModule}}
+	var globalCurr = curr;
+	curr = curr.subarray(this._shift, this._shift + this.nVars);
+{{/isModule}}
+	{{&calcI}}
+};
+{{&className}}.prototype.calcFlows = function(dt, curr) {
+	dt = +dt;
+{{#isModule}}
+	var globalCurr = curr;
+	curr = curr.subarray(this._shift, this._shift + this.nVars);
+{{/isModule}}
+	{{&calcF}}
+};
+{{&className}}.prototype.calcStocks = function(dt, curr, next) {
+	dt = +dt;
+{{#isModule}}
+	var globalCurr = curr;
+	curr = curr.subarray(this._shift, this._shift + this.nVars);
+	next = next.subarray(this._shift, this._shift + this.nVars);
+{{/isModule}}
+	{{&calcS}}
+};
+
+{{/models}}
+var main = new {{&mainClassName}}('main');
+
+main.resolveAllSymbolicRefs();
+
+var cmds = initCmds(main);
+
+{{&epilogue}}`;
 
 export class TemplateContext {
 	name: string;
