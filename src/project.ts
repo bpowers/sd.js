@@ -2,6 +2,8 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
+'use strict';
+
 import common = require('./common');
 import type = require('./type');
 import jxon = require('./jxon');
@@ -10,8 +12,6 @@ import compat = require('./compat');
 import {normalizeTimespec} from './util';
 import {Model} from './model';
 import {Module} from './vars';
-
-'use strict';
 
 // TODO(bp) macro support/warnings
 
