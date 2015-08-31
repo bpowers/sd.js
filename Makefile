@@ -61,6 +61,11 @@ $(RUNTIME): build-rt ./build-runtime.py
 	@echo "  RT    $@"
 	./build-runtime.py >$@
 
+lib: build $(LIB_SRCS) $(CONFIG) bower_components
+	@echo "  TS    $@"
+	$(TSC) $(TSFLAGS) -d -m commonjs --outDir lib $(LIB_SRCS) || true
+	touch $@
+
 $(LIB): build.js build $(RUNTIME) $(REQUIRE) $(ALMOND)
 	@echo "  R.JS  $@"
 	$(REQUIRE) -o $<

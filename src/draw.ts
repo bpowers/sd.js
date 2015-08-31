@@ -332,11 +332,11 @@ function sparkline(
 	}
 };
 
-interface EntStatic {
+export interface EntStatic {
 	new (drawing: Drawing, element: any): Ent;
 }
 
-interface Ent {
+export interface Ent {
 
 	name: string;
 	cx: number;
@@ -862,7 +862,7 @@ const DTypes: {[n: string]: EntStatic} = {
 	'module': DModule,
 };
 
-interface Transform {
+export interface Transform {
 	scale: number;
 	dscale: number;
 	x: number;

@@ -11,7 +11,7 @@ export class Errors {
 	static ERR_BAD_TIME: string = 'bad time (control) data';
 };
 
-interface Properties {
+export interface Properties {
 	usesTime?: boolean;
 }
 

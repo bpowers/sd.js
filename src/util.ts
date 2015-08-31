@@ -72,7 +72,7 @@ function swap(array: any[], a: number, b: number): void {
 
 // partition used in quicksort, based off pseudocode
 // on wikipedia
-function partition(array: any[], l: number, r: number, p: number): number {
+export function partition(array: any[], l: number, r: number, p: number): number {
 	'use strict';
 	let pValue = array[p];
 	// move the pivot to the end

@@ -4,7 +4,7 @@ DOMParser = require('xmldom').DOMParser;
 Mustache = require('mustache');
 
 var fs = require('fs');
-var sd = require('../lib/sd').sd;
+var sd = require('../lib/sd');
 
 var argv = process.argv;
 if (argv.length < 3) {
