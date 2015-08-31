@@ -2,9 +2,9 @@
 
 import json
 
-PREAMBLE = 'lib/runtime_ugly.js'
-EPILOGUE = 'lib/epilogue_src.js'
-DRAW_CSS = 'lib/draw.css'
+PREAMBLE = 'build-rt/runtime.js'
+EPILOGUE = 'build-rt/epilogue.js'
+DRAW_CSS = 'runtime/draw.css'
 DRAW_WRAP = '''<defs><style>
 /* <![CDATA[ */
 %s
@@ -12,19 +12,18 @@ DRAW_WRAP = '''<defs><style>
 </style></defs>
 '''
 
-WRAPPER = '''// Copyright 2013 Bobby Powers. All rights reserved.
+WRAPPER = '''// Copyright 2015 Bobby Powers. All rights reserved.
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-define([], function() {
+define(["require", "exports"], function(_, exports) {
     'use strict';
-    var runtime = {};
     // unquoted source in '%s'
-    runtime.preamble = %s;
+    exports.preamble = %s;
     // unquoted source in '%s'
-    runtime.epilogue = %s;
+    exports.epilogue = %s;
     // unquoted source in '%s'
-    runtime.drawCSS = %s;
+    exports.drawCSS = %s;
 
     return runtime;
 });

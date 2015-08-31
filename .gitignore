@@ -2,12 +2,10 @@ serve
 *~
 /.d8_history
 node_modules
-/lib/runtime.js
-/lib/runtime_ugly.js
 /worker.js
 perf.data
 perf.data.old
 v8.log
 /bower_components
-/dist/sd.nodeps.js
-/dist/sd.nodeps.min.js
+/build
+/build-rt

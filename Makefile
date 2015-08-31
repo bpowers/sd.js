@@ -1,73 +1,75 @@
-# if you invoke make as 'make V=1' it will verbosely list what it is
-# doing, otherwise it defaults to pretty mode, which makes build
-# errors _much_ easier to see
+
+REQUIRE  ?= node_modules/.bin/r.js
+BOWER    ?= node_modules/.bin/bower
+TSLINT   ?= node_modules/.bin/tslint
+TSC      ?= node_modules/.bin/tsc
+
+ALMOND   ?= bower_components/almond
+
+TSFLAGS  = -t es5 --noImplicitAny --removeComments
+
+LIB_SRCS = $(wildcard src/*.ts)
+RT_SRCS  = $(wildcard runtime/*.ts)
+RUNTIME  = build/runtime.js
+
+LIB      = sd.js
+LIB_MIN  = sd.min.js
+
+TARGETS  = $(LIB)
+# make sure we recompile when the Makefile (and associated
+# CFLAGS/LDFLAGS change) or any project files are changed.
+CONFIG   = Makefile $(TSC) $(BOWER) $(TSLINT) $(REQUIRE) build.js
+
+# quiet output, but allow us to look at what commands are being
+# executed by passing 'V=1' to make, without requiring temporarily
+# editing the Makefile.
 ifneq ($V, 1)
-MAKEFLAGS = -s
+MAKEFLAGS += -s
 endif
 
-PYTHON := python2
-
-HAMMER_JS     := bower_components/hammerjs/hammer.js #bower_components/hammerjs/plugins/hammer.showtouches.js bower_components/hammerjs/plugins/hammer.fakemultitouch.js
-HAMMER_MIN_JS := bower_components/hammerjs/hammer.min.js #bower_components/hammerjs/plugins/hammer.showtouches.js bower_components/hammerjs/plugins/hammer.fakemultitouch.js
-
-VENDOR_JS     := $(HAMMER_JS) lib/vendor/mustache.js lib/vendor/q.js lib/vendor/snapsvg.js
-VENDOR_MIN_JS := $(HAMMER_MIN_JS) lib/vendor/mustache.js lib/vendor/q.js lib/vendor/snapsvg.js
-
-RTEST_DIR     := test/test-models
-RTEST_CMD     := $(RTEST_DIR)/regression-test.py
-REXE          := mdl.js
-
-all: dist
-
-dist: dist/sd.js dist/sd.min.js
-
-bower_components:
-	bower install
-	touch $@
+all: $(TARGETS)
 
 node_modules: package.json
-	npm install
+	@echo "  NPM"
+	npm install --quiet
+	touch -c $@
+
+$(TSC) $(BOWER) $(TSLINT) $(REQUIRE): node_modules
+	touch -c $@
+
+bower_components: $(BOWER) bower.json
+	@echo "  BOWER"
+	bower install
+	touch -c $@
+
+$(ALMOND): bower_components
+	touch -c $@
+
+build: $(LIB_SRCS) $(CONFIG)
+	@echo "  TS    $@"
+	$(TSLINT) -c .tslint.json $(LIB_SRCS)
+	$(TSC) $(TSFLAGS) -m amd --outDir build $(LIB_SRCS)
 	touch $@
 
-node_modules/.bin/r.js: node_modules bower_components
+build-rt: $(RT_SRCS) $(CONFIG)
+	@echo "  TS    $@"
+	$(TSLINT) -c .tslint.json $(RT_SRCS)
+	$(TSC) $(TSFLAGS) -m commonjs --outDir build-rt $(RT_SRCS)
 	touch $@
 
-lib/runtime_ugly.js: lib/runtime_src.js Makefile
-	cp lib/runtime_src.js $@
-#	node_modules/.bin/uglifyjs lib/runtime_src.js -c -m -o $@
+$(RUNTIME): build-rt
+	./build-runtime.py >$@
 
-lib/runtime.js: lib/runtime_ugly.js lib/epilogue_src.js lib/draw.css quote_runtime.py Makefile
-	$(PYTHON) quote_runtime.py >$@
+$(LIB): build.js build $(RUNTIME) $(REQUIRE) $(ALMOND)
+	@echo "  R.JS  $@"
+	$(REQUIRE) -o $<
 
-dist/sd.js: node_modules/.bin/r.js build.js lib/*.js lib/runtime.js $(VENDOR_JS)
-	mkdir -p dist
-	node_modules/.bin/r.js -o build.js
-	cat $(VENDOR_JS) dist/sd.nodeps.js >$@
-
-dist/sd.min.js: node_modules/.bin/r.js build_min.js lib/*.js lib/runtime.js $(VENDOR_JS)
-	mkdir -p dist
-	node_modules/.bin/r.js -o build_min.js
-	cat $(VENDOR_MIN_JS) dist/sd.nodeps.min.js >$@
-
-hint: lib/runtime.js
-	node_modules/.bin/jshint --config .jshintrc lib/*.js
-
-jsdeps:
-	mkdir -p lib/vendor
-	curl -o lib/vendor/require.js    'http://requirejs.org/docs/release/2.1.9/comments/require.js'
+$(LIB_MIN): build_min.js src $(REQUIRE) $(ALMOND)
+	@echo "  R.JS  $@"
+	$(REQUIRE) -o $<
 
 clean:
-	rm -rf dist
-	rm -f lib/runtime.js
+	rm -rf build build-rt
+	find . -name '*~' | xargs rm
 
-$(RTEST_CMD): $(RTEST_DIR) .gitmodules
-	@echo "  GIT   $<"
-	git submodule update --init
-	touch $@
-
-check: lib/runtime.js node_modules bower_components
-	node_modules/.bin/nodeunit test/runner.js
-	./$(RTEST_CMD) ./$(REXE) $(RTEST_DIR)
-
-
-.PHONY: all dist hint jsdeps clean check
+.PHONY: all clean

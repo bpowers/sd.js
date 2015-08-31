@@ -1,10 +1,10 @@
 ({
-    baseUrl: 'lib',
+    baseUrl: 'build',
     include: ['sd'],
-    name: 'vendor/almond',
+    name: '../bower_components/almond/almond',
     wrap: {
-        startFile: 'lib/build/start.frag.js',
-        endFile: 'lib/build/end.frag.js'
+        startFile: 'src/build/start.frag.js',
+        endFile: 'src/build/end.frag.js'
     },
-    out: 'dist/sd.nodeps.min.js',
+    out: 'sd.min.js',
 })

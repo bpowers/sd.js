@@ -6,7 +6,7 @@
   "authors": [
     "Bobby Powers <bobbypowers@gmail.com>"
   ],
-  "main": "dist/sd.min.js",
+  "main": "sd.js",
   "keywords": [
     "sd",
     "system dynamics",
@@ -24,9 +24,9 @@
   ],
   "dependencies": {},
   "devDependencies": {
-    "hammerjs": "~2.0.4",
+    "hammerjs": "^2.0.4",
     "DefinitelyTyped": "latest",
-    "almond": "~0.3.1",
-    "q": "~2.0.2"
+    "almond": "^0.3.1",
+    "q": "^2.0.2"
   }
 }
