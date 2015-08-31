@@ -3,7 +3,10 @@
 // license that can be found in the LICENSE file.
 
 /// <reference path="../bower_components/DefinitelyTyped/hammerjs/hammerjs.d.ts" />
+/// <amd-dependency path="../bower_components/hammerjs/hammer" />
+
 /// <reference path="../bower_components/DefinitelyTyped/snapsvg/snapsvg.d.ts" />
+/// <amd-dependency path="../bower_components/Snap.svg/dist/snap.svg" />
 
 /* global navigator: false, document: false */
 
@@ -896,7 +899,7 @@ export class Drawing {
 			element = svgElement;
 		}
 		// FIXME: gross
-		svg = <SVGElement><any>HTMLElement;
+		svg = <SVGElement><any>element;
 		element.innerHTML = '';
 		this.paper = Snap(svg);
 		let defs = <any>svg.getElementsByTagName('defs')[0];

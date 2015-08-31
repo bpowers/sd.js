@@ -15,6 +15,9 @@ import type = require('./type');
 import vars = require('./vars');
 import runtime = require('./runtime');
 
+import Q = require('../bower_components/q/q');
+import Mustache = require('../bower_components/mustache.js/mustache');
+
 // whether we map names -> offsets in a Float64Array, or use names
 // as object property lookups.  With DEBUG = true, equations are
 // easier to debug but run slower.

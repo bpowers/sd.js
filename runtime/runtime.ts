@@ -241,7 +241,9 @@ function handleMessage(e: any): void {
 
 	// TODO(bp) look into transferrable objects
 	let msg = [id, result];
-	postMessage(msg, '*');
+	// FIXME: this is a DedicatedWorkerGlobalScope, but TypeScript
+	// is clueless.
+	(<any>this).postMessage(msg);
 }
 
 let desiredSeries: string[] = null;
