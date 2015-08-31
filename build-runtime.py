@@ -16,17 +16,16 @@ WRAPPER = '''// Copyright 2015 Bobby Powers. All rights reserved.
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-define(["require", "exports"], function(_, exports) {
-    'use strict';
-    // unquoted source in '%s'
-    exports.preamble = %s;
-    // unquoted source in '%s'
-    exports.epilogue = %s;
-    // unquoted source in '%s'
-    exports.drawCSS = %s;
+'use strict';
 
-    return runtime;
-});
+// unquoted source in '%s'
+export const preamble = %s;
+
+// unquoted source in '%s'
+export const epilogue = %s;
+
+// unquoted source in '%s'
+export const drawCSS = %s;
 '''
 
 def slurp(file_name):

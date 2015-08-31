@@ -8,9 +8,9 @@ ALMOND   ?= bower_components/almond
 
 TSFLAGS  = -t es5 --noImplicitAny --removeComments
 
-LIB_SRCS = $(wildcard src/*.ts)
+RUNTIME  = src/runtime.ts
+LIB_SRCS = $(filter-out $(RUNTIME), $(wildcard src/*.ts)) $(RUNTIME)
 RT_SRCS  = $(wildcard runtime/*.ts)
-RUNTIME  = build/runtime.js
 
 LIB      = sd.js
 LIB_MIN  = sd.min.js
@@ -57,7 +57,7 @@ build-rt: $(RT_SRCS) $(CONFIG)
 	$(TSC) $(TSFLAGS) -m commonjs --outDir build-rt $(RT_SRCS)
 	touch $@
 
-$(RUNTIME): build-rt
+$(RUNTIME): build-rt ./build-runtime.py
 	./build-runtime.py >$@
 
 $(LIB): build.js build $(RUNTIME) $(REQUIRE) $(ALMOND)
