@@ -17,10 +17,11 @@ RT_SRCS    = $(wildcard runtime/*.ts)
 LIB        = sd.js
 LIB_MIN    = sd.min.js
 
-TARGETS    = $(LIB)
+TARGETS    = $(LIB) $(LIB_MIN) lib
 # make sure we recompile when the Makefile (and associated
 # CFLAGS/LDFLAGS change) or any project files are changed.
-CONFIG     = Makefile $(TSC) $(BOWER) $(TSLINT) $(REQUIRE) build.js
+CONFIG     = Makefile $(TSC) $(BOWER) $(TSLINT) $(REQUIRE) build.js \
+	$(shell find typings -name '*.d.ts')
 
 # quiet output, but allow us to look at what commands are being
 # executed by passing 'V=1' to make, without requiring temporarily
@@ -47,10 +48,11 @@ bower_components: $(BOWER) bower.json
 $(ALMOND): bower_components
 	touch -c $@
 
+# AMD-based browser/requirejs target
 build: $(LIB_SRCS) $(CONFIG) bower_components
 	@echo "  TS    $@"
 	$(TSLINT) -c .tslint.json $(LIB_SRCS)
-	$(TSC) $(TSFLAGS) -m amd --outDir build $(LIB_SRCS) || true
+	$(TSC) $(TSFLAGS) -m amd --outDir build $(LIB_SRCS)
 	cp -a $(MUSTACHEJS) $(QJS) $@
 	touch $@
 
@@ -64,16 +66,19 @@ $(RUNTIME): build-rt ./build-runtime.py
 	@echo "  RT    $@"
 	./build-runtime.py >$@
 
-lib: build $(LIB_SRCS) $(CONFIG) bower_components
+# commonjs-based node target.  JS is an endless sea of sadness - we
+# need to run tsc twice, once for node's commonjs require style, and
+# another time for require.js and the browser.
+lib: $(LIB_SRCS) $(CONFIG)
 	@echo "  TS    $@"
-	$(TSC) $(TSFLAGS) -d -m commonjs --outDir lib $(LIB_SRCS) || true
+	$(TSC) $(TSFLAGS) -d -m commonjs --outDir lib $(LIB_SRCS)
 	touch $@
 
 $(LIB): build.js build $(RUNTIME) $(REQUIRE) $(ALMOND)
 	@echo "  R.JS  $@"
 	$(REQUIRE) -o $<
 
-$(LIB_MIN): build_min.js src $(REQUIRE) $(ALMOND)
+$(LIB_MIN): build_min.js build $(REQUIRE) $(ALMOND)
 	@echo "  R.JS  $@"
 	$(REQUIRE) -o $<
 
