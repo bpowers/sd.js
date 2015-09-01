@@ -4,6 +4,10 @@
 
 'use strict';
 
+export interface Error {
+	error: string;
+}
+
 export interface NodeStatic {
 	new (el: Element): NodeStatic;
 }
@@ -12,6 +16,17 @@ export interface Node {
 	// constructor(el: Element): Node;
 	toXml(doc: XMLDocument, parent: Element): boolean;
 }
+
+export interface Builder<N extends Node> {
+	(el: Element): [N, Error];
+}
+
+export function PointBuilder(el: Element): [Point, Error] {
+	'use strict';
+	return [null, null];
+}
+
+let b: Builder<Point> = PointBuilder;
 
 export class Point implements Node {
 	X: number;

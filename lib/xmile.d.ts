@@ -1,9 +1,16 @@
+export interface Error {
+    error: string;
+}
 export interface NodeStatic {
     new (el: Element): NodeStatic;
 }
 export interface Node {
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
+export interface Builder<N extends Node> {
+    (el: Element): [N, Error];
+}
+export declare function PointBuilder(el: Element): [Point, Error];
 export declare class Point implements Node {
     X: number;
     Y: number;
