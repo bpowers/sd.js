@@ -1,9 +1,9 @@
 
-REQUIRE    ?= node_modules/.bin/r.js
-BOWER      ?= node_modules/.bin/bower
-TSLINT     ?= node_modules/.bin/tslint
-TSC        ?= node_modules/.bin/tsc
-MOCHA      ?= node_modules/.bin/mocha
+REQUIRE   ?= node_modules/.bin/r.js
+BOWER     ?= node_modules/.bin/bower
+TSLINT    ?= node_modules/.bin/tslint
+TSC       ?= node_modules/.bin/tsc
+MOCHA     ?= node_modules/.bin/mocha
 
 ALMOND     = bower_components/almond
 QJS        = bower_components/q/q.js
@@ -26,14 +26,17 @@ TARGETS    = $(LIB) $(LIB_MIN) lib
 CONFIG     = Makefile $(TSC) $(BOWER) $(TSLINT) $(REQUIRE) build.js \
 	$(shell find typings -name '*.d.ts')
 
-QUIET_RJS =
+RTEST_DIR  = test/test-models
+RTEST_CMD  = $(RTEST_DIR)/regression-test.py
+
+QUIET_RJS  =
 
 # quiet output, but allow us to look at what commands are being
 # executed by passing 'V=1' to make, without requiring temporarily
 # editing the Makefile.
 ifneq ($V, 1)
 MAKEFLAGS += -s
-QUIET_RJS = >/dev/null
+QUIET_RJS  = >/dev/null
 endif
 
 # GNU make, you are the worst.
@@ -97,11 +100,19 @@ $(LIB_MIN): build_min.js build $(REQUIRE) $(ALMOND)
 	@echo "  R.JS  $@"
 	$(REQUIRE) -o $< $(QUIET_RJS)
 
+$(RTEST_CMD): $(RTEST_DIR) .gitmodules
+	@echo "  GIT   $<"
+	git submodule update --init
+	touch $@
+
 test: lib node_modules $(TEST_SRCS)
 	@echo "  TEST"
 	$(TSLINT) -c .tslint.json $(TEST_SRCS)
 	$(TSC) $(TSFLAGS) -d -m commonjs --outDir test $(TEST_SRCS)
 	$(MOCHA)
+
+rtest: lib $(RTEST_CMD)
+	./$(RTEST_CMD) ./bin/mdl.js $(RTEST_DIR)
 
 clean:
 	rm -rf build build-rt
@@ -110,4 +121,4 @@ clean:
 distclean: clean
 	rm -rf node_modules bower_components
 
-.PHONY: all clean distclean test
+.PHONY: all clean distclean test rtest
