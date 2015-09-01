@@ -76,6 +76,9 @@ $(LIB_MIN): build_min.js src $(REQUIRE) $(ALMOND)
 
 clean:
 	rm -rf build build-rt
-	find . -name '*~' | xargs rm
+	find . -name '*~' | xargs rm -f
 
-.PHONY: all clean
+distclean: clean
+	rm -rf node_modules bower_components
+
+.PHONY: all clean distclean
