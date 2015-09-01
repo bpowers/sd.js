@@ -8,7 +8,7 @@ compatability with isee software.  This document contains notes on
 where [sd.js](https://github.com/sdlabs/sd.js) and
 [libsd](https://github.com/sdlabs/libsd) diverge from the spec.
 
-[Includes](http://docs.oasis-open.org/xmile/xmile/v1.0/cos01/xmile-v1.0-cos01.html)
+[Includes](http://docs.oasis-open.org/xmile/xmile/v1.0/cos01/xmile-v1.0-cos01.html#_Toc426543489)
 --------
 
 Includes will eventually be implemented.  There are open questions as
