@@ -105,7 +105,7 @@ $(RTEST_CMD): $(RTEST_DIR) .gitmodules
 	git submodule update --init
 	touch $@
 
-test: lib node_modules $(TEST_SRCS)
+test check: lib node_modules $(TEST_SRCS)
 	@echo "  TEST"
 	$(TSLINT) -c .tslint.json $(TEST_SRCS)
 	$(TSC) $(TSFLAGS) -d -m commonjs --outDir test $(TEST_SRCS)
@@ -121,4 +121,8 @@ clean:
 distclean: clean
 	rm -rf node_modules bower_components
 
-.PHONY: all clean distclean test rtest
+bump-tests: $(RTEST_CMD)
+	cd $(RTEST_DIR) && git pull origin master
+	git commit $(RTEST_DIR) -m 'test: bump test-models'
+
+.PHONY: all clean distclean test rtest check bump-tests
