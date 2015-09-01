@@ -31,7 +31,7 @@ export declare class Lexer {
     _tpeek: Token;
     constructor(text: string);
     peek(): Token;
-    _getChar(): string;
+    _nextRune(): string;
     _skipWhitespace(): void;
     _fastForward(num: number): void;
     _lexIdentifier(startPos: SourceLoc): Token;

@@ -882,7 +882,7 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
                 this._tpeek = this.nextTok();
             return this._tpeek;
         };
-        Lexer.prototype._getChar = function () {
+        Lexer.prototype._nextRune = function () {
             if (this._pos < this._len - 1) {
                 this._pos += 1;
                 this._peek = this.text[this._pos];
@@ -910,7 +910,7 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
                 }
                 if (!isWhitespace(this._peek))
                     break;
-            } while (this._getChar() !== null);
+            } while (this._nextRune() !== null);
         };
         Lexer.prototype._fastForward = function (num) {
             this._pos += num;
@@ -954,9 +954,9 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
             var startLoc = new SourceLoc(this._line, start);
             switch (peek) {
                 case '=':
-                    this._getChar();
+                    this._nextRune();
                     if (this._peek === '=') {
-                        this._getChar();
+                        this._nextRune();
                         return new Token('==', 0, startLoc, new SourceLoc(this._line, start + 2));
                     }
                     else {
@@ -970,7 +970,7 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
                 return this._lexNumber(startLoc);
             if (isIdentifierStart(peek))
                 return this._lexIdentifier(startLoc);
-            this._getChar();
+            this._nextRune();
             return new Token(peek, 0, startLoc, new SourceLoc(this._line, start + 1));
         };
         return Lexer;

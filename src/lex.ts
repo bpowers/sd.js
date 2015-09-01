@@ -102,7 +102,7 @@ export class Lexer {
 		return this._tpeek;
 	}
 
-	_getChar(): string {
+	_nextRune(): string {
 		if (this._pos < this._len - 1) {
 			this._pos += 1;
 			this._peek = this.text[this._pos];
@@ -131,7 +131,7 @@ export class Lexer {
 			}
 			if (!isWhitespace(this._peek))
 				break;
-		} while (this._getChar() !== null);
+		} while (this._nextRune() !== null);
 	}
 
 	_fastForward(num: number): void {
@@ -192,10 +192,10 @@ export class Lexer {
 		// single char tok.
 		switch (peek) {
 		case '=':
-			this._getChar();
+			this._nextRune();
 			if (this._peek === '=') {
 				// eat the second '=', since we matched.
-				this._getChar();
+				this._nextRune();
 				return new Token(
 					'==', TokenType.TOKEN, startLoc,
 					new SourceLoc(this._line, start + 2));
@@ -217,7 +217,7 @@ export class Lexer {
 
 		// if we haven't matched by here, it must be a simple one char
 		// token.  Eat that char and return the new token object.
-		this._getChar();
+		this._nextRune();
 
 		return new Token(
 			peek, TokenType.TOKEN, startLoc,
