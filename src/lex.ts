@@ -30,15 +30,25 @@ export const RESERVED = set('if', 'then', 'else');
 
 function isWhitespace(ch: string): boolean {
 	'use strict';
-	return (/\s/).test(ch);
+	return /\s/.test(ch);
 }
 function isNumberStart(ch: string): boolean {
 	'use strict';
-	return (/[\d\.]/).test(ch);
+	return /[\d\.]/.test(ch);
 }
+// For use in isIdentifierStart.  See below.
+function isOperator(ch: string): boolean {
+	'use strict';
+	return /[=><\[\]\(\)\^\+\-\*\/,]/.test(ch);
+}
+// It is the year 2015, but JS regex's don't support Unicode. The \w
+// character class only matches Latin1.  Work around this by sort of
+// fuzzing this test - instead of checking for \w, check that we're
+// not an operator or number or space.  I think this should be ok, but
+// I can also imagine it missing something important.
 function isIdentifierStart(ch: string): boolean {
 	'use strict';
-	return !isNumberStart(ch) && (/[\w_\"]/).test(ch);
+	return !isNumberStart(ch) && !isWhitespace(ch) && (/[_\"]/.test(ch) || !isOperator(ch));
 }
 
 export class SourceLoc {
@@ -111,11 +121,11 @@ export class Lexer {
 
 	_nextRune(): string {
 		if (this._pos < this._len - 1) {
-			this._pos += 1;
-			this._peek = this.text[this._pos];
+			this._peek = this.text[this._pos+1];
 		} else {
 			this._peek = null;
 		}
+		this._pos++;
 
 		return this._peek;
 	}
@@ -152,15 +162,16 @@ export class Lexer {
 
 	_lexIdentifier(startPos: SourceLoc): Token {
 		const quoted = this._peek === '"';
-		if (quoted)
-			this._nextRune();
 
 		let line = this._line;
 		let pos = this._pos;
 
+		if (quoted)
+			this._nextRune();
+
 		let r: string;
 		while ((r = this._nextRune())) {
-			if (/[\w\d_]/.test(r))
+			if ((isIdentifierStart(r) && r !== '"') || /\d/.test(r))
 				continue;
 			if (quoted) {
 				if (r === '"') {
@@ -175,25 +186,24 @@ export class Lexer {
 		}
 
 		let len = this._pos - pos;
-		let ident = this.text.substring(pos, len);
+		let ident = this.text.substring(pos, pos+len);
 
 		let type = TokenType.IDENT;
 
 		if (ident in RESERVED) {
 			type = TokenType.RESERVED;
 		} else if (ident in OP) {
-			type = TokenType.IDENT;
+			type = TokenType.TOKEN;
 			ident = OP[ident];
 		}
-		return new Token(
-			ident, type, startPos,
-			new SourceLoc(startPos.line, startPos.pos + len));
+
+		return new Token(ident, type, startPos, startPos.off(len));
 	}
 
 	_lexNumber(startPos: SourceLoc): Token {
 		// we do a .toLowerCase before the string gets to here, so we
 		// don't need to match for lower and upper cased 'e's.
-		const numStr = /\d*(\.\d*)?(e(\d+(\.\d*)?)?)?/.exec(this.text.substring(this._pos))[0];
+		const numStr = /\d*(\.\d*)?(e(\d?(\.\d*)?)?)?/.exec(this.text.substring(this._pos))[0];
 		const len = numStr.length;
 		this._fastForward(len);
 		return new Token(
@@ -258,7 +268,7 @@ export class Lexer {
 			break;
 		}
 
-		let op = this.text.substring(pos, len);
+		let op = this.text.substring(pos, pos+len);
 		// replace common multi-run ops with single-rune
 		// equivalents.
 		switch (op) {

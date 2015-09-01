@@ -274,6 +274,9 @@ describe('lex', function() {
 			let count = 0;
 			let tok: Token;
 			while ((tok = lexer.nextTok())) {
+				let expected = t.out[count];
+				expect(tok.type).to.equal(expected.type);
+				expect(tok.tok).to.equal(expected.tok);
 				count++;
 			}
 			expect(count).to.equal(t.out.length);
