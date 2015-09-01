@@ -9,3 +9,5 @@ v8.log
 /bower_components
 /build
 /build-rt
+/test/*.js
+/test/*.d.ts

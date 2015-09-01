@@ -2,13 +2,22 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-import assert = require('chai').assert;
+/// <reference path="../typings/tsd.d.ts" />
+
+'use strict';
+
+/* tslint:disable: align:arguments */
+/* tslint:disable: typedef:call-signature */
+/* tslint:disable: no-string-literal */
+
+import chai = require('chai');
 
 import sd = require('../src/sd');
 import sd = require('../src/lex');
 
 import {set} from '../src/util';
 
+const assert = chai.assert;
 
 let suite: any = {};
 suite.identifierSet = function(test) {
@@ -19,13 +28,13 @@ suite.identifierSet = function(test) {
 	test.ok('value' in iSet, 'has "value"');
 	test.ok('flow' in iSet, 'has "flow"');
 	test.done();
-}
+};
 
 suite.lex = function(test) {
-	const testLex = function(str, expected, types) {
-		var scanner = new lex.Scanner(str);
-		var tok;
-		var i = 0;
+	function testLex(str, expected, types) {
+		let scanner = new lex.Scanner(str);
+		let tok;
+		let i = 0;
 
 		while ((tok = scanner.getToken())) {
 			test.ok(tok.tok === expected[i],
@@ -37,9 +46,10 @@ suite.lex = function(test) {
 	}
 	testLex('IF value THEN MAX(flow, 0) ELSE flow',
 		['if', 'value', 'then', 'max', '(', 'flow', ',', 0, ')', 'else', 'flow'],
-		[lex.RESERVED, lex.IDENT, lex.RESERVED, lex.IDENT,
-		 lex.TOKEN, lex.IDENT, lex.TOKEN, lex.NUMBER, lex.TOKEN,
-		 lex.RESERVED, lex.IDENT]);
+		[
+			lex.RESERVED, lex.IDENT, lex.RESERVED, lex.IDENT,
+			lex.TOKEN, lex.IDENT, lex.TOKEN, lex.NUMBER, lex.TOKEN,
+			lex.RESERVED, lex.IDENT]);
 
 	// we do a .toLowerCase internally, so both of these work.
 	testLex('5E4', [50000], [lex.NUMBER]);
@@ -51,8 +61,10 @@ suite.lex = function(test) {
 
 	testLex('pulse(size_of_1_time_lynx_harvest, 4, 1e3)',
 		['pulse', '(', 'size_of_1_time_lynx_harvest', ',', 4, ',', 1000, ')'],
-		[lex.IDENT, lex.TOKEN, lex.IDENT, lex.TOKEN, lex.NUMBER,
-		 lex.TOKEN, lex.NUMBER, lex.TOKEN])
+		[
+			lex.IDENT, lex.TOKEN, lex.IDENT, lex.TOKEN, lex.NUMBER,
+			lex.TOKEN, lex.NUMBER, lex.TOKEN,
+		]);
 
 
 	test.done();
@@ -60,7 +72,7 @@ suite.lex = function(test) {
 
 suite.lynx1 = function(test) {
 	dataStore.getFile('test/data/lynx-hares2.xml', function(err, data) {
-		var model;
+		let model;
 
 		test.ok(!err, 'read file');
 		if (err) {
@@ -84,49 +96,49 @@ suite.lynx1 = function(test) {
 			test.ok(Object.keys(aSet).length === anArray.length,
 				'num of vars ' + anArray.length +
 				' (expected: ' + Object.keys(aSet).length + ')');
-			var i;
-			for (i = 0; i < anArray.length; ++i) {
+			for (let i = 0; i < anArray.length; ++i) {
 				test.ok(anArray[i].name in aSet,
 					'set contains: ' + anArray[i].name);
 			}
 		}
 
-		var len = Object.keys(model.vars).length;
+		let len = Object.keys(model.vars).length;
 		test.ok(len === 14, 'vars len 14 (' + len + ')');
 
-		const expectedInitials = set('hares', 'lynx',
-					     'size_of_1_time_lynx_harvest', 'hare_birth_fraction',
-					     'area', 'lynx_birth_fraction');
-		//verifyVars(expectedInitials, model.initials);
+		const expectedInitials = set(
+			'hares', 'lynx',
+			'size_of_1_time_lynx_harvest', 'hare_birth_fraction',
+			'area', 'lynx_birth_fraction');
+		// verifyVars(expectedInitials, model.initials);
 
 		const expectedStocks = expectedInitials;
-		//verifyVars(expectedStocks, model.stocks);
+		// verifyVars(expectedStocks, model.stocks);
 
-		expectedFlows = set('hare_births', 'hare_deaths',
-				    'lynx_births', 'lynx_deaths',
-				    'one_time_lynx_harvest',
-				    'hare_density',
-				    'lynx_death_fraction', 'hares_killed_per_lynx');
-		//verifyVars(expectedFlows, model.flows);
+		expectedFlows = set(
+			'hare_births', 'hare_deaths',
+			'lynx_births', 'lynx_deaths',
+			'one_time_lynx_harvest',
+			'hare_density',
+			'lynx_death_fraction', 'hares_killed_per_lynx');
+		// verifyVars(expectedFlows, model.flows);
 
 		function pr(n, l) {
 			console.log(n + ':');
-			var i;
-			for (i = 0; i < l.length; i++)
+			for (let i = 0; i < l.length; i++)
 				console.log('    ' + l[i].name);
 		}
-		//pr('initial', model.initials);
-		//pr('flows', model.flows);
-		//pr('stocks', model.stocks);
+		// pr('initial', model.initials);
+		// pr('flows', model.flows);
+		// pr('stocks', model.stocks);
 
 		test.done();
 	});
 };
 
 // check the variable dependencies used by the sorting routines.
-suite['var - deps'] = function(test) {
+suite['let - deps'] = function(test) {
 	dataStore.getFile('test/data/lynx-hares2.xml', function(err, data) {
-		var model;
+		let model;
 
 		test.ok(!err, 'read file');
 		if (err) {
@@ -142,7 +154,7 @@ suite['var - deps'] = function(test) {
 
 		function verifyDeps(name, depArray) {
 			if (!model.vars.hasOwnProperty(name)) {
-				test.ok(false, 'dep verify failed, unknown var ' + name);
+				test.ok(false, 'dep verify failed, unknown let ' + name);
 				return;
 			}
 			const deps = model.vars[name].getDeps();
@@ -152,7 +164,7 @@ suite['var - deps'] = function(test) {
 				name +  ' expected len ' + depArray.length +
 				', got ' + depsLen);
 
-			var i;
+			let i;
 			for (i = 0; i < depArray.length; ++i) {
 				test.ok(depArray[i] in deps,
 					name + ' has dep ' + depArray[i]);
@@ -169,9 +181,9 @@ suite['var - deps'] = function(test) {
 	});
 };
 
-suite['var - less than'] = function(test){
+suite['let - less than'] = function(test){
 	dataStore.getFile('test/data/lynx-hares2.xml', function(err, data) {
-		var model;
+		let model;
 
 		test.ok(!err, 'read file');
 		if (err) {
@@ -195,9 +207,9 @@ suite['var - less than'] = function(test){
 	});
 };
 
-suite['var - tables'] = function(test){
+suite['let - tables'] = function(test){
 	dataStore.getFile('test/data/lynx-hares2.xml', function(err, data) {
-		var model;
+		let model;
 
 		test.ok(!err, 'read file');
 		if (err) {
@@ -214,7 +226,7 @@ suite['var - tables'] = function(test){
 
 		test.ok(Object.keys(tables).length === 2, 'tables len 2');
 
-		var table;
+		let table;
 		function expect(index, val) {
 			const result = util.lookup(table, index);
 			test.ok(result === val,
@@ -238,9 +250,9 @@ suite['var - tables'] = function(test){
 	});
 };
 
-suite['var - equations'] = function(test){
+suite['let - equations'] = function(test){
 	dataStore.getFile('test/data/lynx-hares2.xml', function(err, data) {
-		var model;
+		let model;
 
 		test.ok(!err, 'read file');
 		if (err) {
@@ -256,11 +268,11 @@ suite['var - equations'] = function(test){
 		function expect(name, eq) {
 			const modelEq = model.vars[name].equation();
 			test.ok(eq === modelEq, 'equation for ' + name +
-				' expected "' + eq + '" got "' + modelEq + '"')
+				' expected "' + eq + '" got "' + modelEq + '"');
 		}
 
 		// this is a stock, it needs to update next.
-		//expect('lynx', '');
+		// expect('lynx', '');
 
 		test.done();
 	});
@@ -269,26 +281,25 @@ suite['var - equations'] = function(test){
 suite.sort = function(test) {
 	// wrap a list of primitive numbers in an object that provides
 	// a lessThan method implementation.
-	function wrapNum() {
+	function wrapNum(): any[] {
 		function num(n) {
 			this.n = n;
 		}
 		num.prototype.lessThan = function(that) {
-			return this.n < that.n
+			return this.n < that.n;
 		};
-		var result = [];
-		var i;
-		for (i = 0; i < arguments.length; i++)
+		let result: num[] = [];
+		for (let i = 0; i < arguments.length; i++)
 			result.push(new num(arguments[i]));
 		return result;
 	}
 	// its not comprehensive, but its something.
-	var toSort   = wrapNum(7, 5, 5, 7, 2, 1);
+	let toSort   = wrapNum(7, 5, 5, 7, 2, 1);
 	const sorted = wrapNum(1, 2, 5, 5, 7, 7);
 
 	// sorts in place;
 	util.sort(toSort);
-	var i;
+	let i;
 	for (i = 0; i < sorted.length; ++i) {
 		test.ok(sorted[i].n === toSort[i].n,
 			sorted[i].n + ' === ' + toSort[i].n);
@@ -298,7 +309,7 @@ suite.sort = function(test) {
 };
 
 suite.lookup = function(test) {
-	var table;
+	let table;
 	function expect(index, val) {
 		const result = util.lookup(table, index);
 		test.ok(result === val,
@@ -334,9 +345,9 @@ suite.lookup = function(test) {
 	test.done();
 };
 
-suite['var - equations 2'] = function(test){
+suite['let - equations 2'] = function(test){
 	dataStore.getFile('test/data/pop.xmile', function(err, data) {
-		var model;
+		let model;
 
 		test.ok(!err, 'read file');
 		if (err) {
@@ -352,7 +363,7 @@ suite['var - equations 2'] = function(test){
 		function expect(name, eq) {
 			const modelEq = model.vars[name].eqn;
 			test.ok(eq === modelEq, 'equation for ' + name +
-				' expected "' + eq + '" got "' + modelEq + '"')
+				' expected "' + eq + '" got "' + modelEq + '"');
 		}
 
 		expect('births', 'population * birth_rate');
@@ -360,6 +371,3 @@ suite['var - equations 2'] = function(test){
 		test.done();
 	});
 };
-
-return suite;
-});

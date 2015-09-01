@@ -12,8 +12,10 @@ MUSTACHEJS = bower_components/mustache.js/mustache.js
 TSFLAGS    = -t es5 --noImplicitAny --removeComments
 
 RUNTIME    = src/runtime.ts
+# ensure runtime is only listed once
 LIB_SRCS   = $(filter-out $(RUNTIME), $(wildcard src/*.ts)) $(RUNTIME)
 RT_SRCS    = $(wildcard runtime/*.ts)
+TEST_SRCS  = $(wildcard test/*.ts)
 
 LIB        = sd.js
 LIB_MIN    = sd.min.js
@@ -24,18 +26,30 @@ TARGETS    = $(LIB) $(LIB_MIN) lib
 CONFIG     = Makefile $(TSC) $(BOWER) $(TSLINT) $(REQUIRE) build.js \
 	$(shell find typings -name '*.d.ts')
 
+QUIET_RJS =
+
 # quiet output, but allow us to look at what commands are being
 # executed by passing 'V=1' to make, without requiring temporarily
 # editing the Makefile.
 ifneq ($V, 1)
 MAKEFLAGS += -s
+QUIET_RJS = >/dev/null
 endif
+
+# GNU make, you are the worst.
+.SUFFIXES:
+%: %,v
+%: RCS/%,v
+%: RCS/%
+%: s.%
+%: SCCS/s.%
+
 
 all: $(TARGETS)
 
 node_modules: package.json
 	@echo "  NPM"
-	npm install --quiet
+	npm install --silent
 	touch -c $@
 
 $(TSC) $(BOWER) $(TSLINT) $(REQUIRE): node_modules
@@ -43,7 +57,7 @@ $(TSC) $(BOWER) $(TSLINT) $(REQUIRE): node_modules
 
 bower_components: $(BOWER) bower.json
 	@echo "  BOWER"
-	bower install
+	bower install --silent
 	touch -c $@
 
 $(ALMOND): bower_components
@@ -77,14 +91,16 @@ lib: $(LIB_SRCS) $(CONFIG)
 
 $(LIB): build.js build $(RUNTIME) $(REQUIRE) $(ALMOND)
 	@echo "  R.JS  $@"
-	$(REQUIRE) -o $<
+	$(REQUIRE) -o $< $(QUIET_RJS)
 
 $(LIB_MIN): build_min.js build $(REQUIRE) $(ALMOND)
 	@echo "  R.JS  $@"
-	$(REQUIRE) -o $<
+	$(REQUIRE) -o $< $(QUIET_RJS)
 
-test: lib node_modules
+test: lib node_modules $(TEST_SRCS)
 	@echo "  TEST"
+	$(TSLINT) -c .tslint.json $(TEST_SRCS)
+	$(TSC) $(TSFLAGS) -d -m commonjs --outDir test $(TEST_SRCS)
 	$(MOCHA)
 
 clean:
