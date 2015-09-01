@@ -305,14 +305,7 @@ export function identifierSet(str: string): StringSet {
 	let commentDepth = 0;
 	let tok: Token;
 	while ((tok = lexer.nextTok())) {
-		if (tok.tok === '{') {
-			commentDepth++;
-		} else if (tok.tok === '}') {
-			commentDepth--;
-		} else if (commentDepth > 0) {
-			// if inside of a {} delimited comment, skip the token
-			continue;
-		} else if (tok.type === TokenType.IDENT && !(tok.tok in builtins)) {
+		if (tok.type === TokenType.IDENT && !(tok.tok in builtins)) {
 			result[tok.tok] = true;
 		}
 	}

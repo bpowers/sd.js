@@ -1039,16 +1039,7 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
         var commentDepth = 0;
         var tok;
         while ((tok = lexer.nextTok())) {
-            if (tok.tok === '{') {
-                commentDepth++;
-            }
-            else if (tok.tok === '}') {
-                commentDepth--;
-            }
-            else if (commentDepth > 0) {
-                continue;
-            }
-            else if (tok.type === 1 && !(tok.tok in common_1.builtins)) {
+            if (tok.type === 1 && !(tok.tok in common_1.builtins)) {
                 result[tok.tok] = true;
             }
         }
