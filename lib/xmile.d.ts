@@ -1,18 +1,30 @@
-export declare class Point {
+export interface NodeStatic {
+    new (el: Element): NodeStatic;
+}
+export interface Node {
+    toXml(doc: XMLDocument, parent: Element): boolean;
+}
+export declare class Point implements Node {
     X: number;
     Y: number;
+    constructor(el: Element);
+    toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Size {
+export declare class Size implements Node {
     Width: number;
     Height: number;
+    constructor(el: Element);
+    toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Rect implements Point, Size {
+export declare class Rect implements Point, Size, Node {
     X: number;
     Y: number;
     Width: number;
     Height: number;
+    constructor(el: Element);
+    toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class File {
+export declare class File implements Node {
     version: string;
     level: number;
     header: Header;
@@ -22,32 +34,42 @@ export declare class File {
     behavior: Behavior;
     style: Style;
     models: Model[];
+    constructor(el: Element);
+    toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class SimSpec {
+export declare class SimSpec implements Node {
     timeUnits: string;
     start: number;
     stop: number;
     dt: number;
     savestep: number;
     method: string;
+    constructor(el: Element);
+    toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Unit {
+export declare class Unit implements Node {
     name: string;
     eqn: string;
     alias: string;
+    constructor(el: Element);
+    toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Header {
+export declare class Header implements Node {
     options: Options;
     name: string;
     uuid: string;
     vendor: string;
     product: string;
+    constructor(el: Element);
+    toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Dimension {
+export declare class Dimension implements Node {
     name: string;
     size: string;
+    constructor(el: Element);
+    toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Options {
+export declare class Options implements Node {
     namespaces: string[];
     usesConveyor: boolean;
     usesQueue: boolean;
@@ -59,22 +81,32 @@ export declare class Options {
     usesOutputs: boolean;
     usesInputs: boolean;
     usesAnnotations: boolean;
+    constructor(el: Element);
+    toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Behavior {
+export declare class Behavior implements Node {
     allNonNegative: boolean;
     stockNonNegative: boolean;
     flowNonNegative: boolean;
+    constructor(el: Element);
+    toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Style {
+export declare class Style implements Node {
+    constructor(el: Element);
+    toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Data {
+export declare class Data implements Node {
+    constructor(el: Element);
+    toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Model {
+export declare class Model implements Node {
     name: string;
     variables: Variable[];
     views: View[];
+    constructor(el: Element);
+    toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Variable {
+export declare class Variable implements Node {
     name: string;
     doc: string;
     eqn: string;
@@ -84,21 +116,31 @@ export declare class Variable {
     units: string;
     gf: GF;
     params: Connect[];
+    constructor(el: Element);
+    toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class View {
+export declare class View implements Node {
+    constructor(el: Element);
+    toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class GF {
+export declare class GF implements Node {
     discrete: boolean;
     xPoints: string;
     yPoints: string;
     xScale: Scale;
     yScale: Scale;
+    constructor(el: Element);
+    toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Scale {
+export declare class Scale implements Node {
     min: number;
     max: number;
+    constructor(el: Element);
+    toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Connect {
+export declare class Connect implements Node {
     to: string;
     from: string;
+    constructor(el: Element);
+    toXml(doc: XMLDocument, parent: Element): boolean;
 }
