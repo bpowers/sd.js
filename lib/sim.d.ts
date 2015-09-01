@@ -1,7 +1,6 @@
-/// <reference path="../bower_components/DefinitelyTyped/q/Q.d.ts" />
-/// <reference path="../bower_components/DefinitelyTyped/mustache/mustache.d.ts" />
+/// <reference path="../typings/tsd.d.ts" />
 import type = require('./type');
-import Q = require('../bower_components/q/q');
+import Q = require('q');
 export declare class TemplateContext {
     name: string;
     className: string;

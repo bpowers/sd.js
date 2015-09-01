@@ -2,11 +2,7 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-/// <reference path="../bower_components/DefinitelyTyped/q/Q.d.ts" />
-/// <amd-dependency path="../bower_components/q/q" />
-
-/// <reference path="../bower_components/DefinitelyTyped/mustache/mustache.d.ts" />
-/// <amd-dependency path="../bower_components/mustache.js/mustache" />
+/// <reference path="../typings/tsd.d.ts" />
 
 'use strict';
 
@@ -15,8 +11,8 @@ import type = require('./type');
 import vars = require('./vars');
 import runtime = require('./runtime');
 
-import Q = require('../bower_components/q/q');
-import Mustache = require('../bower_components/mustache.js/mustache');
+import Q = require('q');
+import Mustache = require('mustache');
 
 // whether we map names -> offsets in a Float64Array, or use names
 // as object property lookups.  With DEBUG = true, equations are

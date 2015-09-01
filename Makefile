@@ -1,24 +1,26 @@
 
-REQUIRE  ?= node_modules/.bin/r.js
-BOWER    ?= node_modules/.bin/bower
-TSLINT   ?= node_modules/.bin/tslint
-TSC      ?= node_modules/.bin/tsc
+REQUIRE    ?= node_modules/.bin/r.js
+BOWER      ?= node_modules/.bin/bower
+TSLINT     ?= node_modules/.bin/tslint
+TSC        ?= node_modules/.bin/tsc
 
-ALMOND   ?= bower_components/almond
+ALMOND     = bower_components/almond
+QJS        = bower_components/q/q.js
+MUSTACHEJS = bower_components/mustache.js/mustache.js
 
-TSFLAGS  = -t es5 --noImplicitAny --removeComments
+TSFLAGS    = -t es5 --noImplicitAny --removeComments
 
-RUNTIME  = src/runtime.ts
-LIB_SRCS = $(filter-out $(RUNTIME), $(wildcard src/*.ts)) $(RUNTIME)
-RT_SRCS  = $(wildcard runtime/*.ts)
+RUNTIME    = src/runtime.ts
+LIB_SRCS   = $(filter-out $(RUNTIME), $(wildcard src/*.ts)) $(RUNTIME)
+RT_SRCS    = $(wildcard runtime/*.ts)
 
-LIB      = sd.js
-LIB_MIN  = sd.min.js
+LIB        = sd.js
+LIB_MIN    = sd.min.js
 
-TARGETS  = $(LIB)
+TARGETS    = $(LIB)
 # make sure we recompile when the Makefile (and associated
 # CFLAGS/LDFLAGS change) or any project files are changed.
-CONFIG   = Makefile $(TSC) $(BOWER) $(TSLINT) $(REQUIRE) build.js
+CONFIG     = Makefile $(TSC) $(BOWER) $(TSLINT) $(REQUIRE) build.js
 
 # quiet output, but allow us to look at what commands are being
 # executed by passing 'V=1' to make, without requiring temporarily
@@ -49,6 +51,7 @@ build: $(LIB_SRCS) $(CONFIG) bower_components
 	@echo "  TS    $@"
 	$(TSLINT) -c .tslint.json $(LIB_SRCS)
 	$(TSC) $(TSFLAGS) -m amd --outDir build $(LIB_SRCS) || true
+	cp -a $(MUSTACHEJS) $(QJS) $@
 	touch $@
 
 build-rt: $(RT_SRCS) $(CONFIG)

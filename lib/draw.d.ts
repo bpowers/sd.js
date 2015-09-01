@@ -1,5 +1,4 @@
-/// <reference path="../bower_components/DefinitelyTyped/hammerjs/hammerjs.d.ts" />
-/// <reference path="../bower_components/DefinitelyTyped/snapsvg/snapsvg.d.ts" />
+/// <reference path="../typings/tsd.d.ts" />
 import type = require('./type');
 export interface EntStatic {
     new (drawing: Drawing, element: any): Ent;

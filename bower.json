@@ -24,7 +24,6 @@
   ],
   "dependencies": {},
   "devDependencies": {
-    "DefinitelyTyped": "latest",
     "Snap.svg": "~0.4.1",
     "almond": "^0.3.1",
     "hammerjs": "^2.0.4",
