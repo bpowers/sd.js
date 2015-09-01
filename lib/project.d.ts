@@ -3,9 +3,9 @@ export declare class Project implements type.Project {
     name: string;
     main: type.Module;
     valid: boolean;
-    xmile: any;
+    xmile: XMLDocument;
     timespec: type.TimeSpec;
     models: type.ModelSet;
-    constructor(xmileDoc: any);
+    constructor(xmileDoc: XMLDocument);
     model(name?: string): any;
 }

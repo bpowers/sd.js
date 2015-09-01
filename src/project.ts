@@ -13,17 +13,20 @@ import {normalizeTimespec} from './util';
 import {Model} from './model';
 import {Module} from './vars';
 
-// TODO(bp) macro support/warnings
-
+/**
+ * Project is the container for a set of SD models.
+ *
+ * A single project may include models + non-model elements
+ */
 export class Project implements type.Project {
 	name: string;
 	main: type.Module;
 	valid: boolean;
-	xmile: any;
+	xmile: XMLDocument;
 	timespec: type.TimeSpec;
 	models: type.ModelSet;
 
-	constructor(xmileDoc: any) {
+	constructor(xmileDoc: XMLDocument) {
 		common.err = null;
 
 		if (!xmileDoc || xmileDoc.getElementsByTagName('parsererror').length !== 0) {
@@ -37,7 +40,7 @@ export class Project implements type.Project {
 		// text nodes in there, so just explictly look for xmile
 		let iNode: number;
 		for (iNode = 0; iNode < xmileDoc.childNodes.length &&
-			xmileDoc.childNodes.item(iNode).tagName !== 'xmile'; iNode++);
+			(<Element>xmileDoc.childNodes.item(iNode)).tagName !== 'xmile'; iNode++);
 
 		let xmile = jxon.build(xmileDoc.childNodes.item(iNode));
 
