@@ -8,6 +8,12 @@ compatability with isee software.  This document contains notes on
 where [sd.js](https://github.com/sdlabs/sd.js) and
 [libsd](https://github.com/sdlabs/libsd) diverge from the spec.
 
+[SimSpec](http://docs.oasis-open.org/xmile/xmile/v1.0/cos01/xmile-v1.0-cos01.html#_Toc426543481)
+---------
+
+A key feature of Vensim is savestep.  This is useful for many
+purposes, but not mentioned in the spec.
+
 [Includes](http://docs.oasis-open.org/xmile/xmile/v1.0/cos01/xmile-v1.0-cos01.html#_Toc426543489)
 --------
 
