@@ -8,4 +8,5 @@ export declare class Project implements type.Project {
     models: type.ModelSet;
     constructor(xmileDoc: XMLDocument);
     model(name?: string): any;
+    addDocument(xmileDoc: XMLDocument, isMain?: boolean): boolean;
 }

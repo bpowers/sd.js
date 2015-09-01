@@ -15903,19 +15903,36 @@ define('model',["require", "exports", './util', './vars', './draw', './sim'], fu
 // license that can be found in the LICENSE file.
 
 define('project',["require", "exports", './common', './jxon', './compat', './util', './model', './vars'], function (require, exports, common, jxon, compat, util_1, model_1, vars_1) {
+    function getXmileElement(xmileDoc) {
+        'use strict';
+        var i;
+        for (i = 0; i < xmileDoc.childNodes.length; i++) {
+            var node = xmileDoc.childNodes.item(i);
+            if (node.tagName === 'xmile')
+                return node;
+        }
+        return null;
+    }
     var Project = (function () {
         function Project(xmileDoc) {
             common.err = null;
+            this.valid = false;
+            this.addDocument(xmileDoc, true);
+        }
+        Project.prototype.model = function (name) {
+            if (!name)
+                name = 'main';
+            return this.models[name];
+        };
+        Project.prototype.addDocument = function (xmileDoc, isMain) {
+            if (isMain === void 0) { isMain = false; }
             if (!xmileDoc || xmileDoc.getElementsByTagName('parsererror').length !== 0) {
                 common.err = common.Errors.ERR_VERSION;
                 this.valid = false;
-                return;
+                return false;
             }
-            var iNode;
-            for (iNode = 0; iNode < xmileDoc.childNodes.length &&
-                xmileDoc.childNodes.item(iNode).tagName !== 'xmile'; iNode++)
-                ;
-            var xmile = jxon.build(xmileDoc.childNodes.item(iNode));
+            var xmileElement = getXmileElement(xmileDoc);
+            var xmile = jxon.build(xmileElement);
             if (!(xmile.model instanceof Array))
                 xmile.model = [xmile.model];
             for (var v in compat.vendors) {
@@ -15934,7 +15951,7 @@ define('project',["require", "exports", './common', './jxon', './compat', './uti
             this.timespec = xmile.sim_specs;
             if (!this.timespec) {
                 this.valid = false;
-                return;
+                return false;
             }
             util_1.normalizeTimespec(this.timespec);
             this.models = {};
@@ -15946,11 +15963,7 @@ define('project',["require", "exports", './common', './jxon', './compat', './uti
             }
             this.main = new vars_1.Module(this, null, { '@name': 'main' });
             this.valid = true;
-        }
-        Project.prototype.model = function (name) {
-            if (!name)
-                name = 'main';
-            return this.models[name];
+            return true;
         };
         return Project;
     })();

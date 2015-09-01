@@ -13,6 +13,20 @@ import {normalizeTimespec} from './util';
 import {Model} from './model';
 import {Module} from './vars';
 
+function getXmileElement(xmileDoc: XMLDocument): Element {
+	'use strict';
+	// in Chrome/Firefox, item 0 is xmile.  Under node's XML DOM
+	// item 0 is the <xml> prefix.  And I guess there could be
+	// text nodes in there, so just explictly look for xmile
+	let i: number;
+	for (i = 0; i < xmileDoc.childNodes.length; i++) {
+		let node = <Element>xmileDoc.childNodes.item(i);
+		if (node.tagName === 'xmile')
+			return node;
+	}
+	return null;
+}
+
 /**
  * Project is the container for a set of SD models.
  *
@@ -29,21 +43,29 @@ export class Project implements type.Project {
 	constructor(xmileDoc: XMLDocument) {
 		common.err = null;
 
+		this.valid = false;
+		this.addDocument(xmileDoc, true);
+	}
+
+	model(name?: string): any {
+		if (!name)
+			name = 'main';
+		return this.models[name];
+	}
+
+	// isMain should only be true when called from the constructor.
+	addDocument(xmileDoc: XMLDocument, isMain = false): boolean {
 		if (!xmileDoc || xmileDoc.getElementsByTagName('parsererror').length !== 0) {
 			common.err = common.Errors.ERR_VERSION;
 			this.valid = false;
-			return;
+			return false;
 		}
+		let xmileElement = getXmileElement(xmileDoc);
 
-		// in Chrome/Firefox, item 0 is xmile.  Under node's XML DOM
-		// item 0 is the <xml> prefix.  And I guess there could be
-		// text nodes in there, so just explictly look for xmile
-		let iNode: number;
-		for (iNode = 0; iNode < xmileDoc.childNodes.length &&
-			(<Element>xmileDoc.childNodes.item(iNode)).tagName !== 'xmile'; iNode++);
-
-		let xmile = jxon.build(xmileDoc.childNodes.item(iNode));
-
+		// finished with XMLDocument at this point, we now
+		// have a tree of native JS objects with a 1:1
+		// correspondence to the XMILE doc
+		let xmile = jxon.build(xmileElement);
 		if (!(xmile.model instanceof Array))
 			xmile.model = [xmile.model];
 
@@ -66,7 +88,7 @@ export class Project implements type.Project {
 		this.timespec = xmile.sim_specs;
 		if (!this.timespec) {
 			this.valid = false;
-			return;
+			return false;
 		}
 		normalizeTimespec(this.timespec);
 
@@ -80,11 +102,6 @@ export class Project implements type.Project {
 		}
 		this.main = new Module(this, null, {'@name': 'main'});
 		this.valid = true;
-	}
-
-	model(name?: string): any {
-		if (!name)
-			name = 'main';
-		return this.models[name];
+		return true;
 	}
 }
