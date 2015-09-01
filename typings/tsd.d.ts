@@ -1,3 +1,4 @@
+/// <reference path="chai/chai.d.ts" />
 /// <reference path="hammerjs/hammerjs.d.ts" />
 /// <reference path="mocha/mocha.d.ts" />
 /// <reference path="mustache/mustache.d.ts" />

@@ -11,3 +11,4 @@ v8.log
 /build-rt
 /test/*.js
 /test/*.d.ts
+/test/*.map

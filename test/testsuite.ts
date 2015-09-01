@@ -12,13 +12,14 @@
 
 import chai = require('chai');
 
-import sd = require('../src/sd');
-import sd = require('../src/lex');
+import sd = require('../lib/sd');
+import lex = require('../lib/lex');
 
-import {set} from '../src/util';
+import {set} from '../lib/util';
 
 const assert = chai.assert;
 
+/*
 let suite: any = {};
 suite.identifierSet = function(test) {
 	const iSet = lex.identifierSet('IF value THEN MAX(flow, 0) ELSE flow');
@@ -371,3 +372,4 @@ suite['let - equations 2'] = function(test){
 		test.done();
 	});
 };
+*/

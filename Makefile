@@ -9,7 +9,7 @@ ALMOND     = bower_components/almond
 QJS        = bower_components/q/q.js
 MUSTACHEJS = bower_components/mustache.js/mustache.js
 
-TSFLAGS    = -t es5 --noImplicitAny --removeComments
+TSFLAGS    = -t es5 --noImplicitAny --removeComments --sourceMap
 
 RUNTIME    = src/runtime.ts
 # ensure runtime is only listed once

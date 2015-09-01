@@ -49,16 +49,23 @@ export class SourceLoc {
 }
 
 export class Token {
-	tok: string|number;
+	tok: string;
 	type: TokenType;
 	startLoc: SourceLoc;
 	endLoc: SourceLoc;
 
-	constructor(tok: string|number, type: TokenType, startLoc: SourceLoc, endLoc: SourceLoc) {
+	constructor(tok: string, type: TokenType, startLoc?: SourceLoc, endLoc?: SourceLoc) {
 		this.tok = tok;
 		this.type = type;
 		this.startLoc = startLoc;
 		this.endLoc = endLoc;
+	}
+
+	get value(): number {
+		if (this.type !== TokenType.NUMBER)
+			return undefined;
+
+		return parseFloat(this.tok);
 	}
 }
 
@@ -137,10 +144,9 @@ export class Scanner {
 		// don't need to match for lower and upper cased 'e's.
 		const numStr = /\d*(\.\d*)?(e(\d+(\.\d*)?)?)?/.exec(this.text.substring(this._pos))[0];
 		const len = numStr.length;
-		const num = parseFloat(numStr);
 		this._fastForward(len);
 		return new Token(
-			num, TokenType.NUMBER, startPos,
+			numStr, TokenType.NUMBER, startPos,
 			new SourceLoc(startPos.line, startPos.pos + len));
 	}
 

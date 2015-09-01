@@ -854,6 +854,15 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
             this.startLoc = startLoc;
             this.endLoc = endLoc;
         }
+        Object.defineProperty(Token.prototype, "value", {
+            get: function () {
+                if (this.type !== 3)
+                    return undefined;
+                return parseFloat(this.tok);
+            },
+            enumerable: true,
+            configurable: true
+        });
         return Token;
     })();
     exports.Token = Token;
@@ -919,9 +928,8 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
         Scanner.prototype._lexNumber = function (startPos) {
             var numStr = /\d*(\.\d*)?(e(\d+(\.\d*)?)?)?/.exec(this.text.substring(this._pos))[0];
             var len = numStr.length;
-            var num = parseFloat(numStr);
             this._fastForward(len);
-            return new Token(num, 3, startPos, new SourceLoc(startPos.line, startPos.pos + len));
+            return new Token(numStr, 3, startPos, new SourceLoc(startPos.line, startPos.pos + len));
         };
         Scanner.prototype.getToken = function () {
             this._skipWhitespace();

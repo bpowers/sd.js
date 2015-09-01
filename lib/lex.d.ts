@@ -13,11 +13,12 @@ export declare class SourceLoc {
     off(n: number): SourceLoc;
 }
 export declare class Token {
-    tok: string | number;
+    tok: string;
     type: TokenType;
     startLoc: SourceLoc;
     endLoc: SourceLoc;
-    constructor(tok: string | number, type: TokenType, startLoc: SourceLoc, endLoc: SourceLoc);
+    constructor(tok: string, type: TokenType, startLoc?: SourceLoc, endLoc?: SourceLoc);
+    value: number;
 }
 export declare class Scanner {
     text: string;
