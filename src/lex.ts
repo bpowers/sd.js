@@ -69,23 +69,30 @@ export class Token {
 	}
 }
 
-export class Scanner {
+// TODO(bp) better errors
+export class Lexer {
 	text: string;
-	textOrig: string;
+	orig: string; // keep original string for error diagnostics
+
 	_len: number;
 	_pos: number;
-	_peek: string;
 	_line: number;
-	_lineStart: number;
+	_lstart: number;
+
+	_peek: string; // single rune
+	_tpeek: Token; // next token
 
 	constructor(text: string) {
-		this.textOrig = text;
 		this.text = text.toLowerCase();
+		this.orig = text;
+
 		this._len = text.length;
 		this._pos = 0;
-		this._peek = this.text[0];
 		this._line = 0;
-		this._lineStart = 0;
+		this._lstart = 0;
+
+		this._peek = this.text[0];
+		this._tpeek = null;
 	}
 
 	get peek(): Token {
@@ -108,7 +115,7 @@ export class Scanner {
 		do {
 			if (this._peek === '\n') {
 				this._line += 1;
-				this._lineStart = this._pos + 1;
+				this._lstart = this._pos + 1;
 			}
 			if (!isWhitespace(this._peek))
 				break;
@@ -160,7 +167,7 @@ export class Scanner {
 
 		// keep track of the start of the token, relative to the start of
 		// the current line.
-		let start: number = this._pos - this._lineStart;
+		let start: number = this._pos - this._lstart;
 		let startLoc = new SourceLoc(this._line, start);
 
 		// match two-char tokens; if its not a 2 char token return the
@@ -211,11 +218,11 @@ export class Scanner {
 export function identifierSet(str: string): StringSet {
 	'use strict';
 
-	let scanner = new Scanner(str);
+	let lexer = new Lexer(str);
 	let result: StringSet = {};
 	let commentDepth = 0;
 	let tok: Token;
-	while ((tok = scanner.getToken())) {
+	while ((tok = lexer.getToken())) {
 		if (tok.tok === '{') {
 			commentDepth++;
 		} else if (tok.tok === '}') {

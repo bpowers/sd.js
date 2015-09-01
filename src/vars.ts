@@ -50,12 +50,12 @@ export class Variable implements type.Variable {
 	code(v: type.Offsets): string {
 		if (this.isConst())
 			return "this.initials['" + util.eName(this.name) + "']";
-		let scanner = new lex.Scanner(this.eqn);
+		let lexer = new lex.Lexer(this.eqn);
 		let result: string[] = [];
 		let commentDepth = 0;
 		let scope: string;
 		let tok: lex.Token;
-		while ((tok = scanner.getToken())) {
+		while ((tok = lexer.getToken())) {
 			if (tok.tok === '{') {
 				commentDepth++;
 			} else if (tok.tok === '}') {
@@ -83,7 +83,7 @@ export class Variable implements type.Variable {
 				// FIXME :(
 				result.push(''+tok.tok);
 				if (common.builtins[tok.tok].usesTime) {
-					scanner.getToken(); // is '('
+					lexer.getToken(); // is '('
 					scope = this.model.name === 'main' ? 'curr' : 'globalCurr';
 					result.push('(', 'dt', ',', scope + '[0]', ',');
 				}

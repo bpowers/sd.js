@@ -5,7 +5,7 @@
 'use strict';
 
 import {Node, BinaryExpr} from './ast';
-import {Scanner, Token, SourceLoc, TokenType} from './lex';
+import {Lexer, Token, TokenType, SourceLoc} from './lex';
 
 export function parse(eqn: string): [Node, any] {
 	'use strict';
@@ -19,7 +19,7 @@ export function parse(eqn: string): [Node, any] {
 function binaryLevel(n: number, p: Parser, ops: string): ()=>Node {
 	'use strict';
 	return function(): Node {
-		if (!p.lex.peek)
+		if (!p.lexer.peek)
 			return null;
 		let next = p.levels[n+1];
 		let lhs = next();
@@ -36,12 +36,12 @@ function binaryLevel(n: number, p: Parser, ops: string): ()=>Node {
 }
 
 class Parser {
-	lex: Scanner;
+	lexer: Lexer;
 	errs: string[];
 	levels: {[i: number]: ()=>Node};
 
 	constructor(eqn: string) {
-		this.lex = new Scanner(eqn);
+		this.lexer = new Lexer(eqn);
 		this.levels = [
 			binaryLevel(0, this, '^'),
 			binaryLevel(1, this, '*/'),
@@ -56,11 +56,11 @@ class Parser {
 		return null;
 	};
 	consumeAnyOf(ops: string): Token {
-		let peek = this.lex.peek;
+		let peek = this.lexer.peek;
 		if (!peek || peek.type !== TokenType.TOKEN)
 			return;
 		if (ops.indexOf(<string>peek.tok) > -1)
-			return this.lex.getToken();
+			return this.lexer.getToken();
 		return;
 	};
 }

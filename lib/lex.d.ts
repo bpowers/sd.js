@@ -20,14 +20,15 @@ export declare class Token {
     constructor(tok: string, type: TokenType, startLoc?: SourceLoc, endLoc?: SourceLoc);
     value: number;
 }
-export declare class Scanner {
+export declare class Lexer {
     text: string;
-    textOrig: string;
+    orig: string;
     _len: number;
     _pos: number;
-    _peek: string;
     _line: number;
-    _lineStart: number;
+    _lstart: number;
+    _peek: string;
+    _tpeek: Token;
     constructor(text: string);
     peek: Token;
     _getChar(): string;

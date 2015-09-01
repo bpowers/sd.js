@@ -866,24 +866,25 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
         return Token;
     })();
     exports.Token = Token;
-    var Scanner = (function () {
-        function Scanner(text) {
-            this.textOrig = text;
+    var Lexer = (function () {
+        function Lexer(text) {
             this.text = text.toLowerCase();
+            this.orig = text;
             this._len = text.length;
             this._pos = 0;
-            this._peek = this.text[0];
             this._line = 0;
-            this._lineStart = 0;
+            this._lstart = 0;
+            this._peek = this.text[0];
+            this._tpeek = null;
         }
-        Object.defineProperty(Scanner.prototype, "peek", {
+        Object.defineProperty(Lexer.prototype, "peek", {
             get: function () {
                 return this.getToken();
             },
             enumerable: true,
             configurable: true
         });
-        Scanner.prototype._getChar = function () {
+        Lexer.prototype._getChar = function () {
             if (this._pos < this._len - 1) {
                 this._pos += 1;
                 this._peek = this.text[this._pos];
@@ -893,17 +894,17 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
             }
             return this._peek;
         };
-        Scanner.prototype._skipWhitespace = function () {
+        Lexer.prototype._skipWhitespace = function () {
             do {
                 if (this._peek === '\n') {
                     this._line += 1;
-                    this._lineStart = this._pos + 1;
+                    this._lstart = this._pos + 1;
                 }
                 if (!isWhitespace(this._peek))
                     break;
             } while (this._getChar() !== null);
         };
-        Scanner.prototype._fastForward = function (num) {
+        Lexer.prototype._fastForward = function (num) {
             this._pos += num;
             if (this._pos < this._len) {
                 this._peek = this.text[this._pos];
@@ -912,7 +913,7 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
                 this._peek = null;
             }
         };
-        Scanner.prototype._lexIdentifier = function (startPos) {
+        Lexer.prototype._lexIdentifier = function (startPos) {
             var ident = /[\w_][\w\d_]*/.exec(this.text.substring(this._pos))[0];
             var len = ident.length;
             this._fastForward(len);
@@ -925,18 +926,18 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
             }
             return new Token(ident, type, startPos, new SourceLoc(startPos.line, startPos.pos + len));
         };
-        Scanner.prototype._lexNumber = function (startPos) {
+        Lexer.prototype._lexNumber = function (startPos) {
             var numStr = /\d*(\.\d*)?(e(\d+(\.\d*)?)?)?/.exec(this.text.substring(this._pos))[0];
             var len = numStr.length;
             this._fastForward(len);
             return new Token(numStr, 3, startPos, new SourceLoc(startPos.line, startPos.pos + len));
         };
-        Scanner.prototype.getToken = function () {
+        Lexer.prototype.getToken = function () {
             this._skipWhitespace();
             var peek = this._peek;
             if (peek === null || peek === undefined)
                 return null;
-            var start = this._pos - this._lineStart;
+            var start = this._pos - this._lstart;
             var startLoc = new SourceLoc(this._line, start);
             switch (peek) {
                 case '=':
@@ -959,16 +960,16 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
             this._getChar();
             return new Token(peek, 0, startLoc, new SourceLoc(this._line, start + 1));
         };
-        return Scanner;
+        return Lexer;
     })();
-    exports.Scanner = Scanner;
+    exports.Lexer = Lexer;
     function identifierSet(str) {
         'use strict';
-        var scanner = new Scanner(str);
+        var lexer = new Lexer(str);
         var result = {};
         var commentDepth = 0;
         var tok;
-        while ((tok = scanner.getToken())) {
+        while ((tok = lexer.getToken())) {
             if (tok.tok === '{') {
                 commentDepth++;
             }
@@ -1019,12 +1020,12 @@ define('vars',["require", "exports", './common', './util', './lex'], function (r
         Variable.prototype.code = function (v) {
             if (this.isConst())
                 return "this.initials['" + util.eName(this.name) + "']";
-            var scanner = new lex.Scanner(this.eqn);
+            var lexer = new lex.Lexer(this.eqn);
             var result = [];
             var commentDepth = 0;
             var scope;
             var tok;
-            while ((tok = scanner.getToken())) {
+            while ((tok = lexer.getToken())) {
                 if (tok.tok === '{') {
                     commentDepth++;
                 }
@@ -1054,7 +1055,7 @@ define('vars',["require", "exports", './common', './util', './lex'], function (r
                 else if (tok.tok in common.builtins) {
                     result.push('' + tok.tok);
                     if (common.builtins[tok.tok].usesTime) {
-                        scanner.getToken();
+                        lexer.getToken();
                         scope = this.model.name === 'main' ? 'curr' : 'globalCurr';
                         result.push('(', 'dt', ',', scope + '[0]', ',');
                     }

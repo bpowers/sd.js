@@ -12,7 +12,7 @@
 
 import chai = require('chai');
 
-import {Token, TokenType, Scanner} from '../lib/lex';
+import {Lexer, Token, TokenType} from '../lib/lex';
 
 const expect = chai.expect;
 
@@ -270,10 +270,10 @@ const LEX_TESTS: LexTestData[] = [
 describe('lex', function() {
 	LEX_TESTS.forEach(function(t) {
 		it('should lex ' + t.in, function() {
-			let lex = new Scanner(t.in);
+			let lexer = new Lexer(t.in);
 			let count = 0;
 			let tok: Token;
-			while ((tok = lex.getToken())) {
+			while ((tok = lexer.getToken())) {
 				count++;
 			}
 			expect(count).to.equal(t.out.length);
