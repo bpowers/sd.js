@@ -37,7 +37,7 @@ suite.lex = function(test) {
 		let tok;
 		let i = 0;
 
-		while ((tok = scanner.getToken())) {
+		while ((tok = scanner.nextTok())) {
 			test.ok(tok.tok === expected[i],
 				'checking ' + tok.tok + ' === ' + expected[i]);
 			test.ok(tok.type === types[i],

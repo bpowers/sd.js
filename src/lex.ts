@@ -95,9 +95,11 @@ export class Lexer {
 		this._tpeek = null;
 	}
 
-	get peek(): Token {
-		// FIXME: obviously wrong
-		return this.getToken();
+	peek(): Token {
+		if (!this._tpeek)
+			this._tpeek = this.nextTok();
+
+		return this._tpeek;
 	}
 
 	_getChar(): string {
@@ -112,10 +114,20 @@ export class Lexer {
 	}
 
 	_skipWhitespace(): void {
+		let inComment = false;
 		do {
 			if (this._peek === '\n') {
-				this._line += 1;
+				this._line++;
 				this._lstart = this._pos + 1;
+			}
+			if (inComment) {
+				if (this._peek === '}')
+					inComment = false;
+				continue;
+			}
+			if (this._peek === '{') {
+				inComment = true;
+				continue;
 			}
 			if (!isWhitespace(this._peek))
 				break;
@@ -157,7 +169,13 @@ export class Lexer {
 			new SourceLoc(startPos.line, startPos.pos + len));
 	}
 
-	getToken(): Token {
+	nextTok(): Token {
+		if (this._tpeek) {
+			let tpeek = this._tpeek;
+			this._tpeek = null;
+			return this._tpeek;
+		}
+
 		this._skipWhitespace();
 		let peek = this._peek;
 
@@ -222,7 +240,7 @@ export function identifierSet(str: string): StringSet {
 	let result: StringSet = {};
 	let commentDepth = 0;
 	let tok: Token;
-	while ((tok = lexer.getToken())) {
+	while ((tok = lexer.nextTok())) {
 		if (tok.tok === '{') {
 			commentDepth++;
 		} else if (tok.tok === '}') {

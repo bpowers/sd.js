@@ -273,7 +273,7 @@ describe('lex', function() {
 			let lexer = new Lexer(t.in);
 			let count = 0;
 			let tok: Token;
-			while ((tok = lexer.getToken())) {
+			while ((tok = lexer.nextTok())) {
 				count++;
 			}
 			expect(count).to.equal(t.out.length);

@@ -55,7 +55,7 @@ export class Variable implements type.Variable {
 		let commentDepth = 0;
 		let scope: string;
 		let tok: lex.Token;
-		while ((tok = lexer.getToken())) {
+		while ((tok = lexer.nextTok())) {
 			if (tok.tok === '{') {
 				commentDepth++;
 			} else if (tok.tok === '}') {
@@ -83,7 +83,7 @@ export class Variable implements type.Variable {
 				// FIXME :(
 				result.push(''+tok.tok);
 				if (common.builtins[tok.tok].usesTime) {
-					lexer.getToken(); // is '('
+					lexer.nextTok(); // is '('
 					scope = this.model.name === 'main' ? 'curr' : 'globalCurr';
 					result.push('(', 'dt', ',', scope + '[0]', ',');
 				}

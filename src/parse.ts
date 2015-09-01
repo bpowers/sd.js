@@ -56,11 +56,11 @@ class Parser {
 		return null;
 	};
 	consumeAnyOf(ops: string): Token {
-		let peek = this.lexer.peek;
+		let peek = this.lexer.peek();
 		if (!peek || peek.type !== TokenType.TOKEN)
 			return;
 		if (ops.indexOf(<string>peek.tok) > -1)
-			return this.lexer.getToken();
+			return this.lexer.nextTok();
 		return;
 	};
 }

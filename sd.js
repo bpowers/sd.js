@@ -877,13 +877,11 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
             this._peek = this.text[0];
             this._tpeek = null;
         }
-        Object.defineProperty(Lexer.prototype, "peek", {
-            get: function () {
-                return this.getToken();
-            },
-            enumerable: true,
-            configurable: true
-        });
+        Lexer.prototype.peek = function () {
+            if (!this._tpeek)
+                this._tpeek = this.nextTok();
+            return this._tpeek;
+        };
         Lexer.prototype._getChar = function () {
             if (this._pos < this._len - 1) {
                 this._pos += 1;
@@ -895,10 +893,20 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
             return this._peek;
         };
         Lexer.prototype._skipWhitespace = function () {
+            var inComment = false;
             do {
                 if (this._peek === '\n') {
-                    this._line += 1;
+                    this._line++;
                     this._lstart = this._pos + 1;
+                }
+                if (inComment) {
+                    if (this._peek === '}')
+                        inComment = false;
+                    continue;
+                }
+                if (this._peek === '{') {
+                    inComment = true;
+                    continue;
                 }
                 if (!isWhitespace(this._peek))
                     break;
@@ -932,7 +940,12 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
             this._fastForward(len);
             return new Token(numStr, 3, startPos, new SourceLoc(startPos.line, startPos.pos + len));
         };
-        Lexer.prototype.getToken = function () {
+        Lexer.prototype.nextTok = function () {
+            if (this._tpeek) {
+                var tpeek = this._tpeek;
+                this._tpeek = null;
+                return this._tpeek;
+            }
             this._skipWhitespace();
             var peek = this._peek;
             if (peek === null || peek === undefined)
@@ -969,7 +982,7 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
         var result = {};
         var commentDepth = 0;
         var tok;
-        while ((tok = lexer.getToken())) {
+        while ((tok = lexer.nextTok())) {
             if (tok.tok === '{') {
                 commentDepth++;
             }
@@ -1025,7 +1038,7 @@ define('vars',["require", "exports", './common', './util', './lex'], function (r
             var commentDepth = 0;
             var scope;
             var tok;
-            while ((tok = lexer.getToken())) {
+            while ((tok = lexer.nextTok())) {
                 if (tok.tok === '{') {
                     commentDepth++;
                 }
@@ -1055,7 +1068,7 @@ define('vars',["require", "exports", './common', './util', './lex'], function (r
                 else if (tok.tok in common.builtins) {
                     result.push('' + tok.tok);
                     if (common.builtins[tok.tok].usesTime) {
-                        lexer.getToken();
+                        lexer.nextTok();
                         scope = this.model.name === 'main' ? 'curr' : 'globalCurr';
                         result.push('(', 'dt', ',', scope + '[0]', ',');
                     }

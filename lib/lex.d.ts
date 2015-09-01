@@ -30,12 +30,12 @@ export declare class Lexer {
     _peek: string;
     _tpeek: Token;
     constructor(text: string);
-    peek: Token;
+    peek(): Token;
     _getChar(): string;
     _skipWhitespace(): void;
     _fastForward(num: number): void;
     _lexIdentifier(startPos: SourceLoc): Token;
     _lexNumber(startPos: SourceLoc): Token;
-    getToken(): Token;
+    nextTok(): Token;
 }
 export declare function identifierSet(str: string): StringSet;
