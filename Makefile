@@ -3,6 +3,7 @@ REQUIRE    ?= node_modules/.bin/r.js
 BOWER      ?= node_modules/.bin/bower
 TSLINT     ?= node_modules/.bin/tslint
 TSC        ?= node_modules/.bin/tsc
+MOCHA      ?= node_modules/.bin/mocha
 
 ALMOND     = bower_components/almond
 QJS        = bower_components/q/q.js
@@ -82,6 +83,10 @@ $(LIB_MIN): build_min.js build $(REQUIRE) $(ALMOND)
 	@echo "  R.JS  $@"
 	$(REQUIRE) -o $<
 
+test: lib node_modules
+	@echo "  TEST"
+	$(MOCHA)
+
 clean:
 	rm -rf build build-rt
 	find . -name '*~' | xargs rm -f
@@ -89,4 +94,4 @@ clean:
 distclean: clean
 	rm -rf node_modules bower_components
 
-.PHONY: all clean distclean
+.PHONY: all clean distclean test
