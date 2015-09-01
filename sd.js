@@ -823,7 +823,13 @@ define('compat',["require", "exports", './util'], function (require, exports, ut
 
 
 define('lex',["require", "exports", './common', './util'], function (require, exports, common_1, util_1) {
-    exports.reservedWords = util_1.set('if', 'then', 'else');
+    var OP = {
+        'not': '!',
+        'and': '&',
+        'or': '|',
+        'mod': '%',
+    };
+    exports.RESERVED = util_1.set('if', 'then', 'else');
     function isWhitespace(ch) {
         'use strict';
         return (/\s/).test(ch);
@@ -834,7 +840,7 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
     }
     function isIdentifierStart(ch) {
         'use strict';
-        return (/[\w_]/).test(ch);
+        return !isNumberStart(ch) && (/[\w_\"]/).test(ch);
     }
     var SourceLoc = (function () {
         function SourceLoc(line, pos) {
@@ -922,15 +928,34 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
             }
         };
         Lexer.prototype._lexIdentifier = function (startPos) {
-            var ident = /[\w_][\w\d_]*/.exec(this.text.substring(this._pos))[0];
-            var len = ident.length;
-            this._fastForward(len);
-            var type;
-            if (ident in exports.reservedWords) {
+            var quoted = this._peek === '"';
+            if (quoted)
+                this._nextRune();
+            var line = this._line;
+            var pos = this._pos;
+            var r;
+            while ((r = this._nextRune())) {
+                if (/[\w\d_]/.test(r))
+                    continue;
+                if (quoted) {
+                    if (r === '"') {
+                        this._nextRune();
+                        break;
+                    }
+                    if (isWhitespace(r))
+                        continue;
+                }
+                break;
+            }
+            var len = this._pos - pos;
+            var ident = this.text.substring(pos, len);
+            var type = 1;
+            if (ident in exports.RESERVED) {
                 type = 2;
             }
-            else {
+            else if (ident in OP) {
                 type = 1;
+                ident = OP[ident];
             }
             return new Token(ident, type, startPos, new SourceLoc(startPos.line, startPos.pos + len));
         };
@@ -952,26 +977,53 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
                 return null;
             var start = this._pos - this._lstart;
             var startLoc = new SourceLoc(this._line, start);
+            if (isNumberStart(peek))
+                return this._lexNumber(startLoc);
+            if (isIdentifierStart(peek))
+                return this._lexIdentifier(startLoc);
+            var pos = this._pos;
+            var len = 1;
             switch (peek) {
                 case '=':
                     this._nextRune();
                     if (this._peek === '=') {
                         this._nextRune();
-                        return new Token('==', 0, startLoc, new SourceLoc(this._line, start + 2));
+                        len++;
                     }
-                    else {
-                        return new Token('=', 0, startLoc, new SourceLoc(this._line, start + 1));
+                    break;
+                case '<':
+                    this._nextRune();
+                    if (this._peek === '=' || this._peek === '>') {
+                        this._nextRune();
+                        len++;
                     }
+                    break;
+                case '>':
+                    this._nextRune();
+                    if (this._peek === '=') {
+                        this._nextRune();
+                        len++;
+                    }
+                    break;
+                default:
+                    this._nextRune();
+                    break;
+            }
+            var op = this.text.substring(pos, len);
+            switch (op) {
+                case '>=':
+                    op = '≥';
+                    break;
+                case '<=':
+                    op = '≤';
+                    break;
+                case '<>':
+                    op = '≠';
                     break;
                 default:
                     break;
             }
-            if (isNumberStart(peek))
-                return this._lexNumber(startLoc);
-            if (isIdentifierStart(peek))
-                return this._lexIdentifier(startLoc);
-            this._nextRune();
-            return new Token(peek, 0, startLoc, new SourceLoc(this._line, start + 1));
+            return new Token(op, 0, startLoc, startLoc.off(len));
         };
         return Lexer;
     })();

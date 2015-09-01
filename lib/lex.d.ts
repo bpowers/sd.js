@@ -5,7 +5,7 @@ export declare const enum TokenType {
     RESERVED = 2,
     NUMBER = 3,
 }
-export declare const reservedWords: any;
+export declare const RESERVED: any;
 export declare class SourceLoc {
     line: number;
     pos: number;

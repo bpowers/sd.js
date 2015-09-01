@@ -15,11 +15,18 @@ export const enum TokenType {
 	NUMBER,
 }
 
+const OP: {[n: string]: string} = {
+	'not': '!',
+	'and': '&',
+	'or':  '|',
+	'mod': '%',
+};
+
 // the idea is to use the scanner (& an eventual parser) to validate
 // the equations, especially for the macros
 
 // these are words reserved by SMILE
-export const reservedWords = set('if', 'then', 'else');
+export const RESERVED = set('if', 'then', 'else');
 
 function isWhitespace(ch: string): boolean {
 	'use strict';
@@ -31,7 +38,7 @@ function isNumberStart(ch: string): boolean {
 }
 function isIdentifierStart(ch: string): boolean {
 	'use strict';
-	return (/[\w_]/).test(ch);
+	return !isNumberStart(ch) && (/[\w_\"]/).test(ch);
 }
 
 export class SourceLoc {
@@ -144,14 +151,39 @@ export class Lexer {
 	}
 
 	_lexIdentifier(startPos: SourceLoc): Token {
-		const ident = /[\w_][\w\d_]*/.exec(this.text.substring(this._pos))[0];
-		const len = ident.length;
-		this._fastForward(len);
-		let type: TokenType;
-		if (ident in reservedWords) {
+		const quoted = this._peek === '"';
+		if (quoted)
+			this._nextRune();
+
+		let line = this._line;
+		let pos = this._pos;
+
+		let r: string;
+		while ((r = this._nextRune())) {
+			if (/[\w\d_]/.test(r))
+				continue;
+			if (quoted) {
+				if (r === '"') {
+					// eat closing "
+					this._nextRune();
+					break;
+				}
+				if (isWhitespace(r))
+					continue;
+			}
+			break;
+		}
+
+		let len = this._pos - pos;
+		let ident = this.text.substring(pos, len);
+
+		let type = TokenType.IDENT;
+
+		if (ident in RESERVED) {
 			type = TokenType.RESERVED;
-		} else {
+		} else if (ident in OP) {
 			type = TokenType.IDENT;
+			ident = OP[ident];
 		}
 		return new Token(
 			ident, type, startPos,
@@ -188,40 +220,62 @@ export class Lexer {
 		let start: number = this._pos - this._lstart;
 		let startLoc = new SourceLoc(this._line, start);
 
-		// match two-char tokens; if its not a 2 char token return the
-		// single char tok.
-		switch (peek) {
-		case '=':
-			this._nextRune();
-			if (this._peek === '=') {
-				// eat the second '=', since we matched.
-				this._nextRune();
-				return new Token(
-					'==', TokenType.TOKEN, startLoc,
-					new SourceLoc(this._line, start + 2));
-			} else {
-				return new Token(
-					'=', TokenType.TOKEN, startLoc,
-					new SourceLoc(this._line, start + 1));
-			}
-			break;
-		default:
-			break;
-		}
-
 		if (isNumberStart(peek))
 			return this._lexNumber(startLoc);
 
 		if (isIdentifierStart(peek))
 			return this._lexIdentifier(startLoc);
 
-		// if we haven't matched by here, it must be a simple one char
-		// token.  Eat that char and return the new token object.
-		this._nextRune();
+		let pos = this._pos;
+		let len = 1;
 
-		return new Token(
-			peek, TokenType.TOKEN, startLoc,
-			new SourceLoc(this._line, start + 1));
+		// match two-char tokens; if its not a 2 char token return the
+		// single char tok.
+		switch (peek) {
+		case '=':
+			this._nextRune();
+			if (this._peek === '=') {
+				this._nextRune();
+				len++;
+			}
+			break;
+		case '<':
+			this._nextRune();
+			if (this._peek === '=' || this._peek === '>') {
+				this._nextRune();
+				len++;
+			}
+			break;
+		case '>':
+			this._nextRune();
+			if (this._peek === '=') {
+				this._nextRune();
+				len++;
+			}
+			break;
+		default:
+			this._nextRune();
+			break;
+		}
+
+		let op = this.text.substring(pos, len);
+		// replace common multi-run ops with single-rune
+		// equivalents.
+		switch (op) {
+		case '>=':
+			op = '≥';
+			break;
+		case '<=':
+			op = '≤';
+			break;
+		case '<>':
+			op = '≠';
+			break;
+		default:
+			break;
+		}
+
+		return new Token(op, TokenType.TOKEN, startLoc, startLoc.off(len));
 	}
 }
 
