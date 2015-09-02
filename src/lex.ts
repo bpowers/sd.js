@@ -52,13 +52,9 @@ function isIdentifierStart(ch: string): boolean {
 }
 
 export class SourceLoc {
-	line: number;
-	pos: number;
-
-	constructor(line: number, pos: number) {
-		this.line = line;
-		this.pos = pos;
-	}
+	constructor(
+		public line: number,
+		public pos: number) {}
 
 	off(n: number): SourceLoc {
 		return new SourceLoc(this.line, this.pos+n);
@@ -66,17 +62,11 @@ export class SourceLoc {
 }
 
 export class Token {
-	tok: string;
-	type: TokenType;
-	startLoc: SourceLoc;
-	endLoc: SourceLoc;
-
-	constructor(tok: string, type: TokenType, startLoc?: SourceLoc, endLoc?: SourceLoc) {
-		this.tok = tok;
-		this.type = type;
-		this.startLoc = startLoc;
-		this.endLoc = endLoc;
-	}
+	constructor(
+		public tok: string,
+		public type: TokenType,
+		public startLoc?: SourceLoc,
+		public endLoc?: SourceLoc) {}
 
 	get value(): number {
 		if (this.type !== TokenType.NUMBER)
@@ -91,135 +81,43 @@ export class Lexer {
 	text: string;
 	orig: string; // keep original string for error diagnostics
 
-	_len: number;
-	_pos: number;
-	_line: number;
-	_lstart: number;
+	private len: number;
+	private pos: number;
+	private line: number;
+	private lstart: number;
 
-	_peek: string; // single rune
-	_tpeek: Token; // next token
+	private rpeek: string; // single rune
+	private tpeek: Token; // next token
 
 	constructor(text: string) {
 		this.text = text.toLowerCase();
 		this.orig = text;
 
-		this._len = text.length;
-		this._pos = 0;
-		this._line = 0;
-		this._lstart = 0;
+		this.len = text.length;
+		this.pos = 0;
+		this.line = 0;
+		this.lstart = 0;
 
-		this._peek = this.text[0];
-		this._tpeek = null;
+		this.rpeek = this.text[0];
+		this.tpeek = null;
 	}
 
 	peek(): Token {
-		if (!this._tpeek)
-			this._tpeek = this.nextTok();
+		if (!this.tpeek)
+			this.tpeek = this.nextTok();
 
-		return this._tpeek;
-	}
-
-	_nextRune(): string {
-		if (this._pos < this._len - 1) {
-			this._peek = this.text[this._pos+1];
-		} else {
-			this._peek = null;
-		}
-		this._pos++;
-
-		return this._peek;
-	}
-
-	_skipWhitespace(): void {
-		let inComment = false;
-		do {
-			if (this._peek === '\n') {
-				this._line++;
-				this._lstart = this._pos + 1;
-			}
-			if (inComment) {
-				if (this._peek === '}')
-					inComment = false;
-				continue;
-			}
-			if (this._peek === '{') {
-				inComment = true;
-				continue;
-			}
-			if (!isWhitespace(this._peek))
-				break;
-		} while (this._nextRune() !== null);
-	}
-
-	_fastForward(num: number): void {
-		this._pos += num;
-		if (this._pos < this._len) {
-			this._peek = this.text[this._pos];
-		} else {
-			this._peek = null;
-		}
-	}
-
-	_lexIdentifier(startPos: SourceLoc): Token {
-		const quoted = this._peek === '"';
-
-		let line = this._line;
-		let pos = this._pos;
-
-		if (quoted)
-			this._nextRune();
-
-		let r: string;
-		while ((r = this._nextRune())) {
-			if ((isIdentifierStart(r) && r !== '"') || /\d/.test(r))
-				continue;
-			if (quoted) {
-				if (r === '"') {
-					// eat closing "
-					this._nextRune();
-					break;
-				}
-				if (isWhitespace(r))
-					continue;
-			}
-			break;
-		}
-
-		let len = this._pos - pos;
-		let ident = this.text.substring(pos, pos+len);
-
-		let type = TokenType.IDENT;
-
-		if (ident in RESERVED) {
-			type = TokenType.RESERVED;
-		} else if (ident in OP) {
-			type = TokenType.TOKEN;
-			ident = OP[ident];
-		}
-
-		return new Token(ident, type, startPos, startPos.off(len));
-	}
-
-	_lexNumber(startPos: SourceLoc): Token {
-		// we do a .toLowerCase before the string gets to here, so we
-		// don't need to match for lower and upper cased 'e's.
-		const numStr = /\d*(\.\d*)?(e(\d?(\.\d*)?)?)?/.exec(this.text.substring(this._pos))[0];
-		const len = numStr.length;
-		this._fastForward(len);
-		return new Token(
-			numStr, TokenType.NUMBER, startPos,
-			new SourceLoc(startPos.line, startPos.pos + len));
+		return this.tpeek;
 	}
 
 	nextTok(): Token {
-		if (this._tpeek) {
-			let tpeek = this._tpeek;
-			this._tpeek = null;
-			return this._tpeek;
+		if (this.tpeek) {
+			let tpeek = this.tpeek;
+			this.tpeek = null;
+			return this.tpeek;
 		}
 
-		this._skipWhitespace();
-		let peek = this._peek;
+		this.skipWhitespace();
+		let peek = this.rpeek;
 
 		// at the end of the input, peek is null.
 		if (peek === null || peek === undefined)
@@ -227,44 +125,44 @@ export class Lexer {
 
 		// keep track of the start of the token, relative to the start of
 		// the current line.
-		let start: number = this._pos - this._lstart;
-		let startLoc = new SourceLoc(this._line, start);
+		let start: number = this.pos - this.lstart;
+		let startLoc = new SourceLoc(this.line, start);
 
 		if (isNumberStart(peek))
-			return this._lexNumber(startLoc);
+			return this.lexNumber(startLoc);
 
 		if (isIdentifierStart(peek))
-			return this._lexIdentifier(startLoc);
+			return this.lexIdentifier(startLoc);
 
-		let pos = this._pos;
+		let pos = this.pos;
 		let len = 1;
 
 		// match two-char tokens; if its not a 2 char token return the
 		// single char tok.
 		switch (peek) {
 		case '=':
-			this._nextRune();
-			if (this._peek === '=') {
-				this._nextRune();
+			this.nextRune();
+			if (this.rpeek === '=') {
+				this.nextRune();
 				len++;
 			}
 			break;
 		case '<':
-			this._nextRune();
-			if (this._peek === '=' || this._peek === '>') {
-				this._nextRune();
+			this.nextRune();
+			if (this.rpeek === '=' || this.rpeek === '>') {
+				this.nextRune();
 				len++;
 			}
 			break;
 		case '>':
-			this._nextRune();
-			if (this._peek === '=') {
-				this._nextRune();
+			this.nextRune();
+			if (this.rpeek === '=') {
+				this.nextRune();
 				len++;
 			}
 			break;
 		default:
-			this._nextRune();
+			this.nextRune();
 			break;
 		}
 
@@ -286,6 +184,98 @@ export class Lexer {
 		}
 
 		return new Token(op, TokenType.TOKEN, startLoc, startLoc.off(len));
+	}
+
+	private nextRune(): string {
+		if (this.pos < this.len - 1) {
+			this.rpeek = this.text[this.pos+1];
+		} else {
+			this.rpeek = null;
+		}
+		this.pos++;
+
+		return this.rpeek;
+	}
+
+	private skipWhitespace(): void {
+		let inComment = false;
+		do {
+			if (this.rpeek === '\n') {
+				this.line++;
+				this.lstart = this.pos + 1;
+			}
+			if (inComment) {
+				if (this.rpeek === '}')
+					inComment = false;
+				continue;
+			}
+			if (this.rpeek === '{') {
+				inComment = true;
+				continue;
+			}
+			if (!isWhitespace(this.rpeek))
+				break;
+		} while (this.nextRune() !== null);
+	}
+
+	private fastForward(num: number): void {
+		this.pos += num;
+		if (this.pos < this.len) {
+			this.rpeek = this.text[this.pos];
+		} else {
+			this.rpeek = null;
+		}
+	}
+
+	private lexIdentifier(startPos: SourceLoc): Token {
+		const quoted = this.rpeek === '"';
+
+		let line = this.line;
+		let pos = this.pos;
+
+		if (quoted)
+			this.nextRune();
+
+		let r: string;
+		while ((r = this.nextRune())) {
+			if ((isIdentifierStart(r) && r !== '"') || /\d/.test(r))
+				continue;
+			if (quoted) {
+				if (r === '"') {
+					// eat closing "
+					this.nextRune();
+					break;
+				}
+				if (isWhitespace(r))
+					continue;
+			}
+			break;
+		}
+
+		let len = this.pos - pos;
+		let ident = this.text.substring(pos, pos+len);
+
+		let type = TokenType.IDENT;
+
+		if (ident in RESERVED) {
+			type = TokenType.RESERVED;
+		} else if (ident in OP) {
+			type = TokenType.TOKEN;
+			ident = OP[ident];
+		}
+
+		return new Token(ident, type, startPos, startPos.off(len));
+	}
+
+	private lexNumber(startPos: SourceLoc): Token {
+		// we do a .toLowerCase before the string gets to here, so we
+		// don't need to match for lower and upper cased 'e's.
+		const numStr = /\d*(\.\d*)?(e(\d?(\.\d*)?)?)?/.exec(this.text.substring(this.pos))[0];
+		const len = numStr.length;
+		this.fastForward(len);
+		return new Token(
+			numStr, TokenType.NUMBER, startPos,
+			new SourceLoc(startPos.line, startPos.pos + len));
 	}
 }
 

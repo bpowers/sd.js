@@ -23,19 +23,19 @@ export declare class Token {
 export declare class Lexer {
     text: string;
     orig: string;
-    _len: number;
-    _pos: number;
-    _line: number;
-    _lstart: number;
-    _peek: string;
-    _tpeek: Token;
+    private len;
+    private pos;
+    private line;
+    private lstart;
+    private rpeek;
+    private tpeek;
     constructor(text: string);
     peek(): Token;
-    _nextRune(): string;
-    _skipWhitespace(): void;
-    _fastForward(num: number): void;
-    _lexIdentifier(startPos: SourceLoc): Token;
-    _lexNumber(startPos: SourceLoc): Token;
     nextTok(): Token;
+    private nextRune();
+    private skipWhitespace();
+    private fastForward(num);
+    private lexIdentifier(startPos);
+    private lexNumber(startPos);
 }
 export declare function identifierSet(str: string): StringSet;
