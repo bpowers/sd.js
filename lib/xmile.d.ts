@@ -176,6 +176,7 @@ export declare class Variable implements XNode {
     dimensions: Dimension[];
     elements: ArrayElement[];
     connections: Connect[];
+    resource: string;
     units: Unit;
     doc: string;
     range: Range;

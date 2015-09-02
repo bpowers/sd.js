@@ -742,6 +742,9 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
             return [0, null];
         if (typeof v === 'number')
             return [v, null];
+        var n = parseFloat(v);
+        if (isFinite(n))
+            return [n, null];
         return [NaN, new Error('not number: ' + v)];
     }
     function bool(v) {
@@ -781,6 +784,10 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
     exports.Rect = Rect;
     var File = (function () {
         function File() {
+            this.namespace = 'https://docs.oasis-open.org/xmile/ns/XMILE/v1.0';
+            this.dimensions = [];
+            this.units = [];
+            this.models = [];
         }
         File.Build = function (el) {
             var file = new File();
@@ -797,6 +804,7 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
                 }
             }
             for (var i = 0; i < el.childNodes.length; i++) {
+                var model = void 0;
                 var child = el.childNodes.item(i);
                 if (child.nodeType !== 1)
                     continue;
@@ -811,14 +819,21 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
                         if (err)
                             return [null, new Error('SimSpec: ' + err.error)];
                         break;
+                    case 'model':
+                        _c = Model.Build(child), model = _c[0], err = _c[1];
+                        if (err)
+                            return [null, new Error('SimSpec: ' + err.error)];
+                        file.models.push(model);
+                        break;
                 }
             }
             console.log('version: ' + file.version);
             console.log('namespace: ' + file.namespace);
             console.log('header: ' + file.header);
             console.log('sim_spec: ' + file.simSpec);
+            console.log('models: ' + file.models.length);
             return [file, err];
-            var _a, _b;
+            var _a, _b, _c;
         };
         File.prototype.toXml = function (doc, parent) {
             return true;
@@ -999,6 +1014,7 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
     exports.Dimension = Dimension;
     var Options = (function () {
         function Options() {
+            this.namespaces = [];
             this.usesArrays = false;
             this.usesMacros = false;
             this.usesConveyor = false;
@@ -1116,8 +1132,47 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
     })();
     exports.Data = Data;
     var Model = (function () {
-        function Model(el) {
+        function Model() {
+            this.name = '';
+            this.run = false;
+            this.variables = [];
+            this.views = [];
         }
+        Model.Build = function (el) {
+            var model = new Model();
+            var err;
+            for (var i = 0; i < el.childNodes.length; i++) {
+                var child = el.childNodes.item(i);
+                if (child.nodeType !== 1)
+                    continue;
+                switch (child.nodeName.toLowerCase()) {
+                    case 'variables':
+                        for (var j = 0; j < child.childNodes.length; j++) {
+                            var vchild = child.childNodes.item(j);
+                            if (vchild.nodeType !== 1)
+                                continue;
+                            var v = void 0;
+                            _a = Variable.Build(vchild), v = _a[0], err = _a[1];
+                            if (err)
+                                return [null, new Error(child.nodeName + ' var: ' + err.error)];
+                            model.variables.push(v);
+                        }
+                        break;
+                    case 'views':
+                        for (var j = 0; j < child.childNodes.length; j++) {
+                            var vchild = child.childNodes.item(j);
+                            var view = void 0;
+                            _b = View.Build(vchild), view = _b[0], err = _b[1];
+                            if (err)
+                                return [null, new Error('view: ' + err.error)];
+                            model.views.push(view);
+                        }
+                        break;
+                }
+            }
+            return [model, null];
+            var _a, _b;
+        };
         Object.defineProperty(Model.prototype, "ident", {
             get: function () {
                 return canonicalize(this.name);
@@ -1131,9 +1186,93 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
         return Model;
     })();
     exports.Model = Model;
-    var Variable = (function () {
-        function Variable(el) {
+    var ArrayElement = (function () {
+        function ArrayElement() {
+            this.subscript = [];
         }
+        ArrayElement.Build = function (el) {
+            var arrayEl = new ArrayElement();
+            console.log('TODO: array element');
+            return [arrayEl, null];
+        };
+        ArrayElement.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        return ArrayElement;
+    })();
+    exports.ArrayElement = ArrayElement;
+    var Range = (function () {
+        function Range() {
+        }
+        Range.Build = function (el) {
+            var range = new Range();
+            console.log('TODO: range element');
+            return [range, null];
+        };
+        Range.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        return Range;
+    })();
+    exports.Range = Range;
+    var Format = (function () {
+        function Format() {
+            this.precision = '';
+            this.scaleBy = '1';
+            this.displayAs = 'number';
+            this.delimit000s = false;
+        }
+        Format.Build = function (el) {
+            var fmt = new Format();
+            console.log('TODO: format element');
+            return [fmt, null];
+        };
+        Format.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        return Format;
+    })();
+    exports.Format = Format;
+    var Variable = (function () {
+        function Variable() {
+            this.name = '';
+            this.eqn = '';
+            this.connections = [];
+            this.inflows = [];
+            this.outflows = [];
+        }
+        Variable.Build = function (el) {
+            var v = new Variable();
+            var err;
+            for (var i = 0; i < el.attributes.length; i++) {
+                var attr_5 = el.attributes.item(i);
+                switch (attr_5.name.toLowerCase()) {
+                    case 'name':
+                        v.name = attr_5.value;
+                        break;
+                    case 'resource':
+                        v.resource = attr_5.value;
+                        break;
+                }
+            }
+            for (var i = 0; i < el.childNodes.length; i++) {
+                var child = el.childNodes.item(i);
+                if (child.nodeType !== 1)
+                    continue;
+                switch (child.nodeName.toLowerCase()) {
+                    case 'eqn':
+                        v.eqn = content(child);
+                        break;
+                    case 'inflow':
+                        v.inflows.push(content(child));
+                        break;
+                    case 'outflow':
+                        v.outflows.push(content(child));
+                        break;
+                }
+            }
+            return [v, err];
+        };
         Variable.prototype.toXml = function (doc, parent) {
             return true;
         };
@@ -1141,8 +1280,13 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
     })();
     exports.Variable = Variable;
     var View = (function () {
-        function View(el) {
+        function View() {
         }
+        View.Build = function (el) {
+            var view = new View();
+            var err;
+            return [view, err];
+        };
         View.prototype.toXml = function (doc, parent) {
             return true;
         };

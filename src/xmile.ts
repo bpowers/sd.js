@@ -437,6 +437,7 @@ export class Options implements XNode {
 	static Build(el: Node): [Options, Error] {
 		let options = new Options();
 		let err: Error;
+
 		for (let i = 0; i < el.attributes.length; i++) {
 			let attr = el.attributes.item(i);
 			switch (attr.name.toLowerCase()) {
@@ -446,6 +447,7 @@ export class Options implements XNode {
 				break;
 			}
 		}
+
 		for (let i = 0; i < el.childNodes.length; i++) {
 			let child = el.childNodes.item(i);
 			if (child.nodeType !== 1) // Element
@@ -555,6 +557,8 @@ export class Model implements XNode {
 			case 'variables':
 				for (let j = 0; j < child.childNodes.length; j++) {
 					let vchild = child.childNodes.item(j);
+					if (vchild.nodeType !== 1) // Element
+						continue;
 					let v: Variable;
 					[v, err] = Variable.Build(vchild);
 					// FIXME: real logging
@@ -642,16 +646,16 @@ export class Format implements XNode {
 
 // TODO: split into multiple subclasses?
 export class Variable implements XNode {
-	name:            string;
-	eqn:             string;
+	name:            string = '';
+	eqn:             string = '';
 	gf:              GF;
 	// mathml        Node;
 	// arrayed-vars
 	dimensions:      Dimension[];    // REQUIRED for arrayed vars
 	elements:        ArrayElement[]; // non-A2A
 	// modules
-	connections:     Connect[];
-	// resource:     string;         // path or URL to model XMILE file
+	connections:     Connect[] = [];
+	resource:        string;         // path or URL to model XMILE file
 	// access:       string;         // TODO: not sure if should implement
 	// autoExport:   boolean;        // TODO: not sure if should implement
 	units:           Unit;
@@ -662,8 +666,8 @@ export class Variable implements XNode {
 	format:          Format;
 	// stocks
 	nonNegative:     boolean;
-	inflows:         string[];
-	outflows:        string[];
+	inflows:         string[] = [];
+	outflows:        string[] = [];
 	// flows
 	// multiplier:   string; // expression used on downstream side of stock to convert units
 	// queues
@@ -678,6 +682,36 @@ export class Variable implements XNode {
 	static Build(el: Node): [Variable, Error] {
 		let v = new Variable();
 		let err: Error;
+
+		for (let i = 0; i < el.attributes.length; i++) {
+			let attr = el.attributes.item(i);
+			switch (attr.name.toLowerCase()) {
+			case 'name':
+				v.name = attr.value;
+				break;
+			case 'resource':
+				v.resource = attr.value;
+				break;
+			}
+		}
+
+		for (let i = 0; i < el.childNodes.length; i++) {
+			let child = el.childNodes.item(i);
+			if (child.nodeType !== 1) // Element
+				continue;
+			switch (child.nodeName.toLowerCase()) {
+			case 'eqn':
+				v.eqn = content(child);
+				break;
+			case 'inflow':
+				v.inflows.push(content(child));
+				break;
+			case 'outflow':
+				v.outflows.push(content(child));
+				break;
+			}
+		}
+
 		return [v, err];
 	}
 
