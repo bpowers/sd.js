@@ -6,10 +6,6 @@
 
 'use strict';
 
-/* tslint:disable: align:arguments */
-/* tslint:disable: typedef:call-signature */
-/* tslint:disable: no-string-literal */
-
 import chai = require('chai');
 
 import {Lexer, Token, TokenType} from '../lib/lex';
@@ -267,9 +263,9 @@ const LEX_TESTS: LexTestData[] = [
 	},
 ];
 
-describe('lex', function() {
-	LEX_TESTS.forEach(function(t) {
-		it('should lex ' + t.in, function() {
+describe('lex', function(): void {
+	LEX_TESTS.forEach(function(t: LexTestData): void {
+		it('should lex ' + t.in, function(): void {
 			let lexer = new Lexer(t.in);
 			let count = 0;
 			let tok: Token;
