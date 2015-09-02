@@ -262,7 +262,7 @@ export class Table extends Variable {
 
 export class Module extends Variable implements type.Module {
 	modelName: string;
-	refs: type.RefSet;
+	refs: type.ReferenceMap;
 
 	constructor(project: type.Project, parent: type.Model, xmile: any) {
 		super();

@@ -1,19 +1,20 @@
 import type = require('./type');
 import draw = require('./draw');
 import sim = require('./sim');
+import xmile = require('./xmile');
 export declare class Model implements type.Model {
     name: string;
     valid: boolean;
-    xmile: any;
+    project: type.Project;
+    xModel: xmile.Model;
     modules: type.ModuleMap;
     tables: type.TableMap;
-    project: type.Project;
-    vars: type.VariableSet;
+    vars: type.VariableMap;
     private spec;
-    constructor(project: type.Project, xmile: any);
+    constructor(project: type.Project, xModel: xmile.Model);
     simSpec: type.SimSpec;
-    _parseVars(defs: any): void;
     lookup(id: string): type.Variable;
     sim(isStandalone: boolean): sim.Sim;
     drawing(svgElementID: string, overrideColors: boolean, enableMousewheel: boolean): draw.Drawing;
+    private parseVars(defs);
 }

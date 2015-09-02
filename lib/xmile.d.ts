@@ -112,9 +112,11 @@ export declare class Data implements Node {
 }
 export declare class Model implements Node {
     name: string;
+    simSpec: SimSpec;
     variables: Variable[];
     views: View[];
     constructor(el: Element);
+    ident: string;
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
 export declare class Variable implements Node {
@@ -155,3 +157,4 @@ export declare class Connect implements Node {
     constructor(el: Element);
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
+export declare function canonicalize(id: string): string;

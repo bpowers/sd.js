@@ -79,7 +79,6 @@ export class Project implements type.Project {
 		// FIXME: compat translation of equations
 
 		this.files.push(file);
-		// FIXME: pull models + other stuff out of File.
 
 		if (isMain) {
 			this.name = file.header.name || 'sd project';
@@ -90,6 +89,8 @@ export class Project implements type.Project {
 			}
 		}
 
+		// FIXME: merge the other parts of the model into the
+		// project
 		for (let i in file.models) {
 			if (!file.models.hasOwnProperty(i))
 				continue;

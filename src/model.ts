@@ -10,33 +10,34 @@ import util = require('./util');
 import vars = require('./vars');
 import draw = require('./draw');
 import sim = require('./sim');
+import xmile = require('./xmile');
 
 
 const VAR_TYPES = util.set('module', 'stock', 'aux', 'flow');
 
 export class Model implements type.Model {
-	// TODO: remove any
-	name: string;
-	valid: boolean;
-	xmile: any;
-	modules: type.ModuleMap;
-	tables: type.TableMap;
+	name:    string;
+	valid:   boolean;
 	project: type.Project;
-	vars: type.VariableSet;
+	xModel:  xmile.Model;
+	modules: type.ModuleMap;
+	tables:  type.TableMap;
+	vars:    type.VariableMap;
 
 	private spec: type.SimSpec;
 
-	constructor(project: type.Project, xmile: any) {
+	constructor(project: type.Project, xModel: xmile.Model) {
 		this.project = project;
-		this.xmile = xmile;
-		this.name = util.eName(xmile['@name']);
-		this.vars     = {};
-		this.tables   = {};
-		this.modules  = {};
+		this.xModel = xModel;
 
-		this._parseVars(xmile.variables);
+		this.name = xModel.ident;
+		this.vars = {};
+		this.tables = {};
+		this.modules = {};
 
-		this.spec = xmile.simSpec || null;
+		this.parseVars(xModel.variables);
+
+		this.spec = xModel.simSpec || null;
 		this.valid = true;
 		return;
 	}
@@ -45,10 +46,38 @@ export class Model implements type.Model {
 		return this.spec || this.project.simSpec;
 	}
 
+	lookup(id: string): type.Variable {
+		if (id[0] === '.')
+			id = id.substr(1);
+		if (id in this.vars)
+			return this.vars[id];
+		let parts = id.split('.');
+		let module = this.modules[parts[0]];
+		let nextModel = this.project.model(module.modelName);
+		return nextModel.lookup(parts.slice(1).join('.'));
+	}
+
+	sim(isStandalone: boolean): sim.Sim {
+		let mod: type.Module;
+		if (this.name === 'main') {
+			mod = this.project.main;
+		} else {
+			mod = null; // new vars.Module(this.project, null, 'main', this.name);
+			console.log('FIXME: sim of non-main model');
+		}
+		return new sim.Sim(mod, isStandalone);
+	}
+
+	drawing(svgElementID: string, overrideColors: boolean, enableMousewheel: boolean): draw.Drawing {
+		return new draw.Drawing(
+			this, this.xModel.views[0], svgElementID,
+			overrideColors, enableMousewheel);
+	}
+
 	/**
 	 * Validates & figures out all necessary variable information.
 	 */
-	_parseVars(defs: any): void {
+	private parseVars(defs: any): void {
 		// JXON doesn't have the capacity to know when we really want
 		// things to be lists, this is a workaround.
 		for (let type in VAR_TYPES) {
@@ -109,33 +138,5 @@ export class Model implements type.Model {
 				this.vars[flow.name] = flow;
 			}
 		}
-	}
-
-	lookup(id: string): type.Variable {
-		if (id[0] === '.')
-			id = id.substr(1);
-		if (id in this.vars)
-			return this.vars[id];
-		let parts = id.split('.');
-		let module = this.modules[parts[0]];
-		let nextModel = this.project.model(module.modelName);
-		return nextModel.lookup(parts.slice(1).join('.'));
-	}
-
-	sim(isStandalone: boolean): sim.Sim {
-		let mod: type.Module;
-		if (this.name === 'main') {
-			mod = this.project.main;
-		} else {
-			mod = null; // new vars.Module(this.project, null, 'main', this.name);
-			console.log('FIXME: sim of non-main model');
-		}
-		return new sim.Sim(mod, isStandalone);
-	}
-
-	drawing(svgElementID: string, overrideColors: boolean, enableMousewheel: boolean): draw.Drawing {
-		return new draw.Drawing(
-			this, this.xmile.views.view[0], svgElementID,
-			overrideColors, enableMousewheel);
 	}
 }

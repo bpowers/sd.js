@@ -32,7 +32,7 @@ export declare class Table extends Variable {
 }
 export declare class Module extends Variable implements type.Module {
     modelName: string;
-    refs: type.RefSet;
+    refs: type.ReferenceMap;
     constructor(project: type.Project, parent: type.Model, xmile: any);
     getDeps(): type.StringSet;
     referencedModels(all?: type.ModelDefSet): type.ModelDefSet;

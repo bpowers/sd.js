@@ -229,10 +229,15 @@ export class Data implements Node {
 
 export class Model implements Node {
 	name:      string;
+	simSpec:   SimSpec;
 	variables: Variable[];
 	views:     View[];
 
 	constructor(el: Element) {
+	}
+
+	get ident(): string {
+		return canonicalize(this.name);
 	}
 
 	toXml(doc: XMLDocument, parent: Element): boolean {
@@ -306,4 +311,13 @@ export class Connect implements Node {
 	toXml(doc: XMLDocument, parent: Element): boolean {
 		return true;
 	}
+}
+
+export function canonicalize(id: string): string {
+	'use strict';
+	id = id.toLowerCase();
+	id = id.replace(/\\n/g, '_');
+	id = id.replace(/\\\\/g, '\\');
+	id = id.replace(/\\"/g, '\\');
+	return id.replace(/[_\r\n\t \xa0]+/g, '_');
 }
