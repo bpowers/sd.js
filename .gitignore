@@ -12,3 +12,4 @@ v8.log
 /test/*.js
 /test/*.d.ts
 /test/*.map
+/test/.stamp

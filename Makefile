@@ -17,6 +17,8 @@ LIB_SRCS   = $(filter-out $(RUNTIME), $(wildcard src/*.ts)) $(RUNTIME)
 RT_SRCS    = $(wildcard runtime/*.ts)
 TEST_SRCS  = $(wildcard test/*.ts)
 
+TEST       = test/.stamp
+
 LIB        = sd.js
 LIB_MIN    = sd.min.js
 
@@ -105,10 +107,14 @@ $(RTEST_CMD): $(RTEST_DIR) .gitmodules
 	git submodule update --init
 	touch $@
 
-test check: lib node_modules $(TEST_SRCS)
-	@echo "  TEST"
+$(TEST): lib node_modules $(TEST_SRCS)
+	@echo "  TS    test"
 	$(TSLINT) -c .tslint.json $(TEST_SRCS)
 	$(TSC) $(TSFLAGS) -d -m commonjs --outDir test $(TEST_SRCS)
+	touch $@
+
+test check: $(TEST)
+	@echo "  TEST"
 	$(MOCHA)
 
 rtest: lib $(RTEST_CMD)
