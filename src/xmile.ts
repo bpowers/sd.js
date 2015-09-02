@@ -23,25 +23,23 @@ function parseText(val: string): string|boolean|number {
 	return val;
 }
 
-function content(node: Node): string|boolean|number {
+function content(node: Node): string {
 	'use strict';
 	let text = '';
 	if (node.hasChildNodes()) {
 		for (let i = 0; i < node.childNodes.length; i++) {
 			let child: Node = node.childNodes.item(i);
 			switch (child.nodeType) {
-			case 4: // CData
-				text += child.nodeValue;
-				break;
 			case 3: // Text
 				text += child.nodeValue.trim();
 				break;
-			default: // don't care about any other types
+			case 4: // CData
+				text += child.nodeValue;
 				break;
 			}
 		}
 	}
-	return parseText(text);
+	return text;
 }
 
 function str(v: any): [string, Error] {
@@ -132,13 +130,54 @@ export class File implements XNode {
 		public models:     Model[]) {
 	}
 
-	static Build(el: Element): [File, Error] {
+	static Build(el: Node): [File, Error] {
 		let err: Error;
 		let sval: string;
 		let version: string;
 		let namespace: string;
+		let header: Header;
+		let simSpec: SimSpec;
 		for (let i = 0; i < el.attributes.length; i++) {
-			let attrib = el.attributes.item(i);
+			let attr = el.attributes.item(i);
+			switch (attr.name.toLowerCase()) {
+			case 'version':
+				version = attr.value;
+				break;
+			case 'xmlns':
+				namespace = attr.value;
+				break;
+			}
+		}
+		for (let i = 0; i < el.childNodes.length; i++) {
+			let child = el.childNodes.item(i);
+			if (child.nodeType !== 1) // Element
+				continue;
+			switch (child.nodeName.toLowerCase()) {
+			case 'header':
+				[header, err] = Header.Build(child);
+				if (err)
+					return [null, new Error('Header: ' + err.error)];
+				break;
+			case 'sim_spec':
+				[simSpec, err] = SimSpec.Build(child);
+				if (err)
+					return [null, new Error('SimSpec: ' + err.error)];
+				break;
+			}
+		}
+		console.log('version: ' + version);
+		console.log('namespace: ' + namespace);
+		console.log('header: ' + header);
+
+		return [null, null];
+	}
+
+	toXml(doc: XMLDocument, parent: Element): boolean {
+		return true;
+	}
+}
+
+/*			let attrib = el.attributes.item(i);
 			let name = attrib.name.toLowerCase();
 			let val = parseText(attrib.value);
 			switch (name) {
@@ -157,17 +196,8 @@ export class File implements XNode {
 			default:
 				break;
 			}
-		}
-		console.log('version: ' + version);
-		console.log('namespace: ' + namespace);
 
-		return [null, null];
-	}
-
-	toXml(doc: XMLDocument, parent: Element): boolean {
-		return true;
-	}
-}
+*/
 
 export class SimSpec implements XNode {
 	constructor(
@@ -178,7 +208,7 @@ export class SimSpec implements XNode {
 		public method:    string = 'euler',
 		public timeUnits: string = '') {}
 
-	static Build(el: Element): [SimSpec, Error] {
+	static Build(el: Node): [SimSpec, Error] {
 		let method = '';
 		switch (method) {
 		// supported
@@ -218,14 +248,69 @@ export class Unit implements XNode {
 	}
 }
 
+export class Product implements XNode {
+	name:    string = 'unknown';
+	lang:    string = 'English';
+	version: string = '';
+
+	static Build(el: Node): [Product, Error] {
+		let product = new Product();
+		product.name = content(el);
+		for (let i = 0; i < el.attributes.length; i++) {
+			let attr = el.attributes.item(i);
+			let name = attr.name.toLowerCase();
+			switch (name) {
+			case 'version':
+				product.version = attr.value;
+				break;
+			case 'lang':
+				product.lang = attr.value;
+				break;
+			}
+		}
+		return [product, null];
+	}
+
+	toXml(doc: XMLDocument, parent: Element): boolean {
+		return true;
+	}
+}
+
 export class Header implements XNode {
 	options: Options;
 	name:    string;
 	uuid:    string;
 	vendor:  string;
-	product: string;
+	product: Product;
 
 	constructor(el: Element) {
+	}
+
+	static Build(el: Node): [Header, Error] {
+		let err:     Error;
+		let options: Options;
+		let name:    string;
+		let uuid:    string;
+		let vendor:  string;
+		let product: Product;
+		for (let i = 0; i < el.childNodes.length; i++) {
+			let child = el.childNodes.item(i);
+			if (child.nodeType !== 1) // Element
+				continue;
+			switch (child.nodeName.toLowerCase()) {
+			case 'options':
+				[options, err] = Options.Build(child);
+				if (err)
+					return [null, new Error('Options: ' + err.error)];
+				break;
+			case 'product':
+				[product, err] = Product.Build(child);
+				if (err)
+					return [null, new Error('Product: ' + err.error)];
+				break;
+			}
+		}
+		return [null, null];
 	}
 
 	toXml(doc: XMLDocument, parent: Element): boolean {
@@ -258,7 +343,8 @@ export class Options implements XNode {
 	usesInputs:       boolean;
 	usesAnnotations:  boolean;
 
-	constructor(el: Element) {
+	static Build(el: Node): [Options, Error] {
+		return [null, null];
 	}
 
 	toXml(doc: XMLDocument, parent: Element): boolean {

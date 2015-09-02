@@ -39,7 +39,7 @@ export declare class File implements XNode {
     style: Style;
     models: Model[];
     constructor(version: string, namespace: string, header: Header, simSpec: SimSpec, dimensions: Dimension[], units: Unit[], behavior: Behavior, style: Style, models: Model[]);
-    static Build(el: Element): [File, Error];
+    static Build(el: Node): [File, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
 export declare class SimSpec implements XNode {
@@ -50,7 +50,7 @@ export declare class SimSpec implements XNode {
     method: string;
     timeUnits: string;
     constructor(start: number, stop: number, dt: number, saveStep?: number, method?: string, timeUnits?: string);
-    static Build(el: Element): [SimSpec, Error];
+    static Build(el: Node): [SimSpec, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
 export declare class Unit implements XNode {
@@ -60,13 +60,21 @@ export declare class Unit implements XNode {
     constructor(el: Element);
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
+export declare class Product implements XNode {
+    name: string;
+    lang: string;
+    version: string;
+    static Build(el: Node): [Product, Error];
+    toXml(doc: XMLDocument, parent: Element): boolean;
+}
 export declare class Header implements XNode {
     options: Options;
     name: string;
     uuid: string;
     vendor: string;
-    product: string;
+    product: Product;
     constructor(el: Element);
+    static Build(el: Node): [Header, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
 export declare class Dimension implements XNode {
@@ -87,7 +95,7 @@ export declare class Options implements XNode {
     usesOutputs: boolean;
     usesInputs: boolean;
     usesAnnotations: boolean;
-    constructor(el: Element);
+    static Build(el: Node): [Options, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
 export declare class Behavior implements XNode {

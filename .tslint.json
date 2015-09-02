@@ -63,7 +63,7 @@
     ],
     "radix": true,
     "semicolon": true,
-    "switch-default": true,
+    "switch-default": false,
     "triple-equals": [true, "allow-null-check"],
     "typedef": [true,
         "call-signature",

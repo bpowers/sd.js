@@ -482,12 +482,12 @@ define('xmile',["require", "exports"], function (require, exports) {
         'use strict';
         val = val.trim();
         if (/^\s*$/.test(val))
-            return [null, null];
+            return null;
         if (/^(?:true|false)$/i.test(val))
-            return [val.toLowerCase() === 'true', null];
+            return val.toLowerCase() === 'true';
         if (isFinite(val))
-            return [parseFloat(val), null];
-        return [val, null];
+            return parseFloat(val);
+        return val;
     }
     function content(node) {
         'use strict';
@@ -496,18 +496,16 @@ define('xmile',["require", "exports"], function (require, exports) {
             for (var i = 0; i < node.childNodes.length; i++) {
                 var child = node.childNodes.item(i);
                 switch (child.nodeType) {
-                    case 4:
-                        text += child.nodeValue;
-                        break;
                     case 3:
                         text += child.nodeValue.trim();
                         break;
-                    default:
+                    case 4:
+                        text += child.nodeValue;
                         break;
                 }
             }
         }
-        return parseText(text);
+        return text;
     }
     function str(v) {
         'use strict';
@@ -533,12 +531,6 @@ define('xmile',["require", "exports"], function (require, exports) {
             return [v, null];
         return [false, new Error('not boolean: ' + v)];
     }
-    function PointBuilder(el) {
-        'use strict';
-        return [null, null];
-    }
-    exports.PointBuilder = PointBuilder;
-    var b = PointBuilder;
     var Point = (function () {
         function Point(el) {
         }
@@ -567,9 +559,9 @@ define('xmile',["require", "exports"], function (require, exports) {
     })();
     exports.Rect = Rect;
     var File = (function () {
-        function File(version, level, header, simSpec, dimensions, units, behavior, style, models) {
+        function File(version, namespace, header, simSpec, dimensions, units, behavior, style, models) {
             this.version = version;
-            this.level = level;
+            this.namespace = namespace;
             this.header = header;
             this.simSpec = simSpec;
             this.dimensions = dimensions;
@@ -579,7 +571,45 @@ define('xmile',["require", "exports"], function (require, exports) {
             this.models = models;
         }
         File.Build = function (el) {
+            var err;
+            var sval;
+            var version;
+            var namespace;
+            var header;
+            var simSpec;
+            for (var i = 0; i < el.attributes.length; i++) {
+                var attr = el.attributes.item(i);
+                switch (attr.name.toLowerCase()) {
+                    case 'version':
+                        version = attr.value;
+                        break;
+                    case 'xmlns':
+                        namespace = attr.value;
+                        break;
+                }
+            }
+            for (var i = 0; i < el.childNodes.length; i++) {
+                var child = el.childNodes.item(i);
+                if (child.nodeType !== 1)
+                    continue;
+                switch (child.nodeName.toLowerCase()) {
+                    case 'header':
+                        _a = Header.Build(child), header = _a[0], err = _a[1];
+                        if (err)
+                            return [null, new Error('Header: ' + err.error)];
+                        break;
+                    case 'sim_spec':
+                        _b = SimSpec.Build(child), simSpec = _b[0], err = _b[1];
+                        if (err)
+                            return [null, new Error('SimSpec: ' + err.error)];
+                        break;
+                }
+            }
+            console.log('version: ' + version);
+            console.log('namespace: ' + namespace);
+            console.log('header: ' + header);
             return [null, null];
+            var _a, _b;
         };
         File.prototype.toXml = function (doc, parent) {
             return true;
@@ -631,9 +661,64 @@ define('xmile',["require", "exports"], function (require, exports) {
         return Unit;
     })();
     exports.Unit = Unit;
+    var Product = (function () {
+        function Product() {
+        }
+        Product.Build = function (el) {
+            var product = new Product();
+            product.name = content(el);
+            product.lang = 'English';
+            product.version = '';
+            for (var i = 0; i < el.attributes.length; i++) {
+                var attr = el.attributes.item(i);
+                var name_1 = attr.name.toLowerCase();
+                switch (name_1) {
+                    case 'version':
+                        product.version = attr.value;
+                        break;
+                    case 'lang':
+                        product.lang = attr.value;
+                        break;
+                }
+            }
+            return [product, null];
+        };
+        Product.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        return Product;
+    })();
+    exports.Product = Product;
     var Header = (function () {
         function Header(el) {
         }
+        Header.Build = function (el) {
+            var err;
+            var options;
+            var name;
+            var uuid;
+            var vendor;
+            var product;
+            for (var i = 0; i < el.childNodes.length; i++) {
+                var child = el.childNodes.item(i);
+                if (child.nodeType !== 1)
+                    continue;
+                switch (child.nodeName.toLowerCase()) {
+                    case 'options':
+                        _a = Options.Build(child), options = _a[0], err = _a[1];
+                        if (err)
+                            return [null, new Error('Options: ' + err.error)];
+                        break;
+                    case 'product':
+                        _b = Product.Build(child), product = _b[0], err = _b[1];
+                        if (err)
+                            return [null, new Error('Product: ' + err.error)];
+                        break;
+                }
+            }
+            return [null, null];
+            var _a, _b;
+        };
         Header.prototype.toXml = function (doc, parent) {
             return true;
         };
@@ -650,8 +735,11 @@ define('xmile',["require", "exports"], function (require, exports) {
     })();
     exports.Dimension = Dimension;
     var Options = (function () {
-        function Options(el) {
+        function Options() {
         }
+        Options.Build = function (el) {
+            return [null, null];
+        };
         Options.prototype.toXml = function (doc, parent) {
             return true;
         };
@@ -16064,6 +16152,7 @@ define('project',["require", "exports", './common', './xmile', './model', './var
             }
             var _a = xmile.File.Build(xmileElement), file = _a[0], err = _a[1];
             if (err) {
+                console.log('File.Build: ' + err.error);
                 this.valid = false;
                 return false;
             }
