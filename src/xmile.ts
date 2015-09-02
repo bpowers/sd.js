@@ -4,17 +4,14 @@
 
 'use strict';
 
+import {camelCase, i32} from './util';
+
 export class Error {
 	constructor(
 		public error: string) {}
 }
 
 declare function isFinite(n: string|number): boolean;
-
-function i32(n: number): number {
-	'use strict';
-	return n|0;
-}
 
 // expects name to be lowercase
 function attr(node: Node, name: string): string {
@@ -191,38 +188,38 @@ export class File implements XNode {
 	}
 }
 
-/*			let attrib = el.attributes.item(i);
-			let name = attrib.name.toLowerCase();
-			let val = parseText(attrib.value);
-			switch (name) {
-			case 'version':
-				[sval, err] = str(val);
-				if (err)
-					return [null, err];
-				version = sval;
-				break;
-			case 'xmlns':
-				[sval, err] = str(val);
-				if (err)
-					return [null, err];
-				version = sval;
-				break;
-			default:
-				break;
-			}
-
-*/
-
 export class SimSpec implements XNode {
 	public start:     number = 0;
 	public stop:      number = 1;
 	public dt:        number = 1;
-	public saveStep:  number = 1;
+	public saveStep:  number = 0;
 	public method:    string = 'euler';
 	public timeUnits: string = '';
 
+	[indexName: string]: any;
+
 	static Build(el: Node): [SimSpec, Error] {
 		let simSpec = new SimSpec();
+		let err: Error;
+		for (let i = 0; i < el.childNodes.length; i++) {
+			let child = el.childNodes.item(i);
+			if (child.nodeType !== 1) // Element
+				continue;
+			let name = camelCase(child.nodeName.toLowerCase());
+			if (!simSpec.hasOwnProperty(name))
+				continue;
+
+			if (name === 'method' || name === 'timeUnits') {
+				simSpec[name] = content(child);
+			} else {
+				[simSpec[name], err] = num(content(child));
+				if (err)
+					return [null, new Error(child.nodeName + ': ' + err.error)];
+			}
+		}
+
+		if (!simSpec.saveStep)
+			simSpec.saveStep = simSpec.dt;
 
 		switch (simSpec.method) {
 		// supported
@@ -372,10 +369,13 @@ export class Header implements XNode {
 }
 
 export class Dimension implements XNode {
-	name: string;
-	size: string;
+	name: string = '';
+	size: string = '';
 
-	constructor(el: Element) {
+	static Build(el: Node): [Dimension, Error] {
+		let dim = new Dimension();
+		// TODO: implement
+		return [dim, null];
 	}
 
 	toXml(doc: XMLDocument, parent: Element): boolean {
@@ -450,7 +450,7 @@ export class Options implements XNode {
 			// use slice here even for the single char we
 			// are camel-casing to avoid having to check
 			// the length of the string
-			name = name.slice(0, plen) + name.slice(plen+1, plen+2).toUpperCase() + name.slice(plen+2);
+			name = camelCase(name);
 			if (!options.hasOwnProperty(name))
 				continue;
 
@@ -486,11 +486,14 @@ export class Options implements XNode {
 }
 
 export class Behavior implements XNode {
-	allNonNegative:   boolean;
-	stockNonNegative: boolean;
-	flowNonNegative:  boolean;
+	allNonNegative:   boolean = false;
+	stockNonNegative: boolean = false;
+	flowNonNegative:  boolean = false;
 
-	constructor(el: Element) {
+	static Build(el: Node): [Behavior, Error] {
+		let behavior = new Behavior();
+		// TODO
+		return [behavior, null];
 	}
 
 	toXml(doc: XMLDocument, parent: Element): boolean {

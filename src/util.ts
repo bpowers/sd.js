@@ -245,3 +245,17 @@ export function isNaN(n: number): boolean {
 	'use strict';
 	return n !== n;
 }
+
+export function camelCase(s: string): string {
+	'use strict';
+	let i = 0;
+	while ((i = s.indexOf('_')) >= 0 && i < s.length - 1) {
+		s = s.slice(0, i) + s.slice(i+1, i+2).toUpperCase() + s.slice(i+2);
+	}
+	return s;
+}
+
+export function i32(n: number): number {
+	'use strict';
+	return n|0;
+}

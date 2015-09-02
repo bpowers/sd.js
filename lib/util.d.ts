@@ -12,3 +12,5 @@ export declare function qs(e: any, s: any): any;
 export declare function querySelectorInner(e: any, selectors: any): any;
 export declare function qsa(e: any, s: any): any;
 export declare function isNaN(n: number): boolean;
+export declare function camelCase(s: string): string;
+export declare function i32(n: number): number;

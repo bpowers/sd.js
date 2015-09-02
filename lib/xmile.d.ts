@@ -48,6 +48,7 @@ export declare class SimSpec implements XNode {
     saveStep: number;
     method: string;
     timeUnits: string;
+    [indexName: string]: any;
     static Build(el: Node): [SimSpec, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
@@ -85,7 +86,7 @@ export declare class Header implements XNode {
 export declare class Dimension implements XNode {
     name: string;
     size: string;
-    constructor(el: Element);
+    static Build(el: Node): [Dimension, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
 export declare class Options implements XNode {
@@ -122,7 +123,7 @@ export declare class Behavior implements XNode {
     allNonNegative: boolean;
     stockNonNegative: boolean;
     flowNonNegative: boolean;
-    constructor(el: Element);
+    static Build(el: Node): [Behavior, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
 export declare class Style implements XNode {
