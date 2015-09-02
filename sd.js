@@ -559,32 +559,19 @@ define('xmile',["require", "exports"], function (require, exports) {
     })();
     exports.Rect = Rect;
     var File = (function () {
-        function File(version, namespace, header, simSpec, dimensions, units, behavior, style, models) {
-            this.version = version;
-            this.namespace = namespace;
-            this.header = header;
-            this.simSpec = simSpec;
-            this.dimensions = dimensions;
-            this.units = units;
-            this.behavior = behavior;
-            this.style = style;
-            this.models = models;
+        function File() {
         }
         File.Build = function (el) {
-            var err;
-            var sval;
-            var version;
-            var namespace;
-            var header;
-            var simSpec;
+            var file = new File();
+            var err = null;
             for (var i = 0; i < el.attributes.length; i++) {
                 var attr = el.attributes.item(i);
                 switch (attr.name.toLowerCase()) {
                     case 'version':
-                        version = attr.value;
+                        file.version = attr.value;
                         break;
                     case 'xmlns':
-                        namespace = attr.value;
+                        file.namespace = attr.value;
                         break;
                 }
             }
@@ -594,21 +581,22 @@ define('xmile',["require", "exports"], function (require, exports) {
                     continue;
                 switch (child.nodeName.toLowerCase()) {
                     case 'header':
-                        _a = Header.Build(child), header = _a[0], err = _a[1];
+                        _a = Header.Build(child), file.header = _a[0], err = _a[1];
                         if (err)
                             return [null, new Error('Header: ' + err.error)];
                         break;
-                    case 'sim_spec':
-                        _b = SimSpec.Build(child), simSpec = _b[0], err = _b[1];
+                    case 'sim_specs':
+                        _b = SimSpec.Build(child), file.simSpec = _b[0], err = _b[1];
                         if (err)
                             return [null, new Error('SimSpec: ' + err.error)];
                         break;
                 }
             }
-            console.log('version: ' + version);
-            console.log('namespace: ' + namespace);
-            console.log('header: ' + header);
-            return [null, null];
+            console.log('version: ' + file.version);
+            console.log('namespace: ' + file.namespace);
+            console.log('header: ' + file.header);
+            console.log('sim_spec: ' + file.simSpec);
+            return [file, err];
             var _a, _b;
         };
         File.prototype.toXml = function (doc, parent) {

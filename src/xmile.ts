@@ -154,7 +154,7 @@ export class File implements XNode {
 				if (err)
 					return [null, new Error('Header: ' + err.error)];
 				break;
-			case 'sim_spec':
+			case 'sim_specs':
 				[file.simSpec, err] = SimSpec.Build(child);
 				if (err)
 					return [null, new Error('SimSpec: ' + err.error)];
@@ -165,7 +165,7 @@ export class File implements XNode {
 		console.log('version: ' + file.version);
 		console.log('namespace: ' + file.namespace);
 		console.log('header: ' + file.header);
-		console.log('sim_spec: ' + file.header);
+		console.log('sim_spec: ' + file.simSpec);
 
 		return [file, err];
 	}
