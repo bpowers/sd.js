@@ -1,8 +1,8 @@
 import type = require('./type');
 export declare class Project implements type.Project {
     name: string;
-    main: type.Module;
     valid: boolean;
+    main: type.Module;
     xmile: XMLDocument;
     timespec: type.TimeSpec;
     models: type.ModelSet;

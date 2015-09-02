@@ -11,7 +11,6 @@ import common = require('./common');
 import util = require('./util');
 import lex = require('./lex');
 import type = require('./type');
-import xmile = require('./xmile');
 
 export class Variable implements type.Variable {
 	xmile: any;

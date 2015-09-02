@@ -66,6 +66,11 @@ export class Rect implements Point, Size, Node {
 	}
 }
 
+export function FileBuilder(el: Element): [File, Error] {
+	'use strict';
+	return [null, null];
+}
+
 export class File implements Node {
 	version:    string;
 	level:      number;
@@ -78,6 +83,10 @@ export class File implements Node {
 	models:     Model[];
 
 	constructor(el: Element) {
+	}
+
+	static Build(el: Element): [File, Error] {
+		return [null, null];
 	}
 
 	toXml(doc: XMLDocument, parent: Element): boolean {

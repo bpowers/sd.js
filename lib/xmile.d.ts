@@ -31,6 +31,7 @@ export declare class Rect implements Point, Size, Node {
     constructor(el: Element);
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
+export declare function FileBuilder(el: Element): [File, Error];
 export declare class File implements Node {
     version: string;
     level: number;
@@ -42,6 +43,7 @@ export declare class File implements Node {
     style: Style;
     models: Model[];
     constructor(el: Element);
+    static Build(el: Element): [File, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
 export declare class SimSpec implements Node {

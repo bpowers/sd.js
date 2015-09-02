@@ -7,6 +7,7 @@
 import common = require('./common');
 import type = require('./type');
 import jxon = require('./jxon');
+// import xmile = require('./xmile');
 import compat = require('./compat');
 
 import {normalizeTimespec} from './util';
@@ -34,8 +35,10 @@ function getXmileElement(xmileDoc: XMLDocument): Element {
  */
 export class Project implements type.Project {
 	name: string;
-	main: type.Module;
 	valid: boolean;
+
+	main: type.Module;
+
 	xmile: XMLDocument;
 	timespec: type.TimeSpec;
 	models: type.ModelSet;
@@ -62,20 +65,23 @@ export class Project implements type.Project {
 		}
 		let xmileElement = getXmileElement(xmileDoc);
 
+		// FIXME: compat translation of XML
+
 		// finished with XMLDocument at this point, we now
 		// have a tree of native JS objects with a 1:1
 		// correspondence to the XMILE doc
+		/*
+		let [file, err] = xmile.FileBuilder(xmileElement);
+		if (err) {
+			this.valid = false;
+			return false;
+		}
+		*/
+
+		// FIXME: compat translation of equations
 		let xmile = jxon.build(xmileElement);
 		if (!(xmile.model instanceof Array))
 			xmile.model = [xmile.model];
-
-		for (let v in compat.vendors) {
-			if (!compat.vendors.hasOwnProperty(v))
-				continue;
-
-			if (compat.vendors[v].match(xmile))
-				xmile = compat.vendors[v].translate(xmile);
-		}
 
 		this.xmile = xmile;
 		if (typeof xmile.header.name === 'string') {
