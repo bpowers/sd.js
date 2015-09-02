@@ -38,7 +38,6 @@ export declare class File implements XNode {
     behavior: Behavior;
     style: Style;
     models: Model[];
-    constructor(version: string, namespace: string, header: Header, simSpec: SimSpec, dimensions: Dimension[], units: Unit[], behavior: Behavior, style: Style, models: Model[]);
     static Build(el: Node): [File, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
@@ -49,7 +48,6 @@ export declare class SimSpec implements XNode {
     saveStep: number;
     method: string;
     timeUnits: string;
-    constructor(start: number, stop: number, dt: number, saveStep?: number, method?: string, timeUnits?: string);
     static Build(el: Node): [SimSpec, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }

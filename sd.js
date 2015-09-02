@@ -618,20 +618,17 @@ define('xmile',["require", "exports"], function (require, exports) {
     })();
     exports.File = File;
     var SimSpec = (function () {
-        function SimSpec(start, stop, dt, saveStep, method, timeUnits) {
-            if (saveStep === void 0) { saveStep = dt; }
-            if (method === void 0) { method = 'euler'; }
-            if (timeUnits === void 0) { timeUnits = ''; }
-            this.start = start;
-            this.stop = stop;
-            this.dt = dt;
-            this.saveStep = saveStep;
-            this.method = method;
-            this.timeUnits = timeUnits;
+        function SimSpec() {
+            this.start = 0;
+            this.stop = 1;
+            this.dt = 1;
+            this.saveStep = 1;
+            this.method = 'euler';
+            this.timeUnits = '';
         }
         SimSpec.Build = function (el) {
-            var method = '';
-            switch (method) {
+            var simSpec = new SimSpec();
+            switch (simSpec.method) {
                 case 'euler':
                     break;
                 case 'rk4':
@@ -639,12 +636,14 @@ define('xmile',["require", "exports"], function (require, exports) {
                 case 'rk45':
                 case 'gear':
                     console.log('valid but unsupported integration ' +
-                        'method: ' + method + '. using euler');
-                    method = 'euler';
+                        'method: ' + simSpec.method +
+                        '. using euler');
+                    simSpec.method = 'euler';
                     break;
                 default:
-                    return [null, new Error('unknown integration method ' + method)];
+                    return [null, new Error('unknown integration method ' + simSpec.method)];
             }
+            return [simSpec, null];
         };
         SimSpec.prototype.toXml = function (doc, parent) {
             return true;
@@ -663,12 +662,13 @@ define('xmile',["require", "exports"], function (require, exports) {
     exports.Unit = Unit;
     var Product = (function () {
         function Product() {
+            this.name = 'unknown';
+            this.lang = 'English';
+            this.version = '';
         }
         Product.Build = function (el) {
             var product = new Product();
             product.name = content(el);
-            product.lang = 'English';
-            product.version = '';
             for (var i = 0; i < el.attributes.length; i++) {
                 var attr = el.attributes.item(i);
                 var name_1 = attr.name.toLowerCase();

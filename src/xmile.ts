@@ -118,58 +118,56 @@ export class Rect implements Point, Size, XNode {
 }
 
 export class File implements XNode {
-	constructor(
-		public version:    string,
-		public namespace:  string,
-		public header:     Header,
-		public simSpec:    SimSpec,
-		public dimensions: Dimension[],
-		public units:      Unit[],
-		public behavior:   Behavior,
-		public style:      Style,
-		public models:     Model[]) {
-	}
+	public version:    string;
+	public namespace:  string;
+	public header:     Header;
+	public simSpec:    SimSpec;
+	public dimensions: Dimension[];
+	public units:      Unit[];
+	public behavior:   Behavior;
+	public style:      Style;
+	public models:     Model[];
 
 	static Build(el: Node): [File, Error] {
-		let err: Error;
-		let sval: string;
-		let version: string;
-		let namespace: string;
-		let header: Header;
-		let simSpec: SimSpec;
+		let file = new File();
+		let err: Error = null;
+
 		for (let i = 0; i < el.attributes.length; i++) {
 			let attr = el.attributes.item(i);
 			switch (attr.name.toLowerCase()) {
 			case 'version':
-				version = attr.value;
+				file.version = attr.value;
 				break;
 			case 'xmlns':
-				namespace = attr.value;
+				file.namespace = attr.value;
 				break;
 			}
 		}
+
 		for (let i = 0; i < el.childNodes.length; i++) {
 			let child = el.childNodes.item(i);
 			if (child.nodeType !== 1) // Element
 				continue;
 			switch (child.nodeName.toLowerCase()) {
 			case 'header':
-				[header, err] = Header.Build(child);
+				[file.header, err] = Header.Build(child);
 				if (err)
 					return [null, new Error('Header: ' + err.error)];
 				break;
 			case 'sim_spec':
-				[simSpec, err] = SimSpec.Build(child);
+				[file.simSpec, err] = SimSpec.Build(child);
 				if (err)
 					return [null, new Error('SimSpec: ' + err.error)];
 				break;
 			}
 		}
-		console.log('version: ' + version);
-		console.log('namespace: ' + namespace);
-		console.log('header: ' + header);
 
-		return [null, null];
+		console.log('version: ' + file.version);
+		console.log('namespace: ' + file.namespace);
+		console.log('header: ' + file.header);
+		console.log('sim_spec: ' + file.header);
+
+		return [file, err];
 	}
 
 	toXml(doc: XMLDocument, parent: Element): boolean {
@@ -200,17 +198,17 @@ export class File implements XNode {
 */
 
 export class SimSpec implements XNode {
-	constructor(
-		public start:     number,
-		public stop:      number,
-		public dt:        number,
-		public saveStep:  number = dt,
-		public method:    string = 'euler',
-		public timeUnits: string = '') {}
+	public start:     number = 0;
+	public stop:      number = 1;
+	public dt:        number = 1;
+	public saveStep:  number = 1;
+	public method:    string = 'euler';
+	public timeUnits: string = '';
 
 	static Build(el: Node): [SimSpec, Error] {
-		let method = '';
-		switch (method) {
+		let simSpec = new SimSpec();
+
+		switch (simSpec.method) {
 		// supported
 		case 'euler':
 			break;
@@ -221,13 +219,16 @@ export class SimSpec implements XNode {
 		case 'gear':
 			console.log(
 				'valid but unsupported integration ' +
-					'method: ' + method + '. using euler');
-			method = 'euler';
+					'method: ' + simSpec.method +
+					'. using euler');
+			simSpec.method = 'euler';
 			break;
 		// unknown
 		default:
-			return [null, new Error('unknown integration method ' + method)];
+			return [null, new Error('unknown integration method ' + simSpec.method)];
 		}
+
+		return [simSpec, null];
 	}
 
 	toXml(doc: XMLDocument, parent: Element): boolean {
