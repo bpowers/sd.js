@@ -9,16 +9,18 @@ export interface Table {
 	y: number[];
 }
 
-export interface TimeSpec {
-	start: number;
-	stop: number;
-	dt: number;
-	savestep: number;
+export interface SimSpec {
+	start:     number;
+	stop:      number;
+	dt:        number;
+	saveStep:  number;
+	method:    string;
+	timeUnits: string;
 }
 
 export interface Series {
-	name: string;
-	time: Float64Array;
+	name:   string;
+	time:   Float64Array;
 	values: Float64Array;
 }
 
@@ -35,19 +37,18 @@ export interface RefSet {
 }
 
 export interface Model {
-	name: string;
-	valid: boolean;
+	name:    string;
+	valid:   boolean;
 	modules: ModuleMap;
-	tables: TableMap;
+	tables:  TableMap;
 	project: Project;
-	vars: VariableSet;
-
-	timespec: TimeSpec;
+	vars:    VariableSet;
+	simSpec: SimSpec;
 
 	lookup(name: string): Variable;
 }
 
-export interface ModelSet {
+export interface ModelMap {
 	[name: string]: Model;
 }
 
@@ -60,10 +61,10 @@ export interface TableMap {
 }
 
 export interface Project {
-	name: string;
-	main: Module;
-	timespec: TimeSpec;
-	models: ModelSet;
+	name:    string;
+	simSpec: SimSpec;
+	main:    Module;
+
 	model(name?: string): Model;
 }
 

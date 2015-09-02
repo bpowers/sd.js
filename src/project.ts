@@ -6,11 +6,9 @@
 
 import common = require('./common');
 import type = require('./type');
-import jxon = require('./jxon');
-// import xmile = require('./xmile');
+import xmile = require('./xmile');
 import compat = require('./compat');
 
-import {normalizeTimespec} from './util';
 import {Model} from './model';
 import {Module} from './vars';
 
@@ -34,18 +32,20 @@ function getXmileElement(xmileDoc: XMLDocument): Element {
  * A single project may include models + non-model elements
  */
 export class Project implements type.Project {
-	name: string;
-	valid: boolean;
+	name:    string;
+	valid:   boolean;
+	simSpec: type.SimSpec;
+	main:    type.Module;
 
-	main: type.Module;
-
-	xmile: XMLDocument;
-	timespec: type.TimeSpec;
-	models: type.ModelSet;
+	private files: xmile.File[];
+	private xmile: XMLDocument;
+	private models: type.ModelMap;
 
 	constructor(xmileDoc: XMLDocument) {
 		common.err = null;
 
+		this.files = [];
+		this.models = {};
 		this.valid = false;
 		this.addDocument(xmileDoc, true);
 	}
@@ -70,42 +70,33 @@ export class Project implements type.Project {
 		// finished with XMLDocument at this point, we now
 		// have a tree of native JS objects with a 1:1
 		// correspondence to the XMILE doc
-		/*
 		let [file, err] = xmile.FileBuilder(xmileElement);
 		if (err) {
 			this.valid = false;
 			return false;
 		}
-		*/
 
 		// FIXME: compat translation of equations
-		let xmile = jxon.build(xmileElement);
-		if (!(xmile.model instanceof Array))
-			xmile.model = [xmile.model];
 
-		this.xmile = xmile;
-		if (typeof xmile.header.name === 'string') {
-			this.name = xmile.header.name;
-		} else {
-			this.name = 'main project';
+		this.files.push(file);
+		// FIXME: pull models + other stuff out of File.
+
+		if (isMain) {
+			this.name = file.header.name || 'sd project';
+			this.simSpec = file.simSpec;
+			if (!file.simSpec) {
+				this.valid = false;
+				return false;
+			}
 		}
 
-		// get our time info: start-time, end-time, dt, etc.
-		this.timespec = xmile.sim_specs;
-		if (!this.timespec) {
-			this.valid = false;
-			return false;
+		for (let i in file.models) {
+			if (!file.models.hasOwnProperty(i))
+				continue;
+			let xModel = file.models[i];
+			this.models[xModel.name] = new Model(this, xModel);
 		}
-		normalizeTimespec(this.timespec);
 
-		this.models = {};
-
-		for (let i = 0; i < xmile.model.length; i++) {
-			let mdl = xmile.model[i];
-			if (!mdl['@name'])
-				mdl['@name'] = 'main';
-			this.models[mdl['@name']] = new Model(this, mdl);
-		}
 		this.main = new Module(this, null, {'@name': 'main'});
 		this.valid = true;
 		return true;

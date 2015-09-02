@@ -24,7 +24,7 @@ export class Model implements type.Model {
 	project: type.Project;
 	vars: type.VariableSet;
 
-	_timespec: type.TimeSpec;
+	private spec: type.SimSpec;
 
 	constructor(project: type.Project, xmile: any) {
 		this.project = project;
@@ -33,23 +33,16 @@ export class Model implements type.Model {
 		this.vars     = {};
 		this.tables   = {};
 		this.modules  = {};
+
 		this._parseVars(xmile.variables);
-		if (xmile.sim_specs) {
-			this._timespec = xmile.sim_specs;
-		} else {
-			this._timespec = null;
-		}
-		util.normalizeTimespec(this._timespec);
+
+		this.spec = xmile.simSpec || null;
 		this.valid = true;
 		return;
 	}
 
-	get timespec(): type.TimeSpec {
-		if (this._timespec) {
-			return this._timespec;
-		} else {
-			return this.project.timespec;
-		}
+	get simSpec(): type.SimSpec {
+		return this.spec || this.project.simSpec;
 	}
 
 	/**
@@ -124,7 +117,8 @@ export class Model implements type.Model {
 		if (id in this.vars)
 			return this.vars[id];
 		let parts = id.split('.');
-		let nextModel = this.project.models[this.modules[parts[0]].modelName];
+		let module = this.modules[parts[0]];
+		let nextModel = this.project.model(module.modelName);
 		return nextModel.lookup(parts.slice(1).join('.'));
 	}
 

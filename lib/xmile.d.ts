@@ -1,5 +1,6 @@
-export interface Error {
+export declare class Error {
     error: string;
+    constructor(error: string);
 }
 export interface NodeStatic {
     new (el: Element): NodeStatic;
@@ -47,13 +48,14 @@ export declare class File implements Node {
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
 export declare class SimSpec implements Node {
-    timeUnits: string;
     start: number;
     stop: number;
     dt: number;
-    savestep: number;
+    saveStep: number;
     method: string;
-    constructor(el: Element);
+    timeUnits: string;
+    constructor(start: number, stop: number, dt: number, saveStep?: number, method?: string, timeUnits?: string);
+    static Build(el: Element): [SimSpec, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
 export declare class Unit implements Node {

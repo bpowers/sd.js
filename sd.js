@@ -470,78 +470,216 @@ define('common',["require", "exports"], function (require, exports) {
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-define('jxon',["require", "exports"], function (require, exports) {
-    function parseText(val) {
-        'use strict';
-        val = val.trim();
-        if (/^\s*$/.test(val))
-            return null;
-        if (/^(?:true|false)$/i.test(val))
-            return val.toLowerCase() === 'true';
-        if (isFinite(val))
-            return parseFloat(val);
-        return val;
-    }
-    function build(parent) {
-        'use strict';
-        var hasAttrs = false;
-        var result = true;
-        var collectedText = '';
-        if (parent.hasAttributes()) {
-            result = {};
-            hasAttrs = true;
-            for (var len = 0; len < parent.attributes.length; len++) {
-                var attrib = parent.attributes.item(len);
-                result['@' + attrib.name.toLowerCase()] = parseText(attrib.value);
-            }
+define('xmile',["require", "exports"], function (require, exports) {
+    var Error = (function () {
+        function Error(error) {
+            this.error = error;
         }
-        if (parent.hasChildNodes()) {
-            for (var i = 0; i < parent.childNodes.length; i++) {
-                var node = parent.childNodes.item(i);
-                switch (node.nodeType) {
-                    case 4:
-                        collectedText += node.nodeValue;
-                        break;
-                    case 3:
-                        collectedText += node.nodeValue.trim();
-                        break;
-                    case 1:
-                        if (!hasAttrs) {
-                            result = {};
-                            hasAttrs = true;
-                        }
-                        var prop = node.nodeName.toLowerCase();
-                        var content = build(node);
-                        if (result.hasOwnProperty(prop)) {
-                            if (!(result[prop] instanceof Array))
-                                result[prop] = [result[prop]];
-                            result[prop].push(content);
-                        }
-                        else {
-                            result[prop] = content;
-                        }
-                        break;
-                    default:
-                        console.log('unknown nodeType: ' + node.nodeType);
-                }
-            }
-        }
-        if (collectedText) {
-            if (hasAttrs) {
-                result.keyValue = collectedText;
-            }
-            else {
-                result = parseText(collectedText);
-            }
-        }
-        return result;
-    }
-    exports.build = build;
-    function unbuild() {
+        return Error;
+    })();
+    exports.Error = Error;
+    function PointBuilder(el) {
         'use strict';
-        return;
+        return [null, null];
     }
-    exports.unbuild = unbuild;
+    exports.PointBuilder = PointBuilder;
+    var b = PointBuilder;
+    var Point = (function () {
+        function Point(el) {
+        }
+        Point.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        return Point;
+    })();
+    exports.Point = Point;
+    var Size = (function () {
+        function Size(el) {
+        }
+        Size.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        return Size;
+    })();
+    exports.Size = Size;
+    var Rect = (function () {
+        function Rect(el) {
+        }
+        Rect.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        return Rect;
+    })();
+    exports.Rect = Rect;
+    function FileBuilder(el) {
+        'use strict';
+        return [null, null];
+    }
+    exports.FileBuilder = FileBuilder;
+    var File = (function () {
+        function File(el) {
+        }
+        File.Build = function (el) {
+            return [null, null];
+        };
+        File.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        return File;
+    })();
+    exports.File = File;
+    var SimSpec = (function () {
+        function SimSpec(start, stop, dt, saveStep, method, timeUnits) {
+            if (saveStep === void 0) { saveStep = dt; }
+            if (method === void 0) { method = 'euler'; }
+            if (timeUnits === void 0) { timeUnits = ''; }
+            this.start = start;
+            this.stop = stop;
+            this.dt = dt;
+            this.saveStep = saveStep;
+            this.method = method;
+            this.timeUnits = timeUnits;
+        }
+        SimSpec.Build = function (el) {
+            var method = '';
+            switch (method) {
+                case 'euler':
+                    break;
+                case 'rk4':
+                case 'rk2':
+                case 'rk45':
+                case 'gear':
+                    console.log('valid but unsupported integration ' +
+                        'method: ' + method + '. using euler');
+                    method = 'euler';
+                    break;
+                default:
+                    return [null, new Error('unknown integration method ' + method)];
+            }
+        };
+        SimSpec.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        return SimSpec;
+    })();
+    exports.SimSpec = SimSpec;
+    var Unit = (function () {
+        function Unit(el) {
+        }
+        Unit.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        return Unit;
+    })();
+    exports.Unit = Unit;
+    var Header = (function () {
+        function Header(el) {
+        }
+        Header.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        return Header;
+    })();
+    exports.Header = Header;
+    var Dimension = (function () {
+        function Dimension(el) {
+        }
+        Dimension.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        return Dimension;
+    })();
+    exports.Dimension = Dimension;
+    var Options = (function () {
+        function Options(el) {
+        }
+        Options.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        return Options;
+    })();
+    exports.Options = Options;
+    var Behavior = (function () {
+        function Behavior(el) {
+        }
+        Behavior.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        return Behavior;
+    })();
+    exports.Behavior = Behavior;
+    var Style = (function () {
+        function Style(el) {
+        }
+        Style.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        return Style;
+    })();
+    exports.Style = Style;
+    var Data = (function () {
+        function Data(el) {
+        }
+        Data.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        return Data;
+    })();
+    exports.Data = Data;
+    var Model = (function () {
+        function Model(el) {
+        }
+        Model.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        return Model;
+    })();
+    exports.Model = Model;
+    var Variable = (function () {
+        function Variable(el) {
+        }
+        Variable.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        return Variable;
+    })();
+    exports.Variable = Variable;
+    var View = (function () {
+        function View(el) {
+        }
+        View.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        return View;
+    })();
+    exports.View = View;
+    var GF = (function () {
+        function GF(el) {
+        }
+        GF.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        return GF;
+    })();
+    exports.GF = GF;
+    var Scale = (function () {
+        function Scale(el) {
+        }
+        Scale.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        return Scale;
+    })();
+    exports.Scale = Scale;
+    var Connect = (function () {
+        function Connect(el) {
+        }
+        Connect.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        return Connect;
+    })();
+    exports.Connect = Connect;
 });
 
 // Copyright 2015 Bobby Powers. All rights reserved.
@@ -570,17 +708,6 @@ define('util',["require", "exports"], function (require, exports) {
         return s.replace(/\\n/g, '_').replace(/\s/g, '_').toLowerCase();
     }
     exports.eName = eName;
-    ;
-    function normalizeTimespec(specs) {
-        'use strict';
-        if (!specs)
-            return;
-        if (!specs.savestep)
-            specs.savestep = specs.dt;
-        if (!specs['@method'])
-            specs['@method'] = 'euler';
-    }
-    exports.normalizeTimespec = normalizeTimespec;
     ;
     function set() {
         'use strict';
@@ -15470,7 +15597,7 @@ define('sim',["require", "exports", './util', './vars', './runtime', 'q', 'musta
             this.modules = mods.join(NLSP);
             this.init = init.join(NLSP);
             this.initialVals = JSON.stringify(initials, null, SP);
-            this.timespecVals = JSON.stringify(model.timespec, null, SP);
+            this.timespecVals = JSON.stringify(model.simSpec, null, SP);
             this.tableVals = JSON.stringify(tables, null, SP);
             this.calcI = ci.join(NLSP);
             this.calcF = cf.join(NLSP);
@@ -15727,24 +15854,13 @@ define('model',["require", "exports", './util', './vars', './draw', './sim'], fu
             this.tables = {};
             this.modules = {};
             this._parseVars(xmile.variables);
-            if (xmile.sim_specs) {
-                this._timespec = xmile.sim_specs;
-            }
-            else {
-                this._timespec = null;
-            }
-            util.normalizeTimespec(this._timespec);
+            this.spec = xmile.simSpec || null;
             this.valid = true;
             return;
         }
-        Object.defineProperty(Model.prototype, "timespec", {
+        Object.defineProperty(Model.prototype, "simSpec", {
             get: function () {
-                if (this._timespec) {
-                    return this._timespec;
-                }
-                else {
-                    return this.project.timespec;
-                }
+                return this.spec || this.project.simSpec;
             },
             enumerable: true,
             configurable: true
@@ -15808,7 +15924,8 @@ define('model',["require", "exports", './util', './vars', './draw', './sim'], fu
             if (id in this.vars)
                 return this.vars[id];
             var parts = id.split('.');
-            var nextModel = this.project.models[this.modules[parts[0]].modelName];
+            var module = this.modules[parts[0]];
+            var nextModel = this.project.model(module.modelName);
             return nextModel.lookup(parts.slice(1).join('.'));
         };
         Model.prototype.sim = function (isStandalone) {
@@ -15834,7 +15951,7 @@ define('model',["require", "exports", './util', './vars', './draw', './sim'], fu
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-define('project',["require", "exports", './common', './jxon', './util', './model', './vars'], function (require, exports, common, jxon, util_1, model_1, vars_1) {
+define('project',["require", "exports", './common', './xmile', './model', './vars'], function (require, exports, common, xmile, model_1, vars_1) {
     function getXmileElement(xmileDoc) {
         'use strict';
         var i;
@@ -15848,6 +15965,8 @@ define('project',["require", "exports", './common', './jxon', './util', './model
     var Project = (function () {
         function Project(xmileDoc) {
             common.err = null;
+            this.files = [];
+            this.models = {};
             this.valid = false;
             this.addDocument(xmileDoc, true);
         }
@@ -15864,28 +15983,25 @@ define('project',["require", "exports", './common', './jxon', './util', './model
                 return false;
             }
             var xmileElement = getXmileElement(xmileDoc);
-            var xmile = jxon.build(xmileElement);
-            if (!(xmile.model instanceof Array))
-                xmile.model = [xmile.model];
-            this.xmile = xmile;
-            if (typeof xmile.header.name === 'string') {
-                this.name = xmile.header.name;
-            }
-            else {
-                this.name = 'main project';
-            }
-            this.timespec = xmile.sim_specs;
-            if (!this.timespec) {
+            var _a = xmile.FileBuilder(xmileElement), file = _a[0], err = _a[1];
+            if (err) {
                 this.valid = false;
                 return false;
             }
-            util_1.normalizeTimespec(this.timespec);
-            this.models = {};
-            for (var i = 0; i < xmile.model.length; i++) {
-                var mdl = xmile.model[i];
-                if (!mdl['@name'])
-                    mdl['@name'] = 'main';
-                this.models[mdl['@name']] = new model_1.Model(this, mdl);
+            this.files.push(file);
+            if (isMain) {
+                this.name = file.header.name || 'sd project';
+                this.simSpec = file.simSpec;
+                if (!file.simSpec) {
+                    this.valid = false;
+                    return false;
+                }
+            }
+            for (var i in file.models) {
+                if (!file.models.hasOwnProperty(i))
+                    continue;
+                var xModel = file.models[i];
+                this.models[xModel.name] = new model_1.Model(this, xModel);
             }
             this.main = new vars_1.Module(this, null, { '@name': 'main' });
             this.valid = true;

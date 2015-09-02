@@ -9,9 +9,9 @@ export declare class Model implements type.Model {
     tables: type.TableMap;
     project: type.Project;
     vars: type.VariableSet;
-    _timespec: type.TimeSpec;
+    private spec;
     constructor(project: type.Project, xmile: any);
-    timespec: type.TimeSpec;
+    simSpec: type.SimSpec;
     _parseVars(defs: any): void;
     lookup(id: string): type.Variable;
     sim(isStandalone: boolean): sim.Sim;

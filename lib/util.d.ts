@@ -1,7 +1,6 @@
 export declare function titleCase(str: string): string;
 export declare function dName(s: string): string;
 export declare function eName(s: string): string;
-export declare function normalizeTimespec(specs: any): void;
 export declare function set(...args: string[]): any;
 export declare function partition(array: any[], l: number, r: number, p: number): number;
 export declare function sort(array: any[], l?: number, r?: number, part?: typeof partition): void;

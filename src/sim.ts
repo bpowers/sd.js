@@ -106,7 +106,7 @@ export class TemplateContext {
 		this.modules = mods.join(NLSP);
 		this.init = init.join(NLSP);
 		this.initialVals = JSON.stringify(initials, null, SP);
-		this.timespecVals = JSON.stringify(model.timespec, null, SP);
+		this.timespecVals = JSON.stringify(model.simSpec, null, SP);
 		this.tableVals = JSON.stringify(tables, null, SP);
 		this.calcI = ci.join(NLSP);
 		this.calcF = cf.join(NLSP);

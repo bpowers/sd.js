@@ -2,11 +2,13 @@ export interface Table {
     x: number[];
     y: number[];
 }
-export interface TimeSpec {
+export interface SimSpec {
     start: number;
     stop: number;
     dt: number;
-    savestep: number;
+    saveStep: number;
+    method: string;
+    timeUnits: string;
 }
 export interface Series {
     name: string;
@@ -29,10 +31,10 @@ export interface Model {
     tables: TableMap;
     project: Project;
     vars: VariableSet;
-    timespec: TimeSpec;
+    simSpec: SimSpec;
     lookup(name: string): Variable;
 }
-export interface ModelSet {
+export interface ModelMap {
     [name: string]: Model;
 }
 export interface ModuleMap {
@@ -43,9 +45,8 @@ export interface TableMap {
 }
 export interface Project {
     name: string;
+    simSpec: SimSpec;
     main: Module;
-    timespec: TimeSpec;
-    models: ModelSet;
     model(name?: string): Model;
 }
 export interface Offsets {

@@ -31,23 +31,6 @@ export function eName(s: string): string {
 };
 
 /**
- * Extracts the <simspecs> information into nice,
- * usable, validated object.
- *
- * @param simspecs DOM node
- * @return A validated specs object on success, null on failure
- */
-export function normalizeTimespec(specs: any): void {
-	'use strict';
-	if (!specs)
-		return;
-	if (!specs.savestep)
-		specs.savestep = specs.dt;
-	if (!specs['@method'])
-		specs['@method'] = 'euler';
-};
-
-/**
  * Turns the array of arguments into a hashset.
  * Bascially an object like:
  *

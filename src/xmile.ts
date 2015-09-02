@@ -4,8 +4,9 @@
 
 'use strict';
 
-export interface Error {
-	error: string;
+export class Error {
+	constructor(
+		public error: string) {}
 }
 
 export interface NodeStatic {
@@ -95,14 +96,34 @@ export class File implements Node {
 }
 
 export class SimSpec implements Node {
-	timeUnits: string;
-	start:     number;
-	stop:      number;
-	dt:        number;
-	savestep:  number;
-	method:    string;
+	constructor(
+		public start:     number,
+		public stop:      number,
+		public dt:        number,
+		public saveStep:  number = dt,
+		public method:    string = 'euler',
+		public timeUnits: string = '') {}
 
-	constructor(el: Element) {
+	static Build(el: Element): [SimSpec, Error] {
+		let method = '';
+		switch (method) {
+		// supported
+		case 'euler':
+			break;
+		// valid, but not implemented
+		case 'rk4':
+		case 'rk2':
+		case 'rk45':
+		case 'gear':
+			console.log(
+				'valid but unsupported integration ' +
+					'method: ' + method + '. using euler');
+			method = 'euler';
+			break;
+		// unknown
+		default:
+			return [null, new Error('unknown integration method ' + method)];
+		}
 	}
 
 	toXml(doc: XMLDocument, parent: Element): boolean {

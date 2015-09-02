@@ -119,3 +119,8 @@ Uglifying file: /home/bpowers/p/sd.js/build/sd.nakid.js
 
 The standalone sd.js library is now available at `build/sd.js`, and
 includes all the dependencies (Snap.svg, Mustache and Q).
+
+TODO
+----
+
+- logging framework
