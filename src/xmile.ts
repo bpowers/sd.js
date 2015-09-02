@@ -70,6 +70,9 @@ function num(v: any): [number, Error] {
 		return [0, null];
 	if (typeof v === 'number')
 		return [v, null];
+	let n = parseFloat(v);
+	if (isFinite(n))
+		return [n, null];
 	return [NaN, new Error('not number: ' + v)];
 }
 
@@ -132,14 +135,14 @@ export class Rect implements Point, Size, XNode {
 
 export class File implements XNode {
 	version:    string;
-	namespace:  string;
+	namespace:  string      = 'https://docs.oasis-open.org/xmile/ns/XMILE/v1.0';
 	header:     Header;
 	simSpec:    SimSpec;
-	dimensions: Dimension[];
-	units:      Unit[];
+	dimensions: Dimension[] = [];
+	units:      Unit[]      = [];
 	behavior:   Behavior;
 	style:      Style;
-	models:     Model[];
+	models:     Model[]     = [];
 
 	static Build(el: Node): [File, Error] {
 		let file = new File();
@@ -158,6 +161,7 @@ export class File implements XNode {
 		}
 
 		for (let i = 0; i < el.childNodes.length; i++) {
+			let model: Model;
 			let child = el.childNodes.item(i);
 			if (child.nodeType !== 1) // Element
 				continue;
@@ -172,6 +176,12 @@ export class File implements XNode {
 				if (err)
 					return [null, new Error('SimSpec: ' + err.error)];
 				break;
+			case 'model':
+				[model, err] = Model.Build(child);
+				if (err)
+					return [null, new Error('SimSpec: ' + err.error)];
+				file.models.push(model);
+				break;
 			}
 		}
 
@@ -179,6 +189,7 @@ export class File implements XNode {
 		console.log('namespace: ' + file.namespace);
 		console.log('header: ' + file.header);
 		console.log('sim_spec: ' + file.simSpec);
+		console.log('models: ' + file.models.length);
 
 		return [file, err];
 	}
@@ -384,39 +395,39 @@ export class Dimension implements XNode {
 }
 
 export class Options implements XNode {
-	namespaces:       string[];
-	usesArrays:        boolean = false;
-	usesMacros:        boolean = false;
-	usesConveyor:      boolean = false;
-	usesQueue:         boolean = false;
-	usesSubmodels:     boolean = false;
-	usesEventPosters:  boolean = false;
-	hasModelView:      boolean = false;
-	usesOutputs:       boolean = false;
-	usesInputs:        boolean = false;
-	usesAnnotation:    boolean = false;
+	namespaces:        string[] = [];
+	usesArrays:        boolean  = false;
+	usesMacros:        boolean  = false;
+	usesConveyor:      boolean  = false;
+	usesQueue:         boolean  = false;
+	usesSubmodels:     boolean  = false;
+	usesEventPosters:  boolean  = false;
+	hasModelView:      boolean  = false;
+	usesOutputs:       boolean  = false;
+	usesInputs:        boolean  = false;
+	usesAnnotation:    boolean  = false;
 
 	// arrays
-	maximumDimensions: number  = 1;
-	invalidIndexValue: number  = 0; // only 0 or NaN
+	maximumDimensions: number   = 1;
+	invalidIndexValue: number   = 0; // only 0 or NaN
 	// macros
-	recursiveMacros:   boolean = false;
-	optionFilters:     boolean = false;
+	recursiveMacros:   boolean  = false;
+	optionFilters:     boolean  = false;
 	// conveyors
-	arrest:            boolean = false;
-	leak:              boolean = false;
+	arrest:            boolean  = false;
+	leak:              boolean  = false;
 	// queues
-	overflow:          boolean = false;
+	overflow:          boolean  = false;
 	// event posters
-	messages:          boolean = false;
+	messages:          boolean  = false;
 	// outputs
-	numericDisplay:    boolean = false;
-	lamp:              boolean = false;
-	gauge:             boolean = false;
+	numericDisplay:    boolean  = false;
+	lamp:              boolean  = false;
+	gauge:             boolean  = false;
 	// inputs
-	numericInput:      boolean = false;
-	list:              boolean = false;
-	graphicalInput:    boolean = false;
+	numericInput:      boolean  = false;
+	list:              boolean  = false;
+	graphicalInput:    boolean  = false;
 
 	// avoids an 'implicit any' error when setting options in
 	// Build below 'indexName' to avoid a spurious tslint
@@ -524,12 +535,48 @@ export class Data implements XNode {
 }
 
 export class Model implements XNode {
-	name:      string;
-	simSpec:   SimSpec;
-	variables: Variable[];
-	views:     View[];
+	name:        string     = '';
+	run:         boolean    = false;
+	namespaces:  string[];
+	resource:    string; // path or URL to separate resource file
+	simSpec:     SimSpec;
+	// behavior: Behavior;
+	variables:   Variable[] = [];
+	views:       View[]     = [];
 
-	constructor(el: Element) {
+	static Build(el: Node): [Model, Error] {
+		let model = new Model();
+		let err: Error;
+		for (let i = 0; i < el.childNodes.length; i++) {
+			let child = el.childNodes.item(i);
+			if (child.nodeType !== 1) // Element
+				continue;
+			switch (child.nodeName.toLowerCase()) {
+			case 'variables':
+				for (let j = 0; j < child.childNodes.length; j++) {
+					let vchild = child.childNodes.item(j);
+					let v: Variable;
+					[v, err] = Variable.Build(vchild);
+					// FIXME: real logging
+					if (err)
+						return [null, new Error(child.nodeName + ' var: ' + err.error)];
+					model.variables.push(v);
+				}
+				break;
+			case 'views':
+				for (let j = 0; j < child.childNodes.length; j++) {
+					let vchild = child.childNodes.item(j);
+					let view: View;
+					[view, err] = View.Build(vchild);
+					// FIXME: real logging
+					if (err)
+						return [null, new Error('view: ' + err.error)];
+					model.views.push(view);
+				}
+				break;
+			}
+		}
+		return [model, null];
 	}
 
 	get ident(): string {
@@ -552,7 +599,11 @@ export class Variable implements XNode {
 	gf:       GF;
 	params:   Connect[];
 
-	constructor(el: Element) {
+	static Build(el: Node): [Variable, Error] {
+		let v = new Variable();
+		let err: Error;
+
+		return [v, err];
 	}
 
 	toXml(doc: XMLDocument, parent: Element): boolean {
@@ -562,7 +613,11 @@ export class Variable implements XNode {
 
 export class View implements XNode {
 
-	constructor(el: Element) {
+	static Build(el: Node): [View, Error] {
+		let view = new View();
+		let err: Error;
+
+		return [view, err];
 	}
 
 	toXml(doc: XMLDocument, parent: Element): boolean {

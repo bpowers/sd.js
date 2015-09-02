@@ -136,10 +136,13 @@ export declare class Data implements XNode {
 }
 export declare class Model implements XNode {
     name: string;
+    run: boolean;
+    namespaces: string[];
+    resource: string;
     simSpec: SimSpec;
     variables: Variable[];
     views: View[];
-    constructor(el: Element);
+    static Build(el: Node): [Model, Error];
     ident: string;
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
@@ -153,11 +156,11 @@ export declare class Variable implements XNode {
     units: string;
     gf: GF;
     params: Connect[];
-    constructor(el: Element);
+    static Build(el: Node): [Variable, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
 export declare class View implements XNode {
-    constructor(el: Element);
+    static Build(el: Node): [View, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
 export declare class GF implements XNode {
