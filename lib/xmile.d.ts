@@ -66,12 +66,19 @@ export declare class Product implements XNode {
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
 export declare class Header implements XNode {
-    options: Options;
-    name: string;
-    uuid: string;
     vendor: string;
     product: Product;
-    constructor(el: Element);
+    options: Options;
+    name: string;
+    version: string;
+    caption: string;
+    author: string;
+    affiliation: string;
+    client: string;
+    copyright: string;
+    created: string;
+    modified: string;
+    uuid: string;
     static Build(el: Node): [Header, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
@@ -83,16 +90,31 @@ export declare class Dimension implements XNode {
 }
 export declare class Options implements XNode {
     namespaces: string[];
+    usesArrays: boolean;
+    usesMacros: boolean;
     usesConveyor: boolean;
     usesQueue: boolean;
-    usesArrays: boolean;
     usesSubmodels: boolean;
-    usesMacros: boolean;
     usesEventPosters: boolean;
     hasModelView: boolean;
     usesOutputs: boolean;
     usesInputs: boolean;
-    usesAnnotations: boolean;
+    usesAnnotation: boolean;
+    maximumDimensions: number;
+    invalidIndexValue: number;
+    recursiveMacros: boolean;
+    optionFilters: boolean;
+    arrest: boolean;
+    leak: boolean;
+    overflow: boolean;
+    messages: boolean;
+    numericDisplay: boolean;
+    lamp: boolean;
+    gauge: boolean;
+    numericInput: boolean;
+    list: boolean;
+    graphicalInput: boolean;
+    [indexName: string]: any;
     static Build(el: Node): [Options, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }

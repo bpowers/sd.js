@@ -6,7 +6,6 @@ const TIME = 0;
 
 function i32(n: number): number {
 	'use strict';
-
 	return n|0;
 }
 

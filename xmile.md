@@ -8,6 +8,12 @@ compatability with isee software.  This document contains notes on
 where [sd.js](https://github.com/sdlabs/sd.js) and
 [libsd](https://github.com/sdlabs/libsd) diverge from the spec.
 
+Header
+------
+
+- 'model caption' should be removed.
+- the mix of plural vs. singular is weird and should be standardized.
+
 [SimSpec](http://docs.oasis-open.org/xmile/xmile/v1.0/cos01/xmile-v1.0-cos01.html#_Toc426543481)
 ---------
 

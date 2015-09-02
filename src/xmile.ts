@@ -11,6 +11,22 @@ export class Error {
 
 declare function isFinite(n: string|number): boolean;
 
+function i32(n: number): number {
+	'use strict';
+	return n|0;
+}
+
+// expects name to be lowercase
+function attr(node: Node, name: string): string {
+	'use strict';
+	for (let i = 0; i < node.attributes.length; i++) {
+		let attr = node.attributes.item(i);
+		if (attr.name.toLowerCase() === name)
+			return attr.value;
+	}
+	return null;
+}
+
 function parseText(val: string): string|boolean|number {
 	'use strict';
 	val = val.trim();
@@ -118,15 +134,15 @@ export class Rect implements Point, Size, XNode {
 }
 
 export class File implements XNode {
-	public version:    string;
-	public namespace:  string;
-	public header:     Header;
-	public simSpec:    SimSpec;
-	public dimensions: Dimension[];
-	public units:      Unit[];
-	public behavior:   Behavior;
-	public style:      Style;
-	public models:     Model[];
+	version:    string;
+	namespace:  string;
+	header:     Header;
+	simSpec:    SimSpec;
+	dimensions: Dimension[];
+	units:      Unit[];
+	behavior:   Behavior;
+	style:      Style;
+	models:     Model[];
 
 	static Build(el: Node): [File, Error] {
 		let file = new File();
@@ -259,8 +275,7 @@ export class Product implements XNode {
 		product.name = content(el);
 		for (let i = 0; i < el.attributes.length; i++) {
 			let attr = el.attributes.item(i);
-			let name = attr.name.toLowerCase();
-			switch (name) {
+			switch (attr.name.toLowerCase()) {
 			case 'version':
 				product.version = attr.value;
 				break;
@@ -278,40 +293,77 @@ export class Product implements XNode {
 }
 
 export class Header implements XNode {
-	options: Options;
-	name:    string;
-	uuid:    string;
-	vendor:  string;
-	product: Product;
-
-	constructor(el: Element) {
-	}
+	vendor:      string;
+	product:     Product;
+	options:     Options;
+	name:        string;
+	version:     string;
+	caption:     string; // WTF is this
+	// image:    Image;
+	author:      string;
+	affiliation: string;
+	client:      string;
+	copyright:   string;
+	// contact:  Contact;
+	created:     string; // ISO 8601 date format, e.g. “ 2014-08-10”
+	modified:    string; // ISO 8601 date format
+	uuid:        string; // IETF RFC4122 format (84-4-4-12 hex digits with the dashes)
+	// includes: Include[];
 
 	static Build(el: Node): [Header, Error] {
-		let err:     Error;
-		let options: Options;
-		let name:    string;
-		let uuid:    string;
-		let vendor:  string;
-		let product: Product;
+		let header = new Header();
+		let err: Error;
 		for (let i = 0; i < el.childNodes.length; i++) {
 			let child = el.childNodes.item(i);
 			if (child.nodeType !== 1) // Element
 				continue;
 			switch (child.nodeName.toLowerCase()) {
-			case 'options':
-				[options, err] = Options.Build(child);
-				if (err)
-					return [null, new Error('Options: ' + err.error)];
+			case 'vendor':
+				header.vendor = content(child);
 				break;
 			case 'product':
-				[product, err] = Product.Build(child);
+				[header.product, err] = Product.Build(child);
 				if (err)
 					return [null, new Error('Product: ' + err.error)];
 				break;
+			case 'options':
+				[header.options, err] = Options.Build(child);
+				if (err)
+					return [null, new Error('Options: ' + err.error)];
+				break;
+			case 'name':
+				header.name = content(child);
+				break;
+			case 'version':
+				header.version = content(child);
+				break;
+			case 'caption':
+				header.caption = content(child);
+				break;
+			case 'author':
+				header.author = content(child);
+				break;
+			case 'affiliation':
+				header.affiliation = content(child);
+				break;
+			case 'client':
+				header.client = content(child);
+				break;
+			case 'copyright':
+				header.copyright = content(child);
+				break;
+			case 'created':
+				header.created = content(child);
+				break;
+			case 'modified':
+				header.modified = content(child);
+				break;
+			case 'uuid':
+				header.uuid = content(child);
+				break;
 			}
 		}
-		return [null, null];
+		return [header, err];
 	}
 
 	toXml(doc: XMLDocument, parent: Element): boolean {
@@ -333,19 +385,99 @@ export class Dimension implements XNode {
 
 export class Options implements XNode {
 	namespaces:       string[];
-	usesConveyor:     boolean;
-	usesQueue:        boolean;
-	usesArrays:       boolean;
-	usesSubmodels:    boolean;
-	usesMacros:       boolean;
-	usesEventPosters: boolean;
-	hasModelView:     boolean;
-	usesOutputs:      boolean;
-	usesInputs:       boolean;
-	usesAnnotations:  boolean;
+	usesArrays:        boolean = false;
+	usesMacros:        boolean = false;
+	usesConveyor:      boolean = false;
+	usesQueue:         boolean = false;
+	usesSubmodels:     boolean = false;
+	usesEventPosters:  boolean = false;
+	hasModelView:      boolean = false;
+	usesOutputs:       boolean = false;
+	usesInputs:        boolean = false;
+	usesAnnotation:    boolean = false;
+
+	// arrays
+	maximumDimensions: number  = 1;
+	invalidIndexValue: number  = 0; // only 0 or NaN
+	// macros
+	recursiveMacros:   boolean = false;
+	optionFilters:     boolean = false;
+	// conveyors
+	arrest:            boolean = false;
+	leak:              boolean = false;
+	// queues
+	overflow:          boolean = false;
+	// event posters
+	messages:          boolean = false;
+	// outputs
+	numericDisplay:    boolean = false;
+	lamp:              boolean = false;
+	gauge:             boolean = false;
+	// inputs
+	numericInput:      boolean = false;
+	list:              boolean = false;
+	graphicalInput:    boolean = false;
+
+	// avoids an 'implicit any' error when setting options in
+	// Build below 'indexName' to avoid a spurious tslint
+	// 'shadowed name' error.
+	[indexName: string]: any;
 
 	static Build(el: Node): [Options, Error] {
-		return [null, null];
+		let options = new Options();
+		let err: Error;
+		for (let i = 0; i < el.attributes.length; i++) {
+			let attr = el.attributes.item(i);
+			switch (attr.name.toLowerCase()) {
+			case 'namespace':
+				let names = attr.value.split(',');
+				options.namespaces = names.map((s) => s.trim());
+				break;
+			}
+		}
+		for (let i = 0; i < el.childNodes.length; i++) {
+			let child = el.childNodes.item(i);
+			if (child.nodeType !== 1) // Element
+				continue;
+			let name = child.nodeName.toLowerCase();
+			let plen: number;
+			if (name.slice(0, 5) === 'uses_')
+				plen = 4;
+			else if (name.substring(0, 4) !== 'has_')
+				plen = 3;
+			if (!plen)
+				continue;
+			// use slice here even for the single char we
+			// are camel-casing to avoid having to check
+			// the length of the string
+			name = name.slice(0, plen) + name.slice(plen+1, plen+2).toUpperCase() + name.slice(plen+2);
+			if (!options.hasOwnProperty(name))
+				continue;
+
+			options[name] = true;
+
+			if (name === 'usesArrays') {
+				let val: string;
+				val = attr(child, 'maximum_dimensions');
+				if (val) {
+					let n: number;
+					[n, err] = num(val);
+					if (err) {
+						// FIXME: real logging
+						console.log('bad max_dimensions( ' + val + '): ' + err.error);
+						n = 1;
+					}
+					if (n !== i32(n)) {
+						console.log('non-int max_dimensions: ' + val);
+					}
+					options.maximumDimensions = i32(n);
+				}
+				val = attr(child, 'invalid_index_value');
+				if (val === 'NaN')
+					options.invalidIndexValue = NaN;
+			}
+		}
+		return [options, err];
 	}
 
 	toXml(doc: XMLDocument, parent: Element): boolean {
