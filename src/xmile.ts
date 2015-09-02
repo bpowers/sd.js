@@ -588,21 +588,96 @@ export class Model implements XNode {
 	}
 }
 
+// the 'Element' name is defined by the TypeScript lib.d.ts, so we're
+// forced to be more verbose.
+export class ArrayElement implements XNode {
+	subscript: string[] = [];
+	eqn:       string;
+	gf:        GF;
+
+	static Build(el: Node): [ArrayElement, Error] {
+		let arrayEl = new ArrayElement();
+		console.log('TODO: array element');
+		return [arrayEl, null];
+	}
+	toXml(doc: XMLDocument, parent: Element): boolean {
+		return true;
+	}
+}
+
+// Section 4.1.1 - Ranges, Scales, Number Formats
+export class Range implements XNode {
+	min:   number;
+	max:   number;
+	// auto + group only valid on 'scale' tags
+	auto:  boolean;
+	group: number; // 'unique number identifier'
+
+	static Build(el: Node): [Range, Error] {
+		let range = new Range();
+		console.log('TODO: range element');
+		return [range, null];
+	}
+	toXml(doc: XMLDocument, parent: Element): boolean {
+		return true;
+	}
+}
+
+// Section 4.1.1 - Ranges, Scales, Number Formats
+export class Format implements XNode {
+	precision:   string  = ''; // "default: best guess based on the scale of the variable"
+	scaleBy:     string  = '1';
+	displayAs:   string  = 'number'; // "number"|"currency"|"percent"
+	delimit000s: boolean = false; // include thousands separator
+
+	static Build(el: Node): [Format, Error] {
+		let fmt = new Format();
+		console.log('TODO: format element');
+		return [fmt, null];
+	}
+	toXml(doc: XMLDocument, parent: Element): boolean {
+		return true;
+	}
+}
+
+// TODO: split into multiple subclasses?
 export class Variable implements XNode {
-	name:     string;
-	doc:      string;
-	eqn:      string;
-	nonNeg:   boolean;
-	inflows:  string[];
-	outflows: string[];
-	units:    string;
-	gf:       GF;
-	params:   Connect[];
+	name:            string;
+	eqn:             string;
+	gf:              GF;
+	// mathml        Node;
+	// arrayed-vars
+	dimensions:      Dimension[];    // REQUIRED for arrayed vars
+	elements:        ArrayElement[]; // non-A2A
+	// modules
+	connections:     Connect[];
+	// resource:     string;         // path or URL to model XMILE file
+	// access:       string;         // TODO: not sure if should implement
+	// autoExport:   boolean;        // TODO: not sure if should implement
+	units:           Unit;
+	doc:             string; // 'or HTML', but HTML is not valid XML.  string-only.
+	// eventPoster   EventPoster;
+	range:           Range;
+	scale:           Range;
+	format:          Format;
+	// stocks
+	nonNegative:     boolean;
+	inflows:         string[];
+	outflows:        string[];
+	// flows
+	// multiplier:   string; // expression used on downstream side of stock to convert units
+	// queues
+	// overflow:     boolean;
+	// leak:         string;
+	// leakIntegers: boolean;
+	// leakStart:    number;
+	// leakEnd:      number;
+	// auxiliaries
+	flowConcept:     boolean; // :(
 
 	static Build(el: Node): [Variable, Error] {
 		let v = new Variable();
 		let err: Error;
-
 		return [v, err];
 	}
 

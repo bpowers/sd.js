@@ -28,10 +28,35 @@ to how includes interact with web-based tools.  CORS support should
 probably be mandated to allow in-browser cross-origin requests for
 XMILE files.
 
+4 Model
+-------
+
+- doc: `If in plain text, it must use XMILE identifier escape
+  sequences for non-printable characters (i.e., \n for newline, \t for
+  tab, and, necessarily, \\ for backslash), rather than a hexadecimal
+  code such as &#x0A. If in HTML, it must include the proper HTML
+  header. Note this is true for all documentation and user-specified
+  text fields in a XMILE file (i.e., including those in display
+  objects defined in Chapters 5 and 6).`
+  - HTML is not a subset of XML, so you can't embed an HTML DOM inside
+    an XML DOM.
+
+Variables
+---------
+
+- flow concepts.  No documentation, remove them.
+
 Macros
 ------
 
 Macros will almost definitely not be implemented.  Use Modules.
+
+Identifiers
+-----------
+
+The formal spec doesn't deal with dotted identifiers.  Is
+`Sub_Model.Output` a single identifier?  What about
+`.Root_Model_Input`?
 
 Numbers
 -------

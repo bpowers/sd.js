@@ -146,16 +146,45 @@ export declare class Model implements XNode {
     ident: string;
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
+export declare class ArrayElement implements XNode {
+    subscript: string[];
+    eqn: string;
+    gf: GF;
+    static Build(el: Node): [ArrayElement, Error];
+    toXml(doc: XMLDocument, parent: Element): boolean;
+}
+export declare class Range implements XNode {
+    min: number;
+    max: number;
+    auto: boolean;
+    group: number;
+    static Build(el: Node): [Range, Error];
+    toXml(doc: XMLDocument, parent: Element): boolean;
+}
+export declare class Format implements XNode {
+    precision: string;
+    scaleBy: string;
+    displayAs: string;
+    delimit000s: boolean;
+    static Build(el: Node): [Format, Error];
+    toXml(doc: XMLDocument, parent: Element): boolean;
+}
 export declare class Variable implements XNode {
     name: string;
-    doc: string;
     eqn: string;
-    nonNeg: boolean;
+    gf: GF;
+    dimensions: Dimension[];
+    elements: ArrayElement[];
+    connections: Connect[];
+    units: Unit;
+    doc: string;
+    range: Range;
+    scale: Range;
+    format: Format;
+    nonNegative: boolean;
     inflows: string[];
     outflows: string[];
-    units: string;
-    gf: GF;
-    params: Connect[];
+    flowConcept: boolean;
     static Build(el: Node): [Variable, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
