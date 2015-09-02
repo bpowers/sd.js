@@ -4,28 +4,9 @@
 
 'use strict';
 
-declare function isFinite(n: string|number): boolean;
-
-/*function isObject(v) {
-  return typeof v === 'object';
-  }*/
-
-function parseText(val: string): string|boolean|number {
-	'use strict';
-
-	val = val.trim();
-	if (/^\s*$/.test(val))
-		return null;
-	if (/^(?:true|false)$/i.test(val))
-		return val.toLowerCase() === 'true';
-	if (isFinite(val))
-		return parseFloat(val);
-
-	return val;
-}
-
+/*
 // FIXME: find type of parent
-export function build(parent: any): any {
+export function build(parent: Node): any {
 	'use strict';
 
 	let hasAttrs = false;
@@ -79,9 +60,4 @@ export function build(parent: any): any {
 	}
 	return result;
 }
-
-export function unbuild(/*obj*/): any {
-	'use strict';
-
-	return;
-}
+*/

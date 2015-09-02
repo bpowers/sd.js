@@ -64,14 +64,19 @@ export class Project implements type.Project {
 			return false;
 		}
 		let xmileElement = getXmileElement(xmileDoc);
+		if (!xmileElement) {
+			this.valid = false;
+			return false;
+		}
 
 		// FIXME: compat translation of XML
 
 		// finished with XMLDocument at this point, we now
 		// have a tree of native JS objects with a 1:1
 		// correspondence to the XMILE doc
-		let [file, err] = xmile.FileBuilder(xmileElement);
+		let [file, err] = xmile.File.Build(xmileElement);
 		if (err) {
+			console.log('File.Build: ' + err.error);
 			this.valid = false;
 			return false;
 		}

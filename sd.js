@@ -478,6 +478,61 @@ define('xmile',["require", "exports"], function (require, exports) {
         return Error;
     })();
     exports.Error = Error;
+    function parseText(val) {
+        'use strict';
+        val = val.trim();
+        if (/^\s*$/.test(val))
+            return [null, null];
+        if (/^(?:true|false)$/i.test(val))
+            return [val.toLowerCase() === 'true', null];
+        if (isFinite(val))
+            return [parseFloat(val), null];
+        return [val, null];
+    }
+    function content(node) {
+        'use strict';
+        var text = '';
+        if (node.hasChildNodes()) {
+            for (var i = 0; i < node.childNodes.length; i++) {
+                var child = node.childNodes.item(i);
+                switch (child.nodeType) {
+                    case 4:
+                        text += child.nodeValue;
+                        break;
+                    case 3:
+                        text += child.nodeValue.trim();
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        return parseText(text);
+    }
+    function str(v) {
+        'use strict';
+        if (typeof v === 'undefined' || v === null)
+            return ['', null];
+        if (typeof v === 'string')
+            return [v, null];
+        return ['', new Error('not string: ' + v)];
+    }
+    function num(v) {
+        'use strict';
+        if (typeof v === 'undefined' || v === null)
+            return [0, null];
+        if (typeof v === 'number')
+            return [v, null];
+        return [NaN, new Error('not number: ' + v)];
+    }
+    function bool(v) {
+        'use strict';
+        if (typeof v === 'undefined' || v === null)
+            return [false, null];
+        if (typeof v === 'boolean')
+            return [v, null];
+        return [false, new Error('not boolean: ' + v)];
+    }
     function PointBuilder(el) {
         'use strict';
         return [null, null];
@@ -511,13 +566,17 @@ define('xmile',["require", "exports"], function (require, exports) {
         return Rect;
     })();
     exports.Rect = Rect;
-    function FileBuilder(el) {
-        'use strict';
-        return [null, null];
-    }
-    exports.FileBuilder = FileBuilder;
     var File = (function () {
-        function File(el) {
+        function File(version, level, header, simSpec, dimensions, units, behavior, style, models) {
+            this.version = version;
+            this.level = level;
+            this.header = header;
+            this.simSpec = simSpec;
+            this.dimensions = dimensions;
+            this.units = units;
+            this.behavior = behavior;
+            this.style = style;
+            this.models = models;
         }
         File.Build = function (el) {
             return [null, null];
@@ -15999,7 +16058,11 @@ define('project',["require", "exports", './common', './xmile', './model', './var
                 return false;
             }
             var xmileElement = getXmileElement(xmileDoc);
-            var _a = xmile.FileBuilder(xmileElement), file = _a[0], err = _a[1];
+            if (!xmileElement) {
+                this.valid = false;
+                return false;
+            }
+            var _a = xmile.File.Build(xmileElement), file = _a[0], err = _a[1];
             if (err) {
                 this.valid = false;
                 return false;

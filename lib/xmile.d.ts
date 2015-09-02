@@ -2,29 +2,25 @@ export declare class Error {
     error: string;
     constructor(error: string);
 }
-export interface NodeStatic {
-    new (el: Element): NodeStatic;
+export interface XNodeStatic {
+    new (el: Element): XNodeStatic;
 }
-export interface Node {
+export interface XNode {
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export interface Builder<N extends Node> {
-    (el: Element): [N, Error];
-}
-export declare function PointBuilder(el: Element): [Point, Error];
-export declare class Point implements Node {
+export declare class Point implements XNode {
     X: number;
     Y: number;
     constructor(el: Element);
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Size implements Node {
+export declare class Size implements XNode {
     Width: number;
     Height: number;
     constructor(el: Element);
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Rect implements Point, Size, Node {
+export declare class Rect implements Point, Size, XNode {
     X: number;
     Y: number;
     Width: number;
@@ -32,10 +28,9 @@ export declare class Rect implements Point, Size, Node {
     constructor(el: Element);
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare function FileBuilder(el: Element): [File, Error];
-export declare class File implements Node {
+export declare class File implements XNode {
     version: string;
-    level: number;
+    namespace: string;
     header: Header;
     simSpec: SimSpec;
     dimensions: Dimension[];
@@ -43,11 +38,11 @@ export declare class File implements Node {
     behavior: Behavior;
     style: Style;
     models: Model[];
-    constructor(el: Element);
+    constructor(version: string, namespace: string, header: Header, simSpec: SimSpec, dimensions: Dimension[], units: Unit[], behavior: Behavior, style: Style, models: Model[]);
     static Build(el: Element): [File, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class SimSpec implements Node {
+export declare class SimSpec implements XNode {
     start: number;
     stop: number;
     dt: number;
@@ -58,14 +53,14 @@ export declare class SimSpec implements Node {
     static Build(el: Element): [SimSpec, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Unit implements Node {
+export declare class Unit implements XNode {
     name: string;
     eqn: string;
     alias: string;
     constructor(el: Element);
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Header implements Node {
+export declare class Header implements XNode {
     options: Options;
     name: string;
     uuid: string;
@@ -74,13 +69,13 @@ export declare class Header implements Node {
     constructor(el: Element);
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Dimension implements Node {
+export declare class Dimension implements XNode {
     name: string;
     size: string;
     constructor(el: Element);
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Options implements Node {
+export declare class Options implements XNode {
     namespaces: string[];
     usesConveyor: boolean;
     usesQueue: boolean;
@@ -95,22 +90,22 @@ export declare class Options implements Node {
     constructor(el: Element);
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Behavior implements Node {
+export declare class Behavior implements XNode {
     allNonNegative: boolean;
     stockNonNegative: boolean;
     flowNonNegative: boolean;
     constructor(el: Element);
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Style implements Node {
+export declare class Style implements XNode {
     constructor(el: Element);
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Data implements Node {
+export declare class Data implements XNode {
     constructor(el: Element);
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Model implements Node {
+export declare class Model implements XNode {
     name: string;
     simSpec: SimSpec;
     variables: Variable[];
@@ -119,7 +114,7 @@ export declare class Model implements Node {
     ident: string;
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Variable implements Node {
+export declare class Variable implements XNode {
     name: string;
     doc: string;
     eqn: string;
@@ -132,11 +127,11 @@ export declare class Variable implements Node {
     constructor(el: Element);
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class View implements Node {
+export declare class View implements XNode {
     constructor(el: Element);
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class GF implements Node {
+export declare class GF implements XNode {
     discrete: boolean;
     xPoints: string;
     yPoints: string;
@@ -145,13 +140,13 @@ export declare class GF implements Node {
     constructor(el: Element);
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Scale implements Node {
+export declare class Scale implements XNode {
     min: number;
     max: number;
     constructor(el: Element);
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Connect implements Node {
+export declare class Connect implements XNode {
     to: string;
     from: string;
     constructor(el: Element);
