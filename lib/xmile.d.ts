@@ -46,6 +46,7 @@ export declare class SimSpec implements XNode {
     start: number;
     stop: number;
     dt: number;
+    dtReciprocal: number;
     saveStep: number;
     method: string;
     timeUnits: string;

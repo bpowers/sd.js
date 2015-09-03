@@ -232,12 +232,13 @@ export class File implements XNode {
 }
 
 export class SimSpec implements XNode {
-	public start:     number = 0;
-	public stop:      number = 1;
-	public dt:        number = 1;
-	public saveStep:  number = 0;
-	public method:    string = 'euler';
-	public timeUnits: string = '';
+	start:        number = 0;
+	stop:         number = 1;
+	dt:           number = 1;
+	dtReciprocal: number; // the original reciprocal DT
+	saveStep:     number = 0;
+	method:       string = 'euler';
+	timeUnits:    string = '';
 
 	[indexName: string]: any;
 
@@ -261,6 +262,12 @@ export class SimSpec implements XNode {
 				[simSpec[name], err] = num(content(child));
 				if (err)
 					return [null, new Error(child.nodeName + ': ' + err.error)];
+				if (name === 'dt') {
+					if (attr(child, 'reciprocal') === 'true') {
+						simSpec.dtReciprocal = simSpec.dt;
+						simSpec.dt = 1/simSpec.dt;
+					}
+				}
 			}
 		}
 
