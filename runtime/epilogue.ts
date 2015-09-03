@@ -1,6 +1,5 @@
 /// <reference path="./generated.d.ts" />
 
-
 /* global main: false, print: true */
 
 let pr: (...args: string[])=>void;
@@ -12,9 +11,9 @@ if (typeof console === 'undefined') {
 }
 
 main.runToEnd();
-export var series: {[name: string]: Series} = {};
-export var header = 'time\t';
-export var vars = main.varNames();
+let series: {[name: string]: Series} = {};
+let header = 'time\t';
+let vars = main.varNames();
 for (let i = 0; i < vars.length; i++) {
 	let v = vars[i];
 	if (v === 'time')
@@ -24,7 +23,7 @@ for (let i = 0; i < vars.length; i++) {
 }
 pr(header.substr(0, header.length-1));
 
-export var nSteps = main.series('time').time.length;
+let nSteps = main.series('time').time.length;
 for (let i = 0; i < nSteps; i++) {
 	let msg = '';
 	for (let v in series) {

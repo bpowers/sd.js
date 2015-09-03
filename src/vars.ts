@@ -13,6 +13,14 @@ import lex = require('./lex');
 import type = require('./type');
 import xmile = require('./xmile');
 
+const opMap: {[op: string]: string} = {
+	'&': '&&',
+	'|': '||',
+	'≥': '>=',
+	'≤': '<=',
+	'≠': '!==',
+};
+
 export class Variable implements type.Variable {
 	xmile: xmile.Variable;
 	ident: string;
@@ -71,7 +79,10 @@ export class Variable implements type.Variable {
 				}
 			} else if (tok.type !== lex.TokenType.IDENT) {
 				// FIXME :(
-				result.push(''+tok.tok);
+				let op = tok.tok;
+				if (op in opMap)
+					op = opMap[op];
+				result.push(''+op);
 			} else if (ident in common.builtins) {
 				// FIXME :(
 				result.push(''+ident);
@@ -82,6 +93,9 @@ export class Variable implements type.Variable {
 				}
 			} else if (ident in v) {
 				result.push("curr[" + v[ident] + "]");
+			} else if (ident === 'time') {
+				scope = this.model.ident === 'main' ? 'curr' : 'globalCurr';
+				result.push(scope + '[0]');
 			} else {
 				result.push('globalCurr[this.ref["' + ident + '"]]');
 			}

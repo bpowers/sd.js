@@ -24,8 +24,6 @@ const NLSP = DEBUG ? '\n    ' : '';
 
 const tmpl = `{{&preamble}}
 
-var TIME = 0;
-
 {{#models}}
 var {{&className}} = function {{&className}}(name, parent, offset, symRefs) {
 	this.name = name;
@@ -47,7 +45,7 @@ var {{&className}} = function {{&className}}(name, parent, offset, symRefs) {
 
 {{&className}}.prototype = new Simulation();
 {{&className}}.prototype.initials = {{&initialVals}};
-{{&className}}.prototype.timespec = {{&timespecVals}};
+{{&className}}.prototype.simSpec = {{&simSpecVals}};
 {{&className}}.prototype.offsets = {{&offsets}};
 {{&className}}.prototype.tables = {{&tableVals}};
 {{&className}}.prototype.calcInitial = function(dt, curr) {
@@ -92,7 +90,7 @@ export class TemplateContext {
 	modules: string;
 	init: string;
 	initialVals: string;
-	timespecVals: string;
+	simSpecVals: string;
 	tableVals: string;
 	calcI: string;
 	calcF: string;
@@ -106,7 +104,7 @@ export class TemplateContext {
 		this.modules = mods.join(NLSP);
 		this.init = init.join(NLSP);
 		this.initialVals = JSON.stringify(initials, null, SP);
-		this.timespecVals = JSON.stringify(model.simSpec, null, SP);
+		this.simSpecVals = JSON.stringify(model.simSpec, null, SP);
 		this.tableVals = JSON.stringify(tables, null, SP);
 		this.calcI = ci.join(NLSP);
 		this.calcF = cf.join(NLSP);

@@ -8,7 +8,7 @@ export declare class TemplateContext {
     modules: string;
     init: string;
     initialVals: string;
-    timespecVals: string;
+    simSpecVals: string;
     tableVals: string;
     calcI: string;
     calcF: string;

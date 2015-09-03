@@ -1,8 +1,7 @@
-/* jshint globalstrict: true, unused: false */
-/* global cmds: false, TIME: false, DEBUG: false, main: false */
 'use strict';
 
-const TIME = 0;
+// 'time' is always offset 0.  We used to have var named 'TIME', but
+// now we inline '0' below.
 
 function i32(n: number): number {
 	'use strict';
@@ -15,11 +14,13 @@ interface Table {
 	y: number[];
 }
 
-interface TimeSpec {
-	start: number;
-	stop: number;
-	dt: number;
-	savestep: number;
+interface SimSpec {
+	start:     number;
+	stop:      number;
+	dt:        number;
+	saveStep:  number;
+	method:    string;
+	timeUnits: string;
 }
 
 interface Series {
@@ -51,7 +52,7 @@ class Simulation {
 	ref: {[name: string]: number};
 
 	initials: {[name: string]: number};
-	timespec: TimeSpec;
+	simSpec: SimSpec;
 	offsets: {[name: string]: number};
 	tables: {[name: string]: Table};
 
@@ -134,33 +135,33 @@ class Simulation {
 	}
 
 	reset(): void {
-		const timespec = this.timespec;
-		const nSaveSteps = i32((timespec.stop - timespec.start)/timespec.savestep + 1);
+		const spec = this.simSpec;
+		const nSaveSteps = i32((spec.stop - spec.start)/spec.saveStep + 1);
 
 		this.stepNum = 0;
 
 		this.slab = new Float64Array(this.nVars*(nSaveSteps + 1));
 
 		let curr = this.curr();
-		curr[TIME] = timespec.start;
-		this.saveEvery = Math.max(1, i32(timespec.savestep/timespec.dt+0.5));
+		curr[0/*TIME*/] = spec.start;
+		this.saveEvery = Math.max(1, i32(spec.saveStep/spec.dt+0.5));
 
-		this.calcInitial(this.timespec.dt, curr);
+		this.calcInitial(this.simSpec.dt, curr);
 	}
 
 	runTo(endTime: number): void {
-		const dt = this.timespec.dt;
+		const dt = this.simSpec.dt;
 
 		let curr = this.curr();
 		let next = this.slab.subarray(
 			(this.stepNum+1)*this.nVars,
 			(this.stepNum+2)*this.nVars);
 
-		while (curr[TIME] <= endTime) {
+		while (curr[0/*TIME*/] <= endTime) {
 			this.calcFlows(dt, curr);
 			this.calcStocks(dt, curr, next);
 
-			next[TIME] = curr[TIME] + dt;
+			next[0/*TIME*/] = curr[0/*TIME*/] + dt;
 
 			if (this.stepNum++ % this.saveEvery !== 0) {
 				curr.set(next);
@@ -174,7 +175,7 @@ class Simulation {
 	}
 
 	runToEnd(): void {
-		return this.runTo(this.timespec.stop + 0.5*this.timespec.dt);
+		return this.runTo(this.simSpec.stop + 0.5*this.simSpec.dt);
 	}
 
 	curr(): Float64Array {
