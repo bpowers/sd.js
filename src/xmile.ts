@@ -229,6 +229,9 @@ export class SimSpec implements XNode {
 			if (child.nodeType !== 1) // Element
 				continue;
 			let name = camelCase(child.nodeName.toLowerCase());
+			// XXX: hack for compat with some old models of mine
+			if (name === 'savestep')
+				name = 'saveStep';
 			if (!simSpec.hasOwnProperty(name))
 				continue;
 

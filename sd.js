@@ -665,6 +665,8 @@ define('xmile',["require", "exports"], function (require, exports) {
                 if (child.nodeType !== 1)
                     continue;
                 var name_1 = camelCase(child.nodeName.toLowerCase());
+                if (name_1 === 'savestep')
+                    name_1 = 'saveStep';
                 if (!simSpec.hasOwnProperty(name_1))
                     continue;
                 if (name_1 === 'method' || name_1 === 'timeUnits') {
