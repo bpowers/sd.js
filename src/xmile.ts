@@ -256,7 +256,7 @@ export class SimSpec implements XNode {
 				continue;
 
 			if (name === 'method' || name === 'timeUnits') {
-				simSpec[name] = content(child);
+				simSpec[name] = content(child).toLowerCase();
 			} else {
 				[simSpec[name], err] = num(content(child));
 				if (err)

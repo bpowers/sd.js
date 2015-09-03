@@ -691,7 +691,7 @@ define('xmile',["require", "exports"], function (require, exports) {
                 if (!simSpec.hasOwnProperty(name_1))
                     continue;
                 if (name_1 === 'method' || name_1 === 'timeUnits') {
-                    simSpec[name_1] = content(child);
+                    simSpec[name_1] = content(child).toLowerCase();
                 }
                 else {
                     _a = num(content(child)), simSpec[name_1] = _a[0], err = _a[1];
