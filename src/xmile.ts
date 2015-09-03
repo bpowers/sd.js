@@ -835,7 +835,7 @@ export class ViewElement implements XNode {
 	// "any attributes of a Border object"
 	color:             string;
 	background:        string;      // hex|predefined-color
-	zIndex:            number = -1; // range of -1 to INT_MAX
+	zIndex:            number; // default of -1, range of -1 to INT_MAX
 	// "any attributes of a Text Style object"
 	labelSide:         string; // 'top'|'left'|'center'|'bottom'|'right'
 	labelAngle:        number; // degrees where 0 is 3 o'clock, counter-clockwise.
@@ -844,7 +844,7 @@ export class ViewElement implements XNode {
 	to:                string; // ident
 	angle:             number; // degrees
 	// flows + multi-point connectors
-	pts:               Point[] = [];
+	pts:               Point[];
 	// alias
 	of:                string;
 
@@ -926,6 +926,8 @@ export class ViewElement implements XNode {
 					// FIXME: real logging
 					if (err)
 						return [null, new Error('pt: ' + err.error)];
+					if (typeof viewEl.pts === 'undefined')
+						viewEl.pts = [];
 					viewEl.pts.push(pt);
 				}
 

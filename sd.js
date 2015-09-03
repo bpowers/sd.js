@@ -1167,8 +1167,6 @@ define('xmile',["require", "exports"], function (require, exports) {
     exports.Shape = Shape;
     var ViewElement = (function () {
         function ViewElement() {
-            this.zIndex = -1;
-            this.pts = [];
         }
         ViewElement.Build = function (el) {
             var viewEl = new ViewElement();
@@ -1243,6 +1241,8 @@ define('xmile',["require", "exports"], function (require, exports) {
                             _g = Point.Build(vchild), pt = _g[0], err = _g[1];
                             if (err)
                                 return [null, new Error('pt: ' + err.error)];
+                            if (typeof viewEl.pts === 'undefined')
+                                viewEl.pts = [];
                             viewEl.pts.push(pt);
                         }
                         break;
