@@ -137,4 +137,9 @@ TODO
 
 - convert from old-style connector x,y center position to new-style
   connector takeoff angle.
+- finish equation parser
+- add-back isee compat support
 - logging framework
+- vensim diagrams
+- vensim models
+- arrays
