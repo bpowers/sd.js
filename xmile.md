@@ -58,6 +58,17 @@ The formal spec doesn't deal with dotted identifiers.  Is
 `Sub_Model.Output` a single identifier?  What about
 `.Root_Model_Input`?
 
+GF
+--
+
+I am just understanding the idea of a 'gf' outside of a variable, and
+I don't think I like it.  It seems much cleaner to me to always have a
+GF as an attribute of a variable, but allow a variable with a GF but
+no equation to be considered valid.
+
+Also - the begining of the Doc mentions accessing GFs with square
+bracket notation, but later on with ()?
+
 Numbers
 -------
 

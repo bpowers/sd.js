@@ -13,4 +13,6 @@ export declare function querySelectorInner(e: any, selectors: any): any;
 export declare function qsa(e: any, s: any): any;
 export declare function isNaN(n: number): boolean;
 export declare function camelCase(s: string): string;
+export declare function splitOnComma(str: string): string[];
+export declare function numberize(arr: string[]): number[];
 export declare function i32(n: number): number;

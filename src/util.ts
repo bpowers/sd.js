@@ -255,6 +255,16 @@ export function camelCase(s: string): string {
 	return s;
 }
 
+export function splitOnComma(str: string): string[] {
+	'use strict';
+	return str.split(',').map((el) => el.trim());
+}
+
+export function numberize(arr: string[]): number[] {
+	'use strict';
+	return arr.map((el) => parseFloat(el));
+}
+
 export function i32(n: number): number {
 	'use strict';
 	return n|0;

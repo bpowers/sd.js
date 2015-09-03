@@ -671,6 +671,16 @@ define('util',["require", "exports"], function (require, exports) {
         return s;
     }
     exports.camelCase = camelCase;
+    function splitOnComma(str) {
+        'use strict';
+        return str.split(',').map(function (el) { return el.trim(); });
+    }
+    exports.splitOnComma = splitOnComma;
+    function numberize(arr) {
+        'use strict';
+        return arr.map(function (el) { return parseFloat(el); });
+    }
+    exports.numberize = numberize;
     function i32(n) {
         'use strict';
         return n | 0;
@@ -1047,8 +1057,7 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
                 var attr_4 = el.attributes.item(i);
                 switch (attr_4.name.toLowerCase()) {
                     case 'namespace':
-                        var names = attr_4.value.split(',');
-                        options.namespaces = names.map(function (s) { return s.trim(); });
+                        options.namespaces = util_1.splitOnComma(attr_4.value);
                         break;
                 }
             }
@@ -1269,9 +1278,22 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
                     case 'outflow':
                         v.outflows.push(content(child));
                         break;
+                    case 'gf':
+                        _a = GF.Build(child), v.gf = _a[0], err = _a[1];
+                        if (err)
+                            return [null, new Error(v.name + ' GF: ' + err.error)];
+                        break;
+                    case 'connect':
+                        var conn = void 0;
+                        _b = Connection.Build(child), conn = _b[0], err = _b[1];
+                        if (err)
+                            return [null, new Error(v.name + ' conn: ' + err.error)];
+                        v.connections.push(conn);
+                        break;
                 }
             }
             return [v, err];
+            var _a, _b;
         };
         Variable.prototype.toXml = function (doc, parent) {
             return true;
@@ -1294,32 +1316,120 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
     })();
     exports.View = View;
     var GF = (function () {
-        function GF(el) {
+        function GF() {
+            this.type = 'continuous';
         }
+        GF.Build = function (el) {
+            var table = new GF();
+            var err;
+            for (var i = 0; i < el.attributes.length; i++) {
+                var attr_6 = el.attributes.item(i);
+                switch (attr_6.name.toLowerCase()) {
+                    case 'type':
+                        table.type = attr_6.value.toLowerCase();
+                        if (!(table.type in GF.Types))
+                            return [null, new Error('bad type: ' + table.type)];
+                        break;
+                }
+            }
+            for (var i = 0; i < el.childNodes.length; i++) {
+                var child = el.childNodes.item(i);
+                if (child.nodeType !== 1)
+                    continue;
+                switch (child.nodeName.toLowerCase()) {
+                    case 'xscale':
+                        _a = Scale.Build(child), table.xScale = _a[0], err = _a[1];
+                        if (err)
+                            return [null, new Error('xscale: ' + err.error)];
+                        break;
+                    case 'yscale':
+                        _b = Scale.Build(child), table.yScale = _b[0], err = _b[1];
+                        if (err)
+                            return [null, new Error('yscale: ' + err.error)];
+                        break;
+                    case 'xpts':
+                        table.xPoints = util_1.numberize(util_1.splitOnComma(content(child)));
+                        break;
+                    case 'ypts':
+                        table.yPoints = util_1.numberize(util_1.splitOnComma(content(child)));
+                        break;
+                }
+            }
+            if (!table.yPoints)
+                return [null, new Error('table missing ypts')];
+            if (table.type !== 'continuous')
+                console.log('WARN: unimplemented table type: ' + table.type);
+            return [table, err];
+            var _a, _b;
+        };
         GF.prototype.toXml = function (doc, parent) {
             return true;
         };
+        GF.Types = ['continuous', 'extrapolate', 'discrete'];
         return GF;
     })();
     exports.GF = GF;
     var Scale = (function () {
-        function Scale(el) {
+        function Scale() {
         }
+        Scale.Build = function (el) {
+            var scale = new Scale();
+            var err;
+            for (var i = 0; i < el.attributes.length; i++) {
+                var attr_7 = el.attributes.item(i);
+                switch (attr_7.name.toLowerCase()) {
+                    case 'min':
+                        _a = num(attr_7.value), scale.min = _a[0], err = _a[1];
+                        if (err)
+                            return [null, new Error('bad min: ' + attr_7.value)];
+                        break;
+                    case 'max':
+                        _b = num(attr_7.value), scale.max = _b[0], err = _b[1];
+                        if (err)
+                            return [null, new Error('bad max: ' + attr_7.value)];
+                        break;
+                }
+            }
+            if (!scale.hasOwnProperty('min') || !scale.hasOwnProperty('max')) {
+                return [null, new Error('scale requires both min and max')];
+            }
+            return [scale, null];
+            var _a, _b;
+        };
         Scale.prototype.toXml = function (doc, parent) {
             return true;
         };
         return Scale;
     })();
     exports.Scale = Scale;
-    var Connect = (function () {
-        function Connect(el) {
+    var Connection = (function () {
+        function Connection() {
         }
-        Connect.prototype.toXml = function (doc, parent) {
+        Connection.Build = function (el) {
+            var conn = new Connection();
+            var err;
+            for (var i = 0; i < el.attributes.length; i++) {
+                var attr_8 = el.attributes.item(i);
+                switch (attr_8.name.toLowerCase()) {
+                    case 'to':
+                        conn.to = attr_8.value;
+                        break;
+                    case 'from':
+                        conn.from = attr_8.value;
+                        break;
+                }
+            }
+            if (!conn.hasOwnProperty('to') || !conn.hasOwnProperty('from')) {
+                return [null, new Error('connect requires both to and from')];
+            }
+            return [conn, null];
+        };
+        Connection.prototype.toXml = function (doc, parent) {
             return true;
         };
-        return Connect;
+        return Connection;
     })();
-    exports.Connect = Connect;
+    exports.Connection = Connection;
     function canonicalize(id) {
         'use strict';
         id = id.toLowerCase();

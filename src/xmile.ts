@@ -4,7 +4,7 @@
 
 'use strict';
 
-import {camelCase, i32} from './util';
+import {camelCase, splitOnComma, numberize, i32} from './util';
 
 export class Error {
 	constructor(
@@ -84,10 +84,6 @@ function bool(v: any): [boolean, Error] {
 		return [v, null];
 	// XXX: should we accept 0 or 1?
 	return [false, new Error('not boolean: ' + v)];
-}
-
-export interface XNodeStatic {
-	new (el: Element): XNodeStatic;
 }
 
 export interface XNode {
@@ -442,8 +438,7 @@ export class Options implements XNode {
 			let attr = el.attributes.item(i);
 			switch (attr.name.toLowerCase()) {
 			case 'namespace':
-				let names = attr.value.split(',');
-				options.namespaces = names.map((s) => s.trim());
+				options.namespaces = splitOnComma(attr.value);
 				break;
 			}
 		}
@@ -654,7 +649,7 @@ export class Variable implements XNode {
 	dimensions:      Dimension[];    // REQUIRED for arrayed vars
 	elements:        ArrayElement[]; // non-A2A
 	// modules
-	connections:     Connect[] = [];
+	connections:     Connection[] = [];
 	resource:        string;         // path or URL to model XMILE file
 	// access:       string;         // TODO: not sure if should implement
 	// autoExport:   boolean;        // TODO: not sure if should implement
@@ -709,6 +704,18 @@ export class Variable implements XNode {
 			case 'outflow':
 				v.outflows.push(content(child));
 				break;
+			case 'gf':
+				[v.gf, err] = GF.Build(child);
+				if (err)
+					return [null, new Error(v.name + ' GF: ' + err.error)];
+				break;
+			case 'connect':
+				let conn: Connection;
+				[conn, err] = Connection.Build(child);
+				if (err)
+					return [null, new Error(v.name + ' conn: ' + err.error)];
+				v.connections.push(conn);
+				break;
 			}
 		}
 
@@ -735,13 +742,63 @@ export class View implements XNode {
 }
 
 export class GF implements XNode {
-	discrete: boolean;
-	xPoints:  string;
-	yPoints:  string;
-	xScale:   Scale;
-	yScale:   Scale;
+	static Types: string[] = ['continuous', 'extrapolate', 'discrete'];
 
-	constructor(el: Element) {
+	name:     string; // for when the
+	type:     string = 'continuous';
+	xPoints:  number[];
+	yPoints:  number[];
+	xScale:   Scale;
+	yScale:   Scale; // only affects the scale of the graph in the UI
+
+
+	static Build(el: Node): [GF, Error] {
+		let table = new GF();
+		let err: Error;
+
+		for (let i = 0; i < el.attributes.length; i++) {
+			let attr = el.attributes.item(i);
+			switch (attr.name.toLowerCase()) {
+			case 'type':
+				table.type = attr.value.toLowerCase();
+				if (!(table.type in GF.Types))
+					return [null, new Error('bad type: ' + table.type)];
+				break;
+			}
+		}
+
+		for (let i = 0; i < el.childNodes.length; i++) {
+			let child = el.childNodes.item(i);
+			if (child.nodeType !== 1) // Element
+				continue;
+			switch (child.nodeName.toLowerCase()) {
+			case 'xscale':
+				[table.xScale, err] = Scale.Build(child);
+				if (err)
+					return [null, new Error('xscale: ' + err.error)];
+				break;
+			case 'yscale':
+				[table.yScale, err] = Scale.Build(child);
+				if (err)
+					return [null, new Error('yscale: ' + err.error)];
+				break;
+			case 'xpts':
+				table.xPoints = numberize(splitOnComma(content(child)));
+				break;
+			case 'ypts':
+				table.yPoints = numberize(splitOnComma(content(child)));
+				break;
+			}
+		}
+
+		if (!table.yPoints)
+			return [null, new Error('table missing ypts')];
+
+		// FIXME: handle
+		if (table.type !== 'continuous')
+			console.log('WARN: unimplemented table type: ' + table.type);
+
+		return [table, err];
 	}
 
 	toXml(doc: XMLDocument, parent: Element): boolean {
@@ -753,7 +810,31 @@ export class Scale implements XNode {
 	min: number;
 	max: number;
 
-	constructor(el: Element) {
+	static Build(el: Node): [Scale, Error] {
+		let scale = new Scale();
+		let err: Error;
+
+		for (let i = 0; i < el.attributes.length; i++) {
+			let attr = el.attributes.item(i);
+			switch (attr.name.toLowerCase()) {
+			case 'min':
+				[scale.min, err] = num(attr.value);
+				if (err)
+					return [null, new Error('bad min: ' + attr.value)];
+				break;
+			case 'max':
+				[scale.max, err] = num(attr.value);
+				if (err)
+					return [null, new Error('bad max: ' + attr.value)];
+				break;
+			}
+		}
+
+		if (!scale.hasOwnProperty('min') || !scale.hasOwnProperty('max')) {
+			return [null, new Error('scale requires both min and max')];
+		}
+
+		return [scale, null];
 	}
 
 	toXml(doc: XMLDocument, parent: Element): boolean {
@@ -761,11 +842,31 @@ export class Scale implements XNode {
 	}
 }
 
-export class Connect implements XNode {
+export class Connection implements XNode {
 	to:   string;
 	from: string;
 
-	constructor(el: Element) {
+	static Build(el: Node): [Connection, Error] {
+		let conn = new Connection();
+		let err: Error;
+
+		for (let i = 0; i < el.attributes.length; i++) {
+			let attr = el.attributes.item(i);
+			switch (attr.name.toLowerCase()) {
+			case 'to':
+				conn.to = attr.value;
+				break;
+			case 'from':
+				conn.from = attr.value;
+				break;
+			}
+		}
+
+		if (!conn.hasOwnProperty('to') || !conn.hasOwnProperty('from')) {
+			return [null, new Error('connect requires both to and from')];
+		}
+
+		return [conn, null];
 	}
 
 	toXml(doc: XMLDocument, parent: Element): boolean {

@@ -2,9 +2,6 @@ export declare class Error {
     error: string;
     constructor(error: string);
 }
-export interface XNodeStatic {
-    new (el: Element): XNodeStatic;
-}
 export interface XNode {
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
@@ -175,7 +172,7 @@ export declare class Variable implements XNode {
     gf: GF;
     dimensions: Dimension[];
     elements: ArrayElement[];
-    connections: Connect[];
+    connections: Connection[];
     resource: string;
     units: Unit;
     doc: string;
@@ -194,24 +191,26 @@ export declare class View implements XNode {
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
 export declare class GF implements XNode {
-    discrete: boolean;
-    xPoints: string;
-    yPoints: string;
+    static Types: string[];
+    name: string;
+    type: string;
+    xPoints: number[];
+    yPoints: number[];
     xScale: Scale;
     yScale: Scale;
-    constructor(el: Element);
+    static Build(el: Node): [GF, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
 export declare class Scale implements XNode {
     min: number;
     max: number;
-    constructor(el: Element);
+    static Build(el: Node): [Scale, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
-export declare class Connect implements XNode {
+export declare class Connection implements XNode {
     to: string;
     from: string;
-    constructor(el: Element);
+    static Build(el: Node): [Connection, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
 export declare function canonicalize(id: string): string;
