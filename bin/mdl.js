@@ -33,7 +33,7 @@ node "$SDJS_DIR/emit_sim.js" "$model" >"$OUT"
 node "$OUT"
 
 if [ $work = 'yes' ]; then
-    echo "$OUT"
+    echo "$OUT" >&2
 else
     rm -f "$OUT"
 fi

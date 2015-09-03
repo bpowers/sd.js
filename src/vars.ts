@@ -19,6 +19,7 @@ const opMap: {[op: string]: string} = {
 	'≥': '>=',
 	'≤': '<=',
 	'≠': '!==',
+	'=': '===',
 };
 
 export class Variable implements type.Variable {

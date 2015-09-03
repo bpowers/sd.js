@@ -19,8 +19,8 @@ import Mustache = require('mustache');
 // easier to debug but run slower.
 let DEBUG = true;
 
-const SP = DEBUG ? '    ' : '';
-const NLSP = DEBUG ? '\n    ' : '';
+const SP = DEBUG ? '\t' : '';
+const NLSP = DEBUG ? '\n\t' : '';
 
 const tmpl = `{{&preamble}}
 
