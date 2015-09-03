@@ -196,6 +196,9 @@ export declare class Variable implements XNode {
 export declare class Shape implements XNode {
     static Types: string[];
     type: string;
+    width: number;
+    height: number;
+    radius: number;
     static Build(el: Node): [Shape, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }

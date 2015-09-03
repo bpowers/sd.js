@@ -29,6 +29,7 @@ export declare class Drawing {
     model: type.Model;
     xmile: xmile.View;
     colorOverride: boolean;
+    stocksXYCenter: boolean;
     paper: Snap.Paper;
     _g: Snap.Element;
     _t: Transform;
@@ -37,7 +38,7 @@ export declare class Drawing {
         [n: string]: Ent;
     };
     z_ents: Ent[][];
-    constructor(model: type.Model, view: xmile.View, svgElement: string | HTMLElement, overrideColors: boolean, enableMousewheel: boolean);
+    constructor(model: type.Model, view: xmile.View, svgElement: string | HTMLElement, overrideColors: boolean, enableMousewheel: boolean, stocksXYCenter: boolean);
     applyDScaleAt(dscale: number, e: any): void;
     transform(scale?: number, x?: number, y?: number): void;
     normalizeTransform(): void;

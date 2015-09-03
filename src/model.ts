@@ -72,12 +72,17 @@ export class Model implements type.Model {
 		return new sim.Sim(mod, isStandalone);
 	}
 
-	drawing(svgElementID: string, overrideColors: boolean, enableMousewheel: boolean): draw.Drawing {
+	drawing(
+		svgElementID: string,
+		overrideColors: boolean,
+		enableMousewheel: boolean,
+		stocksXYCenter = false): draw.Drawing {
+
 		// FIXME: return first 'stock_flow' view, allow
 		// returning other views.
 		return new draw.Drawing(
 			this, this.xModel.views[0], svgElementID,
-			overrideColors, enableMousewheel);
+			overrideColors, enableMousewheel, stocksXYCenter);
 	}
 
 	/**

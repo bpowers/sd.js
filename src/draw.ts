@@ -374,13 +374,15 @@ class DStock implements Ent {
 		this.cx = element.x;
 		this.cy = element.y;
 		if (element.width) {
-			this.cx += .5*element.width;
+			if (!drawing.stocksXYCenter)
+				this.cx += .5*element.width;
 			this.w = element.width;
 		} else {
 			this.w = 45;
 		}
 		if (element.height) {
-			this.cy += .5*element.height;
+			if (!drawing.stocksXYCenter)
+				this.cy += .5*element.height;
 			this.h = element.height;
 		} else {
 			this.h = 35;
@@ -545,13 +547,13 @@ class DAux implements Ent {
 		this.cx = element.x;
 		this.cy = element.y;
 		if (element.width) {
-			this.cx += .5*element.width;
+			// this.cx += .5*element.width;
 			this.r = element.width/2;
 		} else {
 			this.r = AUX_RADIUS;
 		}
 		if (element.height) {
-			this.cy += .5*element.height;
+			// this.cy += .5*element.height;
 			this.r = element.height/2;
 		} else {
 			this.r = AUX_RADIUS;
@@ -874,6 +876,7 @@ export class Drawing {
 	model: type.Model;
 	xmile: xmile.View;
 	colorOverride: boolean;
+	stocksXYCenter: boolean;
 	paper: Snap.Paper;
 	_g: Snap.Element;
 	_t: Transform;
@@ -881,7 +884,14 @@ export class Drawing {
 	named_ents: {[n: string]: Ent};
 	z_ents: Ent[][];
 
-	constructor(model: type.Model, view: xmile.View, svgElement: string|HTMLElement, overrideColors: boolean, enableMousewheel: boolean) {
+	constructor(
+		model: type.Model,
+		view: xmile.View,
+		svgElement: string|HTMLElement,
+		overrideColors: boolean,
+		enableMousewheel: boolean,
+		stocksXYCenter: boolean) {
+
 		this.model = model;
 		this.xmile = view;
 		let element: HTMLElement;
@@ -909,6 +919,7 @@ export class Drawing {
 		this._g = this.paper.g();
 		this._g.node.id = 'viewport';
 		this.colorOverride = overrideColors;
+		this.stocksXYCenter = stocksXYCenter;
 
 		// var zoom = util.floatAttr(view, 'zoom')/100.0;
 		element.setAttribute('preserveAspectRatio', 'xMinYMin');

@@ -95,6 +95,12 @@ function bool(v: any): [boolean, Error] {
 		return [false, null];
 	if (typeof v === 'boolean')
 		return [v, null];
+	if (typeof v === 'string') {
+		if (v === 'true')
+			return [true, null];
+		else if (v === 'false')
+			return [false, null];
+	}
 	// XXX: should we accept 0 or 1?
 	return [false, new Error('not boolean: ' + v)];
 }
@@ -614,6 +620,9 @@ export class Model implements XNode {
 					let vchild = child.childNodes.item(j);
 					if (vchild.nodeType !== 1) // Element
 						continue;
+					// TODO: style parsing
+					if (vchild.nodeName.toLowerCase() !== 'view')
+						continue;
 					let view: View;
 					[view, err] = View.Build(vchild);
 					// FIXME: real logging
@@ -784,8 +793,12 @@ export class Variable implements XNode {
 }
 
 export class Shape implements XNode {
-	static Types: string[] = ['continuous', 'extrapolate', 'discrete'];
-	type: string; // 'rectangle', 'circle', 'name_only'
+	static Types: string[] = ['rectangle', 'circle', 'name_only'];
+
+	type:   string; // 'rectangle'|'circle'|'name_only'
+	width:  number;
+	height: number;
+	radius: number;
 
 	static Build(el: Node): [Shape, Error] {
 		let shape = new Shape();
@@ -798,6 +811,21 @@ export class Shape implements XNode {
 				shape.type = attr.value.toLowerCase();
 				if (!(shape.type in Shape.Types))
 					return [null, new Error('bad type: ' + shape.type)];
+				break;
+			case 'width':
+				[shape.width, err] = num(attr.value);
+				if (err)
+					return [null, new Error('bad width: ' + err.error)];
+				break;
+			case 'height':
+				[shape.height, err] = num(attr.value);
+				if (err)
+					return [null, new Error('bad height: ' + err.error)];
+				break;
+			case 'radius':
+				[shape.radius, err] = num(attr.value);
+				if (err)
+					return [null, new Error('bad radius: ' + err.error)];
 				break;
 			}
 		}
@@ -929,7 +957,11 @@ export class ViewElement implements XNode {
 						viewEl.pts = [];
 					viewEl.pts.push(pt);
 				}
-
+				break;
+			case 'shape':
+				[viewEl.shape, err] = Shape.Build(child);
+				if (err)
+					return [null, new Error('shape: ' + err.error)];
 				break;
 			}
 		}

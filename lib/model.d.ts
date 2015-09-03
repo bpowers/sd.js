@@ -16,6 +16,6 @@ export declare class Model implements type.Model {
     simSpec: type.SimSpec;
     lookup(id: string): type.Variable;
     sim(isStandalone: boolean): sim.Sim;
-    drawing(svgElementID: string, overrideColors: boolean, enableMousewheel: boolean): draw.Drawing;
+    drawing(svgElementID: string, overrideColors: boolean, enableMousewheel: boolean, stocksXYCenter?: boolean): draw.Drawing;
     private parseVars(variables);
 }

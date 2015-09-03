@@ -557,6 +557,12 @@ define('xmile',["require", "exports"], function (require, exports) {
             return [false, null];
         if (typeof v === 'boolean')
             return [v, null];
+        if (typeof v === 'string') {
+            if (v === 'true')
+                return [true, null];
+            else if (v === 'false')
+                return [false, null];
+        }
         return [false, new Error('not boolean: ' + v)];
     }
     var Point = (function () {
@@ -998,6 +1004,8 @@ define('xmile',["require", "exports"], function (require, exports) {
                             var vchild = child.childNodes.item(j);
                             if (vchild.nodeType !== 1)
                                 continue;
+                            if (vchild.nodeName.toLowerCase() !== 'view')
+                                continue;
                             var view = void 0;
                             _b = View.Build(vchild), view = _b[0], err = _b[1];
                             if (err)
@@ -1152,14 +1160,30 @@ define('xmile',["require", "exports"], function (require, exports) {
                         if (!(shape.type in Shape.Types))
                             return [null, new Error('bad type: ' + shape.type)];
                         break;
+                    case 'width':
+                        _a = num(attr_8.value), shape.width = _a[0], err = _a[1];
+                        if (err)
+                            return [null, new Error('bad width: ' + err.error)];
+                        break;
+                    case 'height':
+                        _b = num(attr_8.value), shape.height = _b[0], err = _b[1];
+                        if (err)
+                            return [null, new Error('bad height: ' + err.error)];
+                        break;
+                    case 'radius':
+                        _c = num(attr_8.value), shape.radius = _c[0], err = _c[1];
+                        if (err)
+                            return [null, new Error('bad radius: ' + err.error)];
+                        break;
                 }
             }
             return [shape, err];
+            var _a, _b, _c;
         };
         Shape.prototype.toXml = function (doc, parent) {
             return true;
         };
-        Shape.Types = ['continuous', 'extrapolate', 'discrete'];
+        Shape.Types = ['rectangle', 'circle', 'name_only'];
         return Shape;
     })();
     exports.Shape = Shape;
@@ -1244,10 +1268,15 @@ define('xmile',["require", "exports"], function (require, exports) {
                             viewEl.pts.push(pt);
                         }
                         break;
+                    case 'shape':
+                        _h = Shape.Build(child), viewEl.shape = _h[0], err = _h[1];
+                        if (err)
+                            return [null, new Error('shape: ' + err.error)];
+                        break;
                 }
             }
             return [viewEl, err];
-            var _a, _b, _c, _d, _e, _f, _g;
+            var _a, _b, _c, _d, _e, _f, _g, _h;
         };
         Object.defineProperty(ViewElement.prototype, "ident", {
             get: function () {
@@ -13126,14 +13155,16 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
             this.cx = element.x;
             this.cy = element.y;
             if (element.width) {
-                this.cx += .5 * element.width;
+                if (!drawing.stocksXYCenter)
+                    this.cx += .5 * element.width;
                 this.w = element.width;
             }
             else {
                 this.w = 45;
             }
             if (element.height) {
-                this.cy += .5 * element.height;
+                if (!drawing.stocksXYCenter)
+                    this.cy += .5 * element.height;
                 this.h = element.height;
             }
             else {
@@ -13236,14 +13267,12 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
             this.cx = element.x;
             this.cy = element.y;
             if (element.width) {
-                this.cx += .5 * element.width;
                 this.r = element.width / 2;
             }
             else {
                 this.r = AUX_RADIUS;
             }
             if (element.height) {
-                this.cy += .5 * element.height;
                 this.r = element.height / 2;
             }
             else {
@@ -13482,7 +13511,7 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
         'module': DModule,
     };
     var Drawing = (function () {
-        function Drawing(model, view, svgElement, overrideColors, enableMousewheel) {
+        function Drawing(model, view, svgElement, overrideColors, enableMousewheel, stocksXYCenter) {
             this.model = model;
             this.xmile = view;
             var element;
@@ -13509,6 +13538,7 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
             this._g = this.paper.g();
             this._g.node.id = 'viewport';
             this.colorOverride = overrideColors;
+            this.stocksXYCenter = stocksXYCenter;
             element.setAttribute('preserveAspectRatio', 'xMinYMin');
             {
                 var tz = 'translateZ(0px)';
@@ -16639,8 +16669,9 @@ define('model',["require", "exports", './util', './vars', './draw', './sim', './
             }
             return new sim.Sim(mod, isStandalone);
         };
-        Model.prototype.drawing = function (svgElementID, overrideColors, enableMousewheel) {
-            return new draw.Drawing(this, this.xModel.views[0], svgElementID, overrideColors, enableMousewheel);
+        Model.prototype.drawing = function (svgElementID, overrideColors, enableMousewheel, stocksXYCenter) {
+            if (stocksXYCenter === void 0) { stocksXYCenter = false; }
+            return new draw.Drawing(this, this.xModel.views[0], svgElementID, overrideColors, enableMousewheel, stocksXYCenter);
         };
         Model.prototype.parseVars = function (variables) {
             for (var i in variables) {
