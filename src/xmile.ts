@@ -77,15 +77,6 @@ function content(node: Node): string {
 	return text;
 }
 
-function str(v: any): [string, Error] {
-	'use strict';
-	if (typeof v === 'undefined' || v === null)
-		return ['', null];
-	if (typeof v === 'string')
-		return [v, null];
-	return ['', new Error('not string: ' + v)];
-}
-
 function num(v: any): [number, Error] {
 	'use strict';
 	if (typeof v === 'undefined' || v === null)

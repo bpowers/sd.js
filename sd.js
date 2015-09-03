@@ -540,14 +540,6 @@ define('xmile',["require", "exports"], function (require, exports) {
         }
         return text;
     }
-    function str(v) {
-        'use strict';
-        if (typeof v === 'undefined' || v === null)
-            return ['', null];
-        if (typeof v === 'string')
-            return [v, null];
-        return ['', new Error('not string: ' + v)];
-    }
     function num(v) {
         'use strict';
         if (typeof v === 'undefined' || v === null)
