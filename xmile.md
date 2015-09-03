@@ -95,3 +95,9 @@ specified.
 `page_sequence`...
 
 - `lable_angle` - counter-clockwise? `This is always specified in conjunction with label_side` -- how is that useful?  Isn't it either/or?
+
+There are 2 possible formattings to use for the display of an entity
+name, that specified in the 'name' attribute of the
+`<aux>`/`<stock>`/`<flow>` tag under the `<view>` section, or the
+'name' attribute of the tag under the `model` section.  I am choosing
+to use the formatting under the model section.

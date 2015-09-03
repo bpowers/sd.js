@@ -12,6 +12,7 @@
 import type = require('./type');
 import vars = require('./vars');
 import runtime = require('./runtime');
+import xmile = require('./xmile');
 
 import {dName, isNaN} from "./util";
 import {canonicalize} from './xmile';
@@ -70,11 +71,6 @@ function addCSSClass(o: any, newClass: string): void {
 	}
 };
 
-function hasKey(o: any, k: string): boolean {
-	'use strict';
-	return o.hasOwnProperty(k);
-};
-
 function isZero(n: number): boolean {
 	'use strict';
 	return Math.abs(n) < 0.0000001;
@@ -106,18 +102,18 @@ const SIDE_MAP: {[index: number]: string} = {
 	3: 'top',
 };
 
-function findSide(element: any, defaultSide = 'bottom'): string {
+function findSide(element: xmile.ViewElement, defaultSide = 'bottom'): string {
 	'use strict';
 
-	if ('@label_side' in element) {
-		let side = element['@label_side'].toLowerCase();
+	if (element.labelSide) {
+		let side = element.labelSide;
 		// FIXME(bp) handle center 'side' case
 		if (side === 'center')
 			return defaultSide;
 		return side;
 	}
-	if ('@label_angle' in element) {
-		let θ = (element['@label_angle'] + 45) % 360;
+	if (element.hasOwnProperty('labelAngle')) {
+		let θ = (element.labelAngle + 45) % 360;
 		let i = (θ/90)|0;
 		return SIDE_MAP[i];
 	}
@@ -331,12 +327,12 @@ function sparkline(
 };
 
 export interface EntStatic {
-	new (drawing: Drawing, element: any): Ent;
+	new (drawing: Drawing, element: xmile.ViewElement): Ent;
 }
 
 export interface Ent {
-
-	name: string;
+	ident: string;
+	dName: string;
 	cx: number;
 	cy: number;
 	set: Snap.Element;
@@ -352,8 +348,8 @@ export interface Ent {
 
 class DStock implements Ent {
 	drawing: Drawing;
-	e: any;
-	name: string;
+	e: xmile.ViewElement;
+	ident: string;
 	dName: string;
 
 	cx: number;
@@ -369,27 +365,27 @@ class DStock implements Ent {
 	set: Snap.Element;
 	graph: Snap.Element;
 
-	constructor(drawing: Drawing, element: any) {
+	constructor(drawing: Drawing, element: xmile.ViewElement) {
 		this.drawing = drawing;
 		this.e = element;
-		this.name = canonicalize(element['@name']);
-		this.dName = dName(element['@name']);
+		this.ident = element.ident;
+		this.dName = dName(element.name);
 
-		this.cx = element['@x'];
-		this.cy = element['@y'];
-		if (element['@width']) {
-			this.cx += .5*element['@width'];
-			this.w = element['@width'];
+		this.cx = element.x;
+		this.cy = element.y;
+		if (element.width) {
+			this.cx += .5*element.width;
+			this.w = element.width;
 		} else {
 			this.w = 45;
 		}
-		if (element['@height']) {
-			this.cy += .5*element['@height'];
-			this.h = element['@height'];
+		if (element.height) {
+			this.cy += .5*element.height;
+			this.h = element.height;
 		} else {
 			this.h = 35;
 		}
-		this.color = this.drawing.colorOverride ? COLOR_AUX : element['@color'] || COLOR_AUX;
+		this.color = this.drawing.colorOverride ? COLOR_AUX : element.color || COLOR_AUX;
 		this.labelSide = findSide(element, 'top');
 	}
 
@@ -397,25 +393,25 @@ class DStock implements Ent {
 		// we are a stock, and need to inform all the flows into and
 		// out of us that they, in fact, flow in and out of us.
 
-		let mEnt = <vars.Stock>this.drawing.model.vars[this.name];
+		let mEnt = <vars.Stock>this.drawing.model.vars[this.ident];
 
 		for (let i = 0; i < mEnt.inflows.length; i++) {
 			let n = mEnt.inflows[i];
 			let dEnt = this.drawing.named_ents[n];
 			if (!dEnt) {
-				console.log('failed connecting ' + this.name + ' .to ' + n);
+				console.log('failed connecting ' + this.ident + ' .to ' + n);
 				continue;
 			}
-			dEnt.to = this.name;
+			dEnt.to = this.ident;
 		}
 		for (let i = 0; i < mEnt.outflows.length; i++) {
 			let n = mEnt.outflows[i];
 			let dEnt = this.drawing.named_ents[n];
 			if (!dEnt) {
-				console.log('failed connecting ' + this.name + ' .from ' + n);
+				console.log('failed connecting ' + this.ident + ' .from ' + n);
 				continue;
 			}
-			this.drawing.named_ents[n].from = this.name;
+			this.drawing.named_ents[n].from = this.ident;
 		}
 	}
 
@@ -454,8 +450,8 @@ class DStock implements Ent {
 
 class DModule implements Ent {
 	drawing: Drawing;
-	e: any;
-	name: string;
+	e: xmile.ViewElement;
+	ident: string;
 	dName: string;
 
 	cx: number;
@@ -471,17 +467,17 @@ class DModule implements Ent {
 	set: Snap.Element;
 	graph: Snap.Element;
 
-	constructor(drawing: Drawing, element: any) {
+	constructor(drawing: Drawing, element: xmile.ViewElement) {
 		this.drawing = drawing;
 		this.e = element;
-		this.name = canonicalize(element['@name']);
-		this.dName = dName(element['@name']);
+		this.ident = element.ident;
+		this.dName = dName(element.name);
 
-		this.cx = element['@x'];
-		this.cy = element['@y'];
+		this.cx = element.x;
+		this.cy = element.y;
 		this.w = 55;
 		this.h = 45;
-		this.color = this.drawing.colorOverride ? COLOR_AUX : element['@color'] || COLOR_AUX;
+		this.color = this.drawing.colorOverride ? COLOR_AUX : element.color || COLOR_AUX;
 		this.labelSide = findSide(element);
 	}
 
@@ -522,8 +518,8 @@ class DModule implements Ent {
 
 class DAux implements Ent {
 	drawing: Drawing;
-	e: any;
-	name: string;
+	e: xmile.ViewElement;
+	ident: string;
 	dName: string;
 
 	cx: number;
@@ -540,27 +536,27 @@ class DAux implements Ent {
 	set: Snap.Element;
 	graph: Snap.Element;
 
-	constructor(drawing: Drawing, element: any) {
+	constructor(drawing: Drawing, element: xmile.ViewElement) {
 		this.drawing = drawing;
 		this.e = element;
-		this.name = canonicalize(element['@name']);
-		this.dName = dName(element['@name']);
+		this.ident = element.ident;
+		this.dName = dName(element.name);
 
-		this.cx = element['@x'];
-		this.cy = element['@y'];
-		if (element['@width']) {
-			this.cx += .5*element['@width'];
-			this.r = element['@width']/2;
+		this.cx = element.x;
+		this.cy = element.y;
+		if (element.width) {
+			this.cx += .5*element.width;
+			this.r = element.width/2;
 		} else {
 			this.r = AUX_RADIUS;
 		}
-		if (element['@height']) {
-			this.cy += .5*element['@height'];
-			this.r = element['@height']/2;
+		if (element.height) {
+			this.cy += .5*element.height;
+			this.r = element.height/2;
 		} else {
 			this.r = AUX_RADIUS;
 		}
-		this.color = this.drawing.colorOverride ? COLOR_AUX : element['@color'] || COLOR_AUX;
+		this.color = this.drawing.colorOverride ? COLOR_AUX : element.color || COLOR_AUX;
 		this.labelSide = findSide(element);
 	}
 
@@ -595,8 +591,8 @@ class DAux implements Ent {
 
 class DFlow implements Ent {
 	drawing: Drawing;
-	e: any;
-	name: string;
+	e: xmile.ViewElement;
+	ident: string;
 	dName: string;
 
 	cx: number;
@@ -612,16 +608,16 @@ class DFlow implements Ent {
 	set: Snap.Element;
 	graph: Snap.Element;
 
-	constructor(drawing: Drawing, element: any) {
+	constructor(drawing: Drawing, element: xmile.ViewElement) {
 		this.drawing = drawing;
 		this.e = element;
-		this.name = canonicalize(element['@name']);
-		this.dName = dName(element['@name']);
-		this.cx = element['@x'];
-		this.cy = element['@y'];
+		this.ident = element.ident;
+		this.dName = dName(element.name);
+		this.cx = element.x;
+		this.cy = element.y;
 		this.to = null;
 		this.from = null;
-		this.color = this.drawing.colorOverride ? COLOR_AUX : element['@color'] || COLOR_AUX;
+		this.color = this.drawing.colorOverride ? COLOR_AUX : element.color || COLOR_AUX;
 		this.labelSide = findSide(element);
 	}
 
@@ -631,50 +627,52 @@ class DFlow implements Ent {
 		let paper = this.drawing.paper;
 		const cx = this.cx;
 		const cy = this.cy;
-		let pts: Array<{[n: string]: number}> = this.e.pts.pt;
+		let pts = this.e.pts;
 		if (pts.length < 2) {
 			console.log('ERROR: too few points for flow: ' + JSON.stringify(this));
 			return;
 		}
 		let spath = '';
-		for (let j = 0; j < pts.length; j++)
-			spath += (j === 0 ? 'M' : 'L') + pts[j]['@x'] + ',' + pts[j]['@y'];
+		for (let j = 0; j < pts.length; j++) {
+			let pt = pts[j];
+			spath += (j === 0 ? 'M' : 'L') + pt.x + ',' + pt.y;
+		}
 
 		let from_cloud: Snap.Element;
 		let cloud: Snap.Element;
 		this.set = this.drawing.group();
 		if (!this.from) {
-			cloud = cloudAt(paper, pts[0]['@x'], pts[0]['@y']);
+			cloud = cloudAt(paper, pts[0].x, pts[0].y);
 			// when we are flowing out of a cloud, don't adjust the
 			// length, just later the cloud above the pipe
 			from_cloud = cloud;
 		}
 		if (!this.to) {
 			let x: number, y: number, prevX: number, prevY: number;
-			x = pts[pts.length-1]['@x'];
-			y = pts[pts.length-1]['@y'];
-			prevX = pts[pts.length-2]['@x'];
-			prevY = pts[pts.length-2]['@y'];
+			x = pts[pts.length-1].x;
+			y = pts[pts.length-1].y;
+			prevX = pts[pts.length-2].x;
+			prevY = pts[pts.length-2].y;
 			cloud = cloudAt(paper, x, y);
 			this.set.add(cloud);
 			if (prevX < x)
-				pts[pts.length-1]['@x'] = x - CLOUD_RADIUS;
+				pts[pts.length-1].x = x - CLOUD_RADIUS;
 			if (prevX > x)
-				pts[pts.length-1]['@x'] = x + CLOUD_RADIUS;
+				pts[pts.length-1].x = x + CLOUD_RADIUS;
 			if (prevY < y)
-				pts[pts.length-1]['@y'] = y - CLOUD_RADIUS;
+				pts[pts.length-1].y = y - CLOUD_RADIUS;
 			if (prevY > y)
-				pts[pts.length-1]['@y'] = y + CLOUD_RADIUS;
+				pts[pts.length-1].y = y + CLOUD_RADIUS;
 		}
 		// recalcualte path after cloud intersection
 		spath = '';
 		let arrowθ: number;
 		for (let j = 0; j < pts.length; j++) {
-			let x = pts[j]['@x'];
-			let y = pts[j]['@y'];
+			let x = pts[j].x;
+			let y = pts[j].y;
 			if (j === pts.length-1) {
-				let dx = x - pts[j-1]['@x'];
-				let dy = y - pts[j-1]['@y'];
+				let dx = x - pts[j-1].x;
+				let dy = y - pts[j-1].y;
 				let θ = Math.atan2(dy, dx) * 180/Math.PI;
 				if (θ < 0)
 					θ += 360;
@@ -700,9 +698,9 @@ class DFlow implements Ent {
 			'fill': 'none',
 		}));
 
-		let lastPt = last(pts);
-		this.set.add(arrowhead(paper, lastPt['@x'], lastPt['@y'], ARROWHEAD_RADIUS*2).attr({
-			'transform': 'rotate(' + (arrowθ) + ',' + lastPt['@x'] + ',' + lastPt['@y'] + ')',
+		let lastPt: Point = last(pts);
+		this.set.add(arrowhead(paper, lastPt.x, lastPt.y, ARROWHEAD_RADIUS*2).attr({
+			'transform': 'rotate(' + (arrowθ) + ',' + lastPt.x + ',' + lastPt.y + ')',
 			'stroke': this.color,
 			'stroke-width': 1,
 			'fill': 'white',
@@ -741,8 +739,9 @@ class DFlow implements Ent {
 
 class DConnector implements Ent {
 	drawing: Drawing;
-	e: any;
-	name: string;
+	e: xmile.ViewElement;
+	ident: string;
+	dName: string;
 
 	cx: number;
 	cy: number;
@@ -756,19 +755,18 @@ class DConnector implements Ent {
 
 	set: Snap.Element;
 
-	constructor(drawing: Drawing, element: any) {
+	constructor(drawing: Drawing, element: xmile.ViewElement) {
 		this.drawing = drawing;
 		this.e = element;
-		this.name = undefined;
-		this.color = this.drawing.colorOverride ? COLOR_CONN : element['@color'] || COLOR_CONN;
+		this.color = this.drawing.colorOverride ? COLOR_CONN : element.color || COLOR_CONN;
 	}
 
 	init(): void {}
 
 	draw(): void {
 		let paper = this.drawing.paper;
-		const cx = this.e['@x'];
-		const cy = this.e['@y'];
+		const cx = this.e.x;
+		const cy = this.e.y;
 		let fromEnt = this.drawing.named_ents[canonicalize(this.e.from)];
 		if (!fromEnt)
 			return;
@@ -874,18 +872,18 @@ export interface Transform {
  */
 export class Drawing {
 	model: type.Model;
-	xmile: any;
+	xmile: xmile.View;
 	colorOverride: boolean;
 	paper: Snap.Paper;
-	_g: any;
+	_g: Snap.Element;
 	_t: Transform;
 	d_ents: Ent[];
 	named_ents: {[n: string]: Ent};
 	z_ents: Ent[][];
 
-	constructor(model: type.Model, xmile: any, svgElement: string|HTMLElement, overrideColors: any, enableMousewheel: boolean) {
+	constructor(model: type.Model, view: xmile.View, svgElement: string|HTMLElement, overrideColors: boolean, enableMousewheel: boolean) {
 		this.model = model;
-		this.xmile = xmile;
+		this.xmile = view;
 		let element: HTMLElement;
 		let svg: SVGElement;
 		if (typeof svgElement === 'string') {
@@ -924,20 +922,6 @@ export class Drawing {
 			style.transform = tz;
 		}
 
-		let elems: any[] = [];
-		for (let n in DTypes) {
-			if (!DTypes.hasOwnProperty(n))
-				continue;
-			if (!(n in xmile))
-				continue;
-			if (!(xmile[n] instanceof Array))
-				xmile[n] = [xmile[n]];
-			for (let i = 0; i < xmile[n].length; i++) {
-				xmile[n][i]['@tagName'] = n;
-				elems.push(xmile[n][i]);
-			}
-		}
-
 		this.d_ents = [];
 		this.z_ents = new Array(Z_MAX);
 		for (let i = 0; i < Z_MAX; i++)
@@ -945,20 +929,17 @@ export class Drawing {
 		this.named_ents = {};
 
 		// create a drawing entity for each known tag in the display
-		for (let i = 0; i < elems.length; i++) {
-			let e = elems[i];
-			let tagName = e['@tagName'];
-			if (!tagName)
-				continue;
-			if (!hasKey(DTypes, tagName)) {
-				console.log('unknown draw ent type ' + e.tagName);
+		for (let i = 0; i < view.elements.length; i++) {
+			let e = view.elements[i];
+			if (!DTypes.hasOwnProperty(e.type)) {
+				console.log('unknown draw ent type ' + e.type);
 				continue;
 			}
-			let de = new DTypes[tagName](this, e);
+			let de = new DTypes[e.type](this, e);
 			this.d_ents.push(de);
-			this.z_ents[Z_ORDER[tagName]].push(de);
-			if (de.name)
-				this.named_ents[de.name] = de;
+			this.z_ents[Z_ORDER[e.type]].push(de);
+			if (de.ident)
+				this.named_ents[de.ident] = de;
 		}
 
 		// all draw ents need to be constructed and read in before we
@@ -1057,9 +1038,9 @@ export class Drawing {
 		scale = this._t.scale + this._t.dscale;
 		let matrix = 'translateZ(0px) matrix(' + scale + ',0,0,' + scale +
 			',' + x + ',' + y + ')';
-		this._g.node.style['-webkit-transform'] = matrix;
-		this._g.node.style['-moz-transform'] = matrix;
-		this._g.node.style['-ms-transform'] = matrix;
+		(<any>this._g.node.style)['-webkit-transform'] = matrix;
+		(<any>this._g.node.style)['-moz-transform'] = matrix;
+		(<any>this._g.node.style)['-ms-transform'] = matrix;
 		this._g.node.style.transform = matrix;
 	}
 

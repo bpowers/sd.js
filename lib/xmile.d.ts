@@ -230,6 +230,7 @@ export declare class ViewElement implements XNode {
     pts: Point[];
     of: string;
     static Build(el: Node): [ViewElement, Error];
+    ident: string;
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
 export declare class View implements XNode {

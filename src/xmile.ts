@@ -858,7 +858,8 @@ export class ViewElement implements XNode {
 			let attr = el.attributes.item(i);
 			switch (attr.name.toLowerCase()) {
 			case 'name':
-				viewEl.name = canonicalize(attr.value);
+				// display-name, not canonicalized
+				viewEl.name = attr.value;
 				break;
 			case 'x':
 				[viewEl.x, err] = num(attr.value);
@@ -936,6 +937,10 @@ export class ViewElement implements XNode {
 		}
 
 		return [viewEl, err];
+	}
+
+	get ident(): string {
+		return canonicalize(this.name);
 	}
 
 	toXml(doc: XMLDocument, parent: Element): boolean {

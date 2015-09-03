@@ -73,6 +73,8 @@ export class Model implements type.Model {
 	}
 
 	drawing(svgElementID: string, overrideColors: boolean, enableMousewheel: boolean): draw.Drawing {
+		// FIXME: return first 'stock_flow' view, allow
+		// returning other views.
 		return new draw.Drawing(
 			this, this.xModel.views[0], svgElementID,
 			overrideColors, enableMousewheel);

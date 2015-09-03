@@ -121,7 +121,8 @@ rtest: lib $(RTEST_CMD)
 	./$(RTEST_CMD) ./bin/mdl.js $(RTEST_DIR)
 
 clean:
-	rm -rf build build-rt
+	rm -rf build build-rt lib
+	rm -f sd.js sd.min.js
 	find . -name '*~' | xargs rm -f
 
 distclean: clean

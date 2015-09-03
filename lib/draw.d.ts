@@ -1,10 +1,12 @@
 /// <reference path="../typings/tsd.d.ts" />
 import type = require('./type');
+import xmile = require('./xmile');
 export interface EntStatic {
-    new (drawing: Drawing, element: any): Ent;
+    new (drawing: Drawing, element: xmile.ViewElement): Ent;
 }
 export interface Ent {
-    name: string;
+    ident: string;
+    dName: string;
     cx: number;
     cy: number;
     set: Snap.Element;
@@ -25,17 +27,17 @@ export interface Transform {
 }
 export declare class Drawing {
     model: type.Model;
-    xmile: any;
+    xmile: xmile.View;
     colorOverride: boolean;
     paper: Snap.Paper;
-    _g: any;
+    _g: Snap.Element;
     _t: Transform;
     d_ents: Ent[];
     named_ents: {
         [n: string]: Ent;
     };
     z_ents: Ent[][];
-    constructor(model: type.Model, xmile: any, svgElement: string | HTMLElement, overrideColors: any, enableMousewheel: boolean);
+    constructor(model: type.Model, view: xmile.View, svgElement: string | HTMLElement, overrideColors: boolean, enableMousewheel: boolean);
     applyDScaleAt(dscale: number, e: any): void;
     transform(scale?: number, x?: number, y?: number): void;
     normalizeTransform(): void;
