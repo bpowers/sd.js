@@ -192,7 +192,39 @@ export declare class Variable implements XNode {
     ident: string;
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
+export declare class Shape implements XNode {
+    static Types: string[];
+    type: string;
+    static Build(el: Node): [Shape, Error];
+    toXml(doc: XMLDocument, parent: Element): boolean;
+}
+export declare class ViewElement implements XNode {
+    name: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    shape: Shape;
+    static Build(el: Node): [ViewElement, Error];
+    toXml(doc: XMLDocument, parent: Element): boolean;
+}
 export declare class View implements XNode {
+    type: string;
+    order: number;
+    width: number;
+    height: number;
+    zoom: number;
+    scrollX: number;
+    scrollY: number;
+    background: string;
+    pageWidth: number;
+    pageHeight: number;
+    pageSequence: string;
+    pageOrientation: string;
+    showPages: boolean;
+    homePage: number;
+    homeView: boolean;
+    elements: ViewElement[];
     static Build(el: Node): [View, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }

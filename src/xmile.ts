@@ -594,6 +594,8 @@ export class Model implements XNode {
 			case 'views':
 				for (let j = 0; j < child.childNodes.length; j++) {
 					let vchild = child.childNodes.item(j);
+					if (vchild.nodeType !== 1) // Element
+						continue;
 					let view: View;
 					[view, err] = View.Build(vchild);
 					// FIXME: real logging
@@ -763,11 +765,159 @@ export class Variable implements XNode {
 	}
 }
 
+export class Shape implements XNode {
+	static Types: string[] = ['continuous', 'extrapolate', 'discrete'];
+	type: string; // 'rectangle', 'circle', 'name_only'
+
+	static Build(el: Node): [Shape, Error] {
+		let shape = new Shape();
+		let err: Error;
+
+		for (let i = 0; i < el.attributes.length; i++) {
+			let attr = el.attributes.item(i);
+			switch (attr.name.toLowerCase()) {
+			case 'type':
+				shape.type = attr.value.toLowerCase();
+				if (!(shape.type in Shape.Types))
+					return [null, new Error('bad type: ' + shape.type)];
+				break;
+			}
+		}
+		return [shape, err];
+	}
+
+	toXml(doc: XMLDocument, parent: Element): boolean {
+		return true;
+	}
+}
+
+export class ViewElement implements XNode {
+	name:   string;
+	x:      number;
+	y:      number;
+	width:  number;
+	height: number;
+	shape:  Shape;
+
+	static Build(el: Node): [ViewElement, Error] {
+		let viewEl = new ViewElement();
+		let err: Error;
+
+		return [viewEl, err];
+	}
+
+	toXml(doc: XMLDocument, parent: Element): boolean {
+		return true;
+	}
+}
+
+
 export class View implements XNode {
+	type:            string        = 'stock_flow'; // 'stock_flow'|'interface'|'popup'|vendor-specific
+	order:           number;
+	width:           number;
+	height:          number;
+	zoom:            number        = 100; // '100' means 1x zoom
+	scrollX:         number        = 0;   // before zoom is applied
+	scrollY:         number        = 0;   // before zoom is applied
+	background:      string;              // 'color' or file: URL
+	pageWidth:       number;
+	pageHeight:      number;
+	pageSequence:    string; // 'row'|'column'
+	pageOrientation: string; // 'landscape|portrait'
+	showPages:       boolean;
+	homePage:        number        = 0;
+	homeView:        boolean       = false;
+	elements:        ViewElement[] = [];
 
 	static Build(el: Node): [View, Error] {
 		let view = new View();
 		let err: Error;
+
+		for (let i = 0; i < el.attributes.length; i++) {
+			let attr = el.attributes.item(i);
+			switch (attr.name.toLowerCase()) {
+			case 'type':
+				view.type = attr.value.toLowerCase();
+				break;
+			case 'order':
+				[view.order, err] = num(attr.value);
+				if (err)
+					return [null, new Error('order: ' + err.error)];
+				break;
+			case 'width':
+				[view.width, err] = num(attr.value);
+				if (err)
+					return [null, new Error('width: ' + err.error)];
+				break;
+			case 'height':
+				[view.height, err] = num(attr.value);
+				if (err)
+					return [null, new Error('height: ' + err.error)];
+				break;
+			case 'zoom':
+				[view.zoom, err] = num(attr.value);
+				if (err)
+					return [null, new Error('zoom: ' + err.error)];
+				break;
+			case 'scroll_x':
+				[view.scrollX, err] = num(attr.value);
+				if (err)
+					return [null, new Error('scroll_x: ' + err.error)];
+				break;
+			case 'scroll_y':
+				[view.scrollY, err] = num(attr.value);
+				if (err)
+					return [null, new Error('scroll_y: ' + err.error)];
+				break;
+			case 'background':
+				view.background = attr.value.toLowerCase();
+				break;
+			case 'page_width':
+				[view.pageWidth, err] = num(attr.value);
+				if (err)
+					return [null, new Error('page_width: ' + err.error)];
+				break;
+			case 'page_height':
+				[view.pageHeight, err] = num(attr.value);
+				if (err)
+					return [null, new Error('page_height: ' + err.error)];
+				break;
+			case 'page_sequence':
+				view.pageSequence = attr.value.toLowerCase();
+				break;
+			case 'page_orientation':
+				view.pageOrientation = attr.value.toLowerCase();
+				break;
+			case 'show_pages':
+				[view.showPages, err] = bool(attr.value);
+				if (err)
+					return [null, new Error('show_pages: ' + err.error)];
+				break;
+			case 'home_page':
+				[view.homePage, err] = num(attr.value);
+				if (err)
+					return [null, new Error('home_page: ' + err.error)];
+				break;
+			case 'home_view':
+				[view.homeView, err] = bool(attr.value);
+				if (err)
+					return [null, new Error('home_view: ' + err.error)];
+				break;
+			}
+		}
+
+		for (let i = 0; i < el.childNodes.length; i++) {
+			let child = el.childNodes.item(i);
+			if (child.nodeType !== 1) // Element
+				continue;
+
+			let viewEl: ViewElement;
+			[viewEl, err] = ViewElement.Build(child);
+			if (err)
+				return [null, new Error('viewEl: ' + err.error)];
+			view.elements.push(viewEl);
+		}
 
 		return [view, err];
 	}

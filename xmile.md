@@ -28,6 +28,13 @@ to how includes interact with web-based tools.  CORS support should
 probably be mandated to allow in-browser cross-origin requests for
 XMILE files.
 
+behavior
+--------
+
+Can cause `non_negative` to propogate, but can't turn that off.
+i.e. you can't specify `non_negative` and then have a single stock
+able to go negative, while you can do the inverse.
+
 4 Model
 -------
 
@@ -76,3 +83,13 @@ Numbers
 -------
 
 `FIXME`: need to restrict exponent to an integer
+
+
+Views
+-----
+
+`page_width` + `page_height` - "The width of a printed page".  In what
+units?  This either shouldn't be required, or needs to be much more
+specified.
+
+`page_sequence`...

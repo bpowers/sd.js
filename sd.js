@@ -977,6 +977,8 @@ define('xmile',["require", "exports"], function (require, exports) {
                     case 'views':
                         for (var j = 0; j < child.childNodes.length; j++) {
                             var vchild = child.childNodes.item(j);
+                            if (vchild.nodeType !== 1)
+                                continue;
                             var view = void 0;
                             _b = View.Build(vchild), view = _b[0], err = _b[1];
                             if (err)
@@ -1117,13 +1119,142 @@ define('xmile',["require", "exports"], function (require, exports) {
         return Variable;
     })();
     exports.Variable = Variable;
+    var Shape = (function () {
+        function Shape() {
+        }
+        Shape.Build = function (el) {
+            var shape = new Shape();
+            var err;
+            for (var i = 0; i < el.attributes.length; i++) {
+                var attr_7 = el.attributes.item(i);
+                switch (attr_7.name.toLowerCase()) {
+                    case 'type':
+                        shape.type = attr_7.value.toLowerCase();
+                        if (!(shape.type in Shape.Types))
+                            return [null, new Error('bad type: ' + shape.type)];
+                        break;
+                }
+            }
+            return [shape, err];
+        };
+        Shape.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        Shape.Types = ['continuous', 'extrapolate', 'discrete'];
+        return Shape;
+    })();
+    exports.Shape = Shape;
+    var ViewElement = (function () {
+        function ViewElement() {
+        }
+        ViewElement.Build = function (el) {
+            var viewEl = new ViewElement();
+            var err;
+            return [viewEl, err];
+        };
+        ViewElement.prototype.toXml = function (doc, parent) {
+            return true;
+        };
+        return ViewElement;
+    })();
+    exports.ViewElement = ViewElement;
     var View = (function () {
         function View() {
+            this.type = 'stock_flow';
+            this.zoom = 100;
+            this.scrollX = 0;
+            this.scrollY = 0;
+            this.homePage = 0;
+            this.homeView = false;
+            this.elements = [];
         }
         View.Build = function (el) {
             var view = new View();
             var err;
+            for (var i = 0; i < el.attributes.length; i++) {
+                var attr_8 = el.attributes.item(i);
+                switch (attr_8.name.toLowerCase()) {
+                    case 'type':
+                        view.type = attr_8.value.toLowerCase();
+                        break;
+                    case 'order':
+                        _a = num(attr_8.value), view.order = _a[0], err = _a[1];
+                        if (err)
+                            return [null, new Error('order: ' + err.error)];
+                        break;
+                    case 'width':
+                        _b = num(attr_8.value), view.width = _b[0], err = _b[1];
+                        if (err)
+                            return [null, new Error('width: ' + err.error)];
+                        break;
+                    case 'height':
+                        _c = num(attr_8.value), view.height = _c[0], err = _c[1];
+                        if (err)
+                            return [null, new Error('height: ' + err.error)];
+                        break;
+                    case 'zoom':
+                        _d = num(attr_8.value), view.zoom = _d[0], err = _d[1];
+                        if (err)
+                            return [null, new Error('zoom: ' + err.error)];
+                        break;
+                    case 'scroll_x':
+                        _e = num(attr_8.value), view.scrollX = _e[0], err = _e[1];
+                        if (err)
+                            return [null, new Error('scroll_x: ' + err.error)];
+                        break;
+                    case 'scroll_y':
+                        _f = num(attr_8.value), view.scrollY = _f[0], err = _f[1];
+                        if (err)
+                            return [null, new Error('scroll_y: ' + err.error)];
+                        break;
+                    case 'background':
+                        view.background = attr_8.value.toLowerCase();
+                        break;
+                    case 'page_width':
+                        _g = num(attr_8.value), view.pageWidth = _g[0], err = _g[1];
+                        if (err)
+                            return [null, new Error('page_width: ' + err.error)];
+                        break;
+                    case 'page_height':
+                        _h = num(attr_8.value), view.pageHeight = _h[0], err = _h[1];
+                        if (err)
+                            return [null, new Error('page_height: ' + err.error)];
+                        break;
+                    case 'page_sequence':
+                        view.pageSequence = attr_8.value.toLowerCase();
+                        break;
+                    case 'page_orientation':
+                        view.pageOrientation = attr_8.value.toLowerCase();
+                        break;
+                    case 'show_pages':
+                        _j = bool(attr_8.value), view.showPages = _j[0], err = _j[1];
+                        if (err)
+                            return [null, new Error('show_pages: ' + err.error)];
+                        break;
+                    case 'home_page':
+                        _k = num(attr_8.value), view.homePage = _k[0], err = _k[1];
+                        if (err)
+                            return [null, new Error('home_page: ' + err.error)];
+                        break;
+                    case 'home_view':
+                        _l = bool(attr_8.value), view.homeView = _l[0], err = _l[1];
+                        if (err)
+                            return [null, new Error('home_view: ' + err.error)];
+                        break;
+                }
+            }
+            for (var i = 0; i < el.childNodes.length; i++) {
+                var child = el.childNodes.item(i);
+                if (child.nodeType !== 1)
+                    continue;
+                var viewEl = void 0;
+                _m = ViewElement.Build(child), viewEl = _m[0], err = _m[1];
+                if (err)
+                    return [null, new Error('viewEl: ' + err.error)];
+                view.elements.push(viewEl);
+            }
             return [view, err];
+            var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
         };
         View.prototype.toXml = function (doc, parent) {
             return true;
@@ -1139,10 +1270,10 @@ define('xmile',["require", "exports"], function (require, exports) {
             var table = new GF();
             var err;
             for (var i = 0; i < el.attributes.length; i++) {
-                var attr_7 = el.attributes.item(i);
-                switch (attr_7.name.toLowerCase()) {
+                var attr_9 = el.attributes.item(i);
+                switch (attr_9.name.toLowerCase()) {
                     case 'type':
-                        table.type = attr_7.value.toLowerCase();
+                        table.type = attr_9.value.toLowerCase();
                         if (!(table.type in GF.Types))
                             return [null, new Error('bad type: ' + table.type)];
                         break;
@@ -1192,17 +1323,17 @@ define('xmile',["require", "exports"], function (require, exports) {
             var scale = new Scale();
             var err;
             for (var i = 0; i < el.attributes.length; i++) {
-                var attr_8 = el.attributes.item(i);
-                switch (attr_8.name.toLowerCase()) {
+                var attr_10 = el.attributes.item(i);
+                switch (attr_10.name.toLowerCase()) {
                     case 'min':
-                        _a = num(attr_8.value), scale.min = _a[0], err = _a[1];
+                        _a = num(attr_10.value), scale.min = _a[0], err = _a[1];
                         if (err)
-                            return [null, new Error('bad min: ' + attr_8.value)];
+                            return [null, new Error('bad min: ' + attr_10.value)];
                         break;
                     case 'max':
-                        _b = num(attr_8.value), scale.max = _b[0], err = _b[1];
+                        _b = num(attr_10.value), scale.max = _b[0], err = _b[1];
                         if (err)
-                            return [null, new Error('bad max: ' + attr_8.value)];
+                            return [null, new Error('bad max: ' + attr_10.value)];
                         break;
                 }
             }
@@ -1225,13 +1356,13 @@ define('xmile',["require", "exports"], function (require, exports) {
             var conn = new Connection();
             var err;
             for (var i = 0; i < el.attributes.length; i++) {
-                var attr_9 = el.attributes.item(i);
-                switch (attr_9.name.toLowerCase()) {
+                var attr_11 = el.attributes.item(i);
+                switch (attr_11.name.toLowerCase()) {
                     case 'to':
-                        conn.to = canonicalize(attr_9.value);
+                        conn.to = canonicalize(attr_11.value);
                         break;
                     case 'from':
-                        conn.from = canonicalize(attr_9.value);
+                        conn.from = canonicalize(attr_11.value);
                         break;
                 }
             }
