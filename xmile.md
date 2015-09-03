@@ -69,6 +69,9 @@ no equation to be considered valid.
 Also - the begining of the Doc mentions accessing GFs with square
 bracket notation, but later on with ()?
 
+`FIXME`: need to unify the concepts of XMILE GF, standalone GF, and
+Table in my stuff.
+
 Numbers
 -------
 

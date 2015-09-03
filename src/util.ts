@@ -11,24 +11,14 @@ export function titleCase(str: string): string {
 	return str.replace(/(?:^|\s)\w/g, function(match: string): string {
 		return match.toUpperCase();
 	});
-};
+}
 
 /// dName converts a string into the format the user
 /// expects to see on a diagram.
 export function dName(s: string): string {
 	'use strict';
 	return s.replace(/\\n/g, '\n').replace(/_/g, ' ');
-};
-
-/// eName converts a string into the format used
-/// internally in the engine and drawing code with
-/// underscores.
-export function eName(s: string): string {
-	'use strict';
-	if (typeof s !== 'string')
-		return '';
-	return s.replace(/\\n/g, '_').replace(/\s/g, '_').toLowerCase();
-};
+}
 
 /**
  * Turns the array of arguments into a hashset.
@@ -42,7 +32,7 @@ export function set(...args: string[]): any {
 	for (let i = 0; i < args.length; ++i)
 		result[args[i]] = true;
 	return result;
-};
+}
 
 // swap the values at 2 indexes in the specified array, used for
 // quicksort.
@@ -51,7 +41,7 @@ function swap(array: any[], a: number, b: number): void {
 	let tmp = array[a];
 	array[a] = array[b];
 	array[b] = tmp;
-};
+}
 
 // partition used in quicksort, based off pseudocode
 // on wikipedia
@@ -70,7 +60,7 @@ export function partition(array: any[], l: number, r: number, p: number): number
 	// move pivot to final location.
 	swap(array, store, r);
 	return store;
-};
+}
 
 // partition used in quicksort for numbers, based off
 // pseudocode on wikipedia
@@ -104,7 +94,7 @@ export function sort(array: any[], l = 0, r = array.length-1, part = partition):
 	let newPivot = part(array, l, r, pivot);
 	sort(array, l, newPivot - 1, part);
 	sort(array, newPivot + 1, r, part);
-};
+}
 
 /**
  * Interpolates the y-value of the given index in the table.  If
@@ -152,7 +142,7 @@ export function lookup(table: any, index: number): number {
 		// y = m*x + b
 		return (index - x[i-1])*slope + y[i-1];
 	}
-};
+}
 
 /**
  *  Returns the minimum of either of the arguments
@@ -160,7 +150,7 @@ export function lookup(table: any, index: number): number {
 export function min(a: number, b: number): number {
 	'use strict';
 	return a < b ? a : b;
-};
+}
 
 /**
  * numArr returns a new array, composed of the result of calling
@@ -173,12 +163,12 @@ export function numArr(arr: any[]): number[] {
 		result.push(parseFloat(arr[i]));
 	}
 	return result;
-};
+}
 
 export function floatAttr(o: any, n: any): number {
 	'use strict';
 	return parseFloat(o.getAttribute(n));
-};
+}
 
 // wrapper/re-implementation of querySelector that works under
 // Node with xmldom.
@@ -205,7 +195,7 @@ export function qs(e: any, s: any): any {
 		curr = null;
 	}
 	return curr;
-};
+}
 
 export function querySelectorInner(e: any, selectors: any): any {
 	'use strict';
@@ -239,33 +229,9 @@ export function qsa(e: any, s: any): any {
 	});
 
 	return querySelectorInner(e, selectors);
-};
+}
 
 export function isNaN(n: number): boolean {
 	'use strict';
 	return n !== n;
-}
-
-export function camelCase(s: string): string {
-	'use strict';
-	let i = 0;
-	while ((i = s.indexOf('_')) >= 0 && i < s.length - 1) {
-		s = s.slice(0, i) + s.slice(i+1, i+2).toUpperCase() + s.slice(i+2);
-	}
-	return s;
-}
-
-export function splitOnComma(str: string): string[] {
-	'use strict';
-	return str.split(',').map((el) => el.trim());
-}
-
-export function numberize(arr: string[]): number[] {
-	'use strict';
-	return arr.map((el) => parseFloat(el));
-}
-
-export function i32(n: number): number {
-	'use strict';
-	return n|0;
 }

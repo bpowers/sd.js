@@ -13,7 +13,8 @@ import type = require('./type');
 import vars = require('./vars');
 import runtime = require('./runtime');
 
-import {dName, eName, isNaN} from "./util";
+import {dName, isNaN} from "./util";
+import {canonicalize} from './xmile';
 
 const AUX_RADIUS = 9;
 const LABEL_PAD = 6;
@@ -371,7 +372,7 @@ class DStock implements Ent {
 	constructor(drawing: Drawing, element: any) {
 		this.drawing = drawing;
 		this.e = element;
-		this.name = eName(element['@name']);
+		this.name = canonicalize(element['@name']);
 		this.dName = dName(element['@name']);
 
 		this.cx = element['@x'];
@@ -473,7 +474,7 @@ class DModule implements Ent {
 	constructor(drawing: Drawing, element: any) {
 		this.drawing = drawing;
 		this.e = element;
-		this.name = eName(element['@name']);
+		this.name = canonicalize(element['@name']);
 		this.dName = dName(element['@name']);
 
 		this.cx = element['@x'];
@@ -542,7 +543,7 @@ class DAux implements Ent {
 	constructor(drawing: Drawing, element: any) {
 		this.drawing = drawing;
 		this.e = element;
-		this.name = eName(element['@name']);
+		this.name = canonicalize(element['@name']);
 		this.dName = dName(element['@name']);
 
 		this.cx = element['@x'];
@@ -614,7 +615,7 @@ class DFlow implements Ent {
 	constructor(drawing: Drawing, element: any) {
 		this.drawing = drawing;
 		this.e = element;
-		this.name = eName(element['@name']);
+		this.name = canonicalize(element['@name']);
 		this.dName = dName(element['@name']);
 		this.cx = element['@x'];
 		this.cy = element['@y'];
@@ -768,12 +769,12 @@ class DConnector implements Ent {
 		let paper = this.drawing.paper;
 		const cx = this.e['@x'];
 		const cy = this.e['@y'];
-		let fromEnt = this.drawing.named_ents[eName(this.e.from)];
+		let fromEnt = this.drawing.named_ents[canonicalize(this.e.from)];
 		if (!fromEnt)
 			return;
 		let fx = fromEnt.cx;
 		let fy = fromEnt.cy;
-		let toEnt = this.drawing.named_ents[eName(this.e.to)];
+		let toEnt = this.drawing.named_ents[canonicalize(this.e.to)];
 		if (!toEnt)
 			return;
 		let tx = toEnt.cx;

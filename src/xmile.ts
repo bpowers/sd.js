@@ -4,7 +4,29 @@
 
 'use strict';
 
-import {camelCase, splitOnComma, numberize, i32} from './util';
+export function camelCase(s: string): string {
+	'use strict';
+	let i = 0;
+	while ((i = s.indexOf('_')) >= 0 && i < s.length - 1) {
+		s = s.slice(0, i) + s.slice(i+1, i+2).toUpperCase() + s.slice(i+2);
+	}
+	return s;
+}
+
+export function splitOnComma(str: string): string[] {
+	'use strict';
+	return str.split(',').map((el) => el.trim());
+}
+
+export function numberize(arr: string[]): number[] {
+	'use strict';
+	return arr.map((el) => parseFloat(el));
+}
+
+export function i32(n: number): number {
+	'use strict';
+	return n|0;
+}
 
 export class Error {
 	constructor(
@@ -180,12 +202,6 @@ export class File implements XNode {
 				break;
 			}
 		}
-
-		console.log('version: ' + file.version);
-		console.log('namespace: ' + file.namespace);
-		console.log('header: ' + file.header);
-		console.log('sim_spec: ' + file.simSpec);
-		console.log('models: ' + file.models.length);
 
 		return [file, err];
 	}
@@ -544,6 +560,16 @@ export class Model implements XNode {
 	static Build(el: Node): [Model, Error] {
 		let model = new Model();
 		let err: Error;
+
+		for (let i = 0; i < el.attributes.length; i++) {
+			let attr = el.attributes.item(i);
+			switch (attr.name.toLowerCase()) {
+			case 'name':
+				model.name = attr.value;
+				break;
+			}
+		}
+
 		for (let i = 0; i < el.childNodes.length; i++) {
 			let child = el.childNodes.item(i);
 			if (child.nodeType !== 1) // Element
@@ -641,6 +667,7 @@ export class Format implements XNode {
 
 // TODO: split into multiple subclasses?
 export class Variable implements XNode {
+	type:            string = '';
 	name:            string = '';
 	eqn:             string = '';
 	gf:              GF;
@@ -678,6 +705,8 @@ export class Variable implements XNode {
 		let v = new Variable();
 		let err: Error;
 
+		v.type = el.nodeName.toLowerCase();
+
 		for (let i = 0; i < el.attributes.length; i++) {
 			let attr = el.attributes.item(i);
 			switch (attr.name.toLowerCase()) {
@@ -699,10 +728,10 @@ export class Variable implements XNode {
 				v.eqn = content(child);
 				break;
 			case 'inflow':
-				v.inflows.push(content(child));
+				v.inflows.push(canonicalize(content(child)));
 				break;
 			case 'outflow':
-				v.outflows.push(content(child));
+				v.outflows.push(canonicalize(content(child)));
 				break;
 			case 'gf':
 				[v.gf, err] = GF.Build(child);
@@ -720,6 +749,10 @@ export class Variable implements XNode {
 		}
 
 		return [v, err];
+	}
+
+	get ident(): string {
+		return canonicalize(this.name);
 	}
 
 	toXml(doc: XMLDocument, parent: Element): boolean {
@@ -854,10 +887,10 @@ export class Connection implements XNode {
 			let attr = el.attributes.item(i);
 			switch (attr.name.toLowerCase()) {
 			case 'to':
-				conn.to = attr.value;
+				conn.to = canonicalize(attr.value);
 				break;
 			case 'from':
-				conn.from = attr.value;
+				conn.from = canonicalize(attr.value);
 				break;
 			}
 		}
@@ -876,9 +909,18 @@ export class Connection implements XNode {
 
 export function canonicalize(id: string): string {
 	'use strict';
+	let quoted = false;
+	if (id.length > 1) {
+		let f = id.slice(0, 1);
+		let l = id.slice(id.length-1);
+		quoted = f === '"' && l === '"';
+	}
 	id = id.toLowerCase();
 	id = id.replace(/\\n/g, '_');
 	id = id.replace(/\\\\/g, '\\');
 	id = id.replace(/\\"/g, '\\');
-	return id.replace(/[_\r\n\t \xa0]+/g, '_');
+	id = id.replace(/[_\r\n\t \xa0]+/g, '_');
+	if (quoted)
+		return id.slice(1, -1);
+	return id;
 }

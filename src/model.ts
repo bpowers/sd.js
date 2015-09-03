@@ -20,17 +20,17 @@ export class Model implements type.Model {
 	valid:   boolean;
 	project: type.Project;
 	xModel:  xmile.Model;
-	modules: type.ModuleMap;
-	tables:  type.TableMap;
-	vars:    type.VariableMap;
+	modules: type.ModuleMap   = {};
+	tables:  type.TableMap    = {};
+	vars:    type.VariableMap = {};
 
 	private spec: type.SimSpec;
 
-	constructor(project: type.Project, xModel: xmile.Model) {
+	constructor(project: type.Project, ident: string, xModel: xmile.Model) {
 		this.project = project;
 		this.xModel = xModel;
 
-		this.name = xModel.ident;
+		this.name = ident;
 		this.vars = {};
 		this.tables = {};
 		this.modules = {};
@@ -40,6 +40,10 @@ export class Model implements type.Model {
 		this.spec = xModel.simSpec || null;
 		this.valid = true;
 		return;
+	}
+
+	get ident(): string {
+		return xmile.canonicalize(this.name);
 	}
 
 	get simSpec(): type.SimSpec {
@@ -77,66 +81,59 @@ export class Model implements type.Model {
 	/**
 	 * Validates & figures out all necessary variable information.
 	 */
-	private parseVars(defs: any): void {
-		// JXON doesn't have the capacity to know when we really want
-		// things to be lists, this is a workaround.
-		for (let type in VAR_TYPES) {
-			// for every known type, make sure we have a list of
-			// elements even if there is only one element (e.g. a
-			// module)
-			if (defs[type] && !(defs[type] instanceof Array))
-				defs[type] = [defs[type]];
-		}
+	private parseVars(variables: xmile.Variable[]): xmile.Error {
+		for (let i in variables) {
+			if (!variables.hasOwnProperty(i))
+				continue;
 
-		if (defs.module) {
-			for (let i = 0; i < defs.module.length; i++) {
-				let xmile = defs.module[i];
-				let module = new vars.Module(this.project, this, xmile);
-				this.modules[module.name] = module;
-				this.vars[module.name] = module;
-			}
-		}
+			let v = variables[i];
+			// IMPORTANT: we need to use the canonicalized
+			// identifier, not the 'xmile name', which is
+			// what I like to think of as the display name.
+			let ident = v.ident;
 
-		if (defs.stock) {
-			for (let i = 0; i < defs.stock.length; i++) {
-				let xmile = defs.stock[i];
-				let stock = new vars.Stock(this, xmile);
-				this.vars[stock.name] = stock;
-			}
-		}
+			// FIXME: is this too simplistic?
+			if (ident in this.vars)
+				return new xmile.Error('duplicate var ' + ident);
 
-		if (defs.aux) {
-			for (let i = 0; i < defs.aux.length; i++) {
-				let xmile = defs.aux[i];
+			switch (v.type) {
+			case 'module':
+				let module = new vars.Module(this.project, this, v);
+				this.modules[ident] = module;
+				this.vars[ident] = module;
+				break;
+			case 'stock':
+				let stock = new vars.Stock(this, v);
+				this.vars[ident] = stock;
+				break;
+			case 'aux':
+				// FIXME: fix Variable/GF/Table nonsense
 				let aux: type.Variable = null;
-				if (xmile.gf) {
-					let table = new vars.Table(this, xmile);
+				if (v.gf) {
+					let table = new vars.Table(this, v);
 					if (table.ok) {
-						this.tables[aux.name] = table;
+						this.tables[ident] = table;
 						aux = table;
 					}
 				}
 				if (!aux)
-					aux = new vars.Variable(this, xmile);
-				this.vars[aux.name] = aux;
-			}
-		}
-
-		if (defs.flow) {
-			for (let i = 0; i < defs.flow.length; i++) {
-				let xmile = defs.flow[i];
+					aux = new vars.Variable(this, v);
+				this.vars[ident] = aux;
+				break;
+			case 'flow':
 				let flow: type.Variable = null;
-				if (xmile.gf) {
-					let table = new vars.Table(this, xmile);
+				if (v.gf) {
+					let table = new vars.Table(this, v);
 					if (table.ok) {
-						this.tables[flow.name] = table;
+						this.tables[ident] = table;
 						flow = table;
 					}
 				}
 				if (!flow)
-					flow = new vars.Variable(this, xmile);
-				this.vars[flow.name] = flow;
+					flow = new vars.Variable(this, v);
+				this.vars[ident] = flow;
 			}
 		}
+		return null;
 	}
 }

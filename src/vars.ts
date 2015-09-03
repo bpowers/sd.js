@@ -11,36 +11,35 @@ import common = require('./common');
 import util = require('./util');
 import lex = require('./lex');
 import type = require('./type');
+import xmile = require('./xmile');
 
 export class Variable implements type.Variable {
-	xmile: any;
-	name: string;
+	xmile: xmile.Variable;
+	ident: string;
 	eqn: string;
 
-	model: type.Model;
-	parent: type.Model;
 	project: type.Project;
+	parent: type.Model;
+	// only for modules
+	model: type.Model;
 
 	_deps: type.StringSet;
 	_allDeps: type.StringSet;
 
-	constructor(model?: type.Model, xmile?: any) {
+	constructor(model?: type.Model, v?: xmile.Variable) {
 		// for subclasses, when instantiated for their prototypes
 		if (arguments.length === 0)
 			return;
 
 		this.model = model;
-		this.xmile = xmile;
+		this.xmile = v;
 
-		let eqn = '';
-		if (xmile.eqn)
-			eqn = xmile.eqn.toString().toLowerCase();
-		this.eqn = eqn;
-		this.name = util.eName(xmile['@name']);
+		this.eqn = v.eqn;
+		this.ident = v.ident;
 
 		// for a flow or aux, we depend on variables that aren't built
 		// in functions in the equation.
-		this._deps = lex.identifierSet(eqn);
+		this._deps = lex.identifierSet(this.eqn);
 	};
 	// returns a string of this variables initial equation. suitable for
 	// exec()'ing
@@ -49,22 +48,16 @@ export class Variable implements type.Variable {
 	};
 	code(v: type.Offsets): string {
 		if (this.isConst())
-			return "this.initials['" + util.eName(this.name) + "']";
+			return "this.initials['" + this.ident + "']";
 		let lexer = new lex.Lexer(this.eqn);
 		let result: string[] = [];
 		let commentDepth = 0;
 		let scope: string;
 		let tok: lex.Token;
 		while ((tok = lexer.nextTok())) {
-			if (tok.tok === '{') {
-				commentDepth++;
-			} else if (tok.tok === '}') {
-				commentDepth--;
-			} else if (commentDepth > 0) {
-				// if inside of a {} delimited comment, skip the token
-				continue;
-			} else if (tok.tok in common.reserved) {
-				switch (tok.tok) {
+			let ident = xmile.canonicalize(tok.tok);
+			if (tok.tok in common.reserved) {
+				switch (ident) {
 				case 'if':
 					break; // skip
 				case 'then':
@@ -74,23 +67,23 @@ export class Variable implements type.Variable {
 					result.push(':');
 					break;
 				default:
-					console.log('ERROR: unexpected tok: ' + tok.tok);
+					console.log('ERROR: unexpected tok: ' + ident);
 				}
 			} else if (tok.type !== lex.TokenType.IDENT) {
 				// FIXME :(
 				result.push(''+tok.tok);
-			} else if (tok.tok in common.builtins) {
+			} else if (ident in common.builtins) {
 				// FIXME :(
-				result.push(''+tok.tok);
-				if (common.builtins[tok.tok].usesTime) {
+				result.push(''+ident);
+				if (common.builtins[ident].usesTime) {
 					lexer.nextTok(); // is '('
-					scope = this.model.name === 'main' ? 'curr' : 'globalCurr';
+					scope = this.model.ident === 'main' ? 'curr' : 'globalCurr';
 					result.push('(', 'dt', ',', scope + '[0]', ',');
 				}
-			} else if (tok.tok in v) {
-				result.push("curr[" + v[tok.tok] + "]");
+			} else if (ident in v) {
+				result.push("curr[" + v[ident] + "]");
 			} else {
-				result.push('globalCurr[this.ref["' + tok.tok + '"]]');
+				result.push('globalCurr[this.ref["' + ident + '"]]');
 			}
 		}
 		if (!result.length) {
@@ -122,7 +115,7 @@ export class Variable implements type.Variable {
 	}
 
 	lessThan(that: Variable): boolean {
-		return this.name in that.getDeps();
+		return this.ident in that.getDeps();
 	}
 
 	isConst(): boolean {
@@ -131,55 +124,41 @@ export class Variable implements type.Variable {
 }
 
 export class Stock extends Variable {
+	initial: string;
 	inflows: string[];
 	outflows: string[];
-	initial: string;
 
-	constructor(model: type.Model, xmile: any) {
+	constructor(model: type.Model, v: xmile.Variable) {
 		super();
 
 		this.model = model;
-		this.xmile = xmile;
-		let eqn = '';
-		if (xmile.eqn)
-			eqn = xmile.eqn.toString().toLowerCase();
-		this.name = util.eName(xmile['@name']);
-		this.initial = eqn;
-		this.eqn = eqn;
-		if (!xmile.inflow)
-			xmile.inflow = [];
-		if (!(xmile.inflow instanceof Array))
-			xmile.inflow = [xmile.inflow];
-		if (!xmile.outflow)
-			xmile.outflow = [];
-		if (!(xmile.outflow instanceof Array))
-			xmile.outflow = [xmile.outflow];
-		this.inflows = xmile.inflow.map(function(s: string): string {
-			return util.eName(s);
-		});
-		this.outflows = xmile.outflow.map(function(s: string): string {
-			return util.eName(s);
-		});
+		this.xmile = v;
+		this.ident = v.ident;
+		this.initial = v.eqn;
+		// FIXME: I don't think this is necessary - commented out to find out.
+		this.eqn = v.eqn;
+		this.inflows = v.inflows;
+		this.outflows = v.outflows;
 
 		// for a stock, the dependencies are any identifiers (that
 		// aren't references to builtin functions) in the initial
 		// variable string.  Deps are used for sorting equations into
 		// the right order, so for now we don't add any of the flows.
-		this._deps = lex.identifierSet(eqn);
+		this._deps = lex.identifierSet(this.initial);
 	}
 
-	// returns a string of this variables initial equation. suitable for
+	// FIXME: returns a string of this variables initial equation. suitable for
 	// exec()'ing
 	initialEquation(): string {
 		return this.initial;
 	}
 
 	code(v: type.Offsets): string {
-		let eqn = "curr[" + v[this.name] + "] + (";
+		let eqn = "curr[" + v[this.ident] + "] + (";
 		if (this.inflows.length > 0)
-			eqn += this.inflows.map(function(s: string): string { return "curr[" + v[s] + "]"; }).join('+');
+			eqn += this.inflows.map((s)=> "curr[" + v[s] + "]").join('+');
 		if (this.outflows.length > 0)
-			eqn += '- (' + this.outflows.map(function(s: string): string { return "curr[" + v[s] + "]"; }).join('+') + ')';
+			eqn += '- (' + this.outflows.map((s)=> "curr[" + v[s] + "]").join('+') + ')';
 		// stocks can have no inflows or outflows and still be valid
 		if (this.inflows.length === 0 && this.outflows.length === 0) {
 			eqn += '0';
@@ -190,50 +169,25 @@ export class Stock extends Variable {
 }
 
 export class Table extends Variable {
-	x: number[];
-	y: number[];
-	ok: boolean;
+	x: number[] = [];
+	y: number[] = [];
+	ok: boolean = true;
 
-	constructor(model: type.Model, xmile: any) {
+	constructor(model: type.Model, v: xmile.Variable) {
 		super();
 
 		this.model = model;
-		this.xmile = xmile;
-		let eqn = '';
-		if (eqn)
-			eqn = xmile.eqn.toString().toLowerCase();
-		this.eqn = eqn;
-		this.name = util.eName(xmile['@name']);
-		this.x = [];
-		this.y = [];
-		this.ok = true;
+		this.xmile = v;
+		this.eqn = v.eqn;
+		this.ident = v.ident;
 
-		if (!xmile.gf.ypts) {
-			this.ok = false;
-			return;
-		}
-
-		let ypts: number[];
-		let sep: string;
-		if (typeof xmile.gf.ypts === 'object') {
-			sep = xmile.gf.ypts['@sep'] || ',';
-			ypts = util.numArr(xmile.gf.ypts.keyValue.split(sep));
-		} else {
-			ypts = util.numArr(xmile.gf.ypts.split(','));
-		}
+		let ypts = v.gf.yPoints;
 
 		// FIXME(bp) unit test
-		let xpts: number[] = null;
-		if (typeof xmile.gf.xpts === 'object') {
-			sep = xmile.gf.xpts['@sep'] || ',';
-			xpts = util.numArr(xmile.gf.xpts.keyValue.split(sep));
-		} else if (xmile.gf.xpts) {
-			xpts = util.numArr(xmile.gf.xpts.split(','));
-		}
-
-		let xscale = xmile.gf.xscale;
-		let xmin = xscale ? xscale['@min'] : 0;
-		let xmax = xscale ? xscale['@max'] : 0;
+		let xpts = v.gf.xPoints;
+		let xscale = v.gf.xScale;
+		let xmin = xscale ? xscale.min : 0;
+		let xmax = xscale ? xscale.max : 0;
 
 		for (let i = 0; i < ypts.length; i++) {
 			let x: number;
@@ -249,14 +203,14 @@ export class Table extends Variable {
 			this.y.push(ypts[i]);
 		}
 
-		this._deps = lex.identifierSet(eqn);
+		this._deps = lex.identifierSet(this.eqn);
 	}
 
 	code(v: type.Offsets): string {
 		if (!this.eqn)
 			return null;
 		let index = super.code(v);
-		return "lookup(this.tables['" + this.name + "'], " + index + ")";
+		return "lookup(this.tables['" + this.ident + "'], " + index + ")";
 	}
 }
 
@@ -264,23 +218,20 @@ export class Module extends Variable implements type.Module {
 	modelName: string;
 	refs: type.ReferenceMap;
 
-	constructor(project: type.Project, parent: type.Model, xmile: any) {
+	constructor(project: type.Project, parent: type.Model, v: xmile.Variable) {
 		super();
 
 		this.project = project;
 		this.parent = parent;
-		this.xmile = xmile;
-		this.name = util.eName(xmile['@name']);
-		this.modelName = this.name;
-		if (!xmile.connect)
-			xmile.connect = [];
-		if (!(xmile.connect instanceof Array))
-			xmile.connect = [xmile.connect];
+		this.xmile = v;
+		this.ident = v.ident;
+		// FIXME: not always true?
+		this.modelName = this.ident;
 		this.refs = {};
 		this._deps = {};
-		for (let i = 0; i < xmile.connect.length; i++) {
-			let ref = new Reference(xmile.connect[i]);
-			this.refs[ref.name] = ref;
+		for (let i = 0; i < v.connections.length; i++) {
+			let ref = new Reference(v.connections[i]);
+			this.refs[ref.ident] = ref;
 			this._deps[ref.ptr] = true;
 		}
 	}
@@ -342,13 +293,16 @@ export class Module extends Variable implements type.Module {
 }
 
 export class Reference extends Variable implements type.Reference {
+	xmileConn: xmile.Connection;
 	ptr: string;
 
-	constructor(xmile: any) {
+	constructor(conn: xmile.Connection) {
 		super();
-		this.xmile = xmile;
-		this.name = util.eName(xmile['@to']);
-		this.ptr = util.eName(xmile['@from']);
+		// FIXME: there is maybe something cleaner to do here?
+		this.xmile = null;
+		this.xmileConn = conn;
+		this.ident = conn.to;
+		this.ptr = conn.from;
 	}
 
 	code(v: type.Offsets): string {

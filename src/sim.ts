@@ -241,13 +241,13 @@ export class Sim {
 			let eqn: string;
 			let v = run_initials[i];
 			if (v instanceof vars.Module) {
-				eqn = 'this.modules["' + v.name + '"].calcInitial(dt, curr);';
+				eqn = 'this.modules["' + v.ident + '"].calcInitial(dt, curr);';
 			} else {
-				if (isRef(v.name))
+				if (isRef(v.ident))
 					continue;
 				if (v.isConst())
-					initials[v.name] = parseFloat(v.eqn);
-				eqn = "curr[" + offsets[v.name] + "] = " + vars.Variable.prototype.code.apply(v, [offsets]) + ';';
+					initials[v.ident] = parseFloat(v.eqn);
+				eqn = "curr[" + offsets[v.ident] + "] = " + vars.Variable.prototype.code.apply(v, [offsets]) + ';';
 			}
 			ci.push(eqn);
 		}
@@ -256,9 +256,9 @@ export class Sim {
 			let v = run_flows[i];
 			eqn = null;
 			if (v instanceof vars.Module) {
-				eqn = 'this.modules["' + v.name + '"].calcFlows(dt, curr);';
-			} else if (!isRef(v.name)) {
-				eqn = "curr[" + offsets[v.name] + "] = " + v.code(offsets) + ';';
+				eqn = 'this.modules["' + v.ident + '"].calcFlows(dt, curr);';
+			} else if (!isRef(v.ident)) {
+				eqn = "curr[" + offsets[v.ident] + "] = " + v.code(offsets) + ';';
 			}
 			if (!eqn)
 				continue;
@@ -268,11 +268,11 @@ export class Sim {
 			let eqn: string;
 			let v = run_stocks[i];
 			if (v instanceof vars.Module) {
-				cs.push('this.modules["' + v.name + '"].calcStocks(dt, curr, next);');
+				cs.push('this.modules["' + v.ident + '"].calcStocks(dt, curr, next);');
 			} else if (!v.hasOwnProperty('initial')) {
-				cs.push("next[" + offsets[v.name] + "] = curr[" + offsets[v.name] + '];');
+				cs.push("next[" + offsets[v.ident] + "] = curr[" + offsets[v.ident] + '];');
 			} else {
-				cs.push("next[" + offsets[v.name] + "] = " + v.code(offsets) + ';');
+				cs.push("next[" + offsets[v.ident] + "] = " + v.code(offsets) + ';');
 			}
 		}
 		for (let n in model.tables) {
@@ -288,7 +288,7 @@ export class Sim {
 		let init: string[] = [];
 		if (Object.keys(model.modules).length) {
 			// +1 for implicit time
-			if (model.name === 'main')
+			if (model.ident === 'main')
 				additional = ' + 1';
 			init.push('var off = Object.keys(this.offsets).length' + additional + ';');
 		}

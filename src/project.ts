@@ -100,10 +100,15 @@ export class Project implements type.Project {
 			if (!file.models.hasOwnProperty(i))
 				continue;
 			let xModel = file.models[i];
-			this.models[xModel.name] = new Model(this, xModel);
+			let ident = xModel.ident;
+			if (ident === '' && !('main' in this.models))
+				ident = 'main';
+			this.models[ident] = new Model(this, ident, xModel);
 		}
 
-		this.main = new Module(this, null, {'@name': 'main'});
+		let modVar = new xmile.Variable();
+		modVar.name = 'main';
+		this.main = new Module(this, null, modVar);
 		this.valid = true;
 		return true;
 	}

@@ -4,6 +4,8 @@
 
 'use strict';
 
+import xmile = require('./xmile');
+
 export interface StringSet {
 	[name: string]: boolean;
 }
@@ -42,6 +44,7 @@ export interface Project {
 
 export interface Model {
 	name:    string;
+	ident:   string;
 	valid:   boolean;
 	modules: ModuleMap;
 	tables:  TableMap;
@@ -70,14 +73,14 @@ export interface ModelDefSet {
 }
 
 export interface Variable {
-	xmile: any;
+	xmile: xmile.Variable;
 
-	name: string;
+	ident: string;
 	eqn: string;
 
-	model: Model;
-	parent: Model;
 	project: Project;
+	parent: Model;
+	model: Model;
 
 	_deps: StringSet;
 	_allDeps: StringSet;

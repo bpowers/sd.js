@@ -470,198 +470,7 @@ define('common',["require", "exports"], function (require, exports) {
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-define('util',["require", "exports"], function (require, exports) {
-    function titleCase(str) {
-        'use strict';
-        return str.replace(/(?:^|\s)\w/g, function (match) {
-            return match.toUpperCase();
-        });
-    }
-    exports.titleCase = titleCase;
-    ;
-    function dName(s) {
-        'use strict';
-        return s.replace(/\\n/g, '\n').replace(/_/g, ' ');
-    }
-    exports.dName = dName;
-    ;
-    function eName(s) {
-        'use strict';
-        if (typeof s !== 'string')
-            return '';
-        return s.replace(/\\n/g, '_').replace(/\s/g, '_').toLowerCase();
-    }
-    exports.eName = eName;
-    ;
-    function set() {
-        'use strict';
-        var args = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            args[_i - 0] = arguments[_i];
-        }
-        var result = {};
-        for (var i = 0; i < args.length; ++i)
-            result[args[i]] = true;
-        return result;
-    }
-    exports.set = set;
-    ;
-    function swap(array, a, b) {
-        'use strict';
-        var tmp = array[a];
-        array[a] = array[b];
-        array[b] = tmp;
-    }
-    ;
-    function partition(array, l, r, p) {
-        'use strict';
-        var pValue = array[p];
-        swap(array, p, r);
-        var store = l;
-        for (var i = l; i < r; ++i) {
-            if (array[i].lessThan(pValue)) {
-                swap(array, i, store);
-                store += 1;
-            }
-        }
-        swap(array, store, r);
-        return store;
-    }
-    exports.partition = partition;
-    ;
-    function sort(array, l, r, part) {
-        'use strict';
-        if (l === void 0) { l = 0; }
-        if (r === void 0) { r = array.length - 1; }
-        if (part === void 0) { part = partition; }
-        if (l >= r)
-            return;
-        var pivot = Math.floor(l + (r - l) / 2);
-        var newPivot = part(array, l, r, pivot);
-        sort(array, l, newPivot - 1, part);
-        sort(array, newPivot + 1, r, part);
-    }
-    exports.sort = sort;
-    ;
-    function lookup(table, index) {
-        'use strict';
-        var size = table.x.length;
-        if (size === 0)
-            return NaN;
-        var x = table.x;
-        var y = table.y;
-        if (index <= x[0]) {
-            return y[0];
-        }
-        else if (index >= x[size - 1]) {
-            return y[size - 1];
-        }
-        var low = 0;
-        var high = size;
-        var mid;
-        while (low < high) {
-            mid = Math.floor(low + (high - low) / 2);
-            if (x[mid] < index) {
-                low = mid + 1;
-            }
-            else {
-                high = mid;
-            }
-        }
-        var i = low;
-        if (x[i] === index) {
-            return y[i];
-        }
-        else {
-            var slope = (y[i] - y[i - 1]) / (x[i] - x[i - 1]);
-            return (index - x[i - 1]) * slope + y[i - 1];
-        }
-    }
-    exports.lookup = lookup;
-    ;
-    function min(a, b) {
-        'use strict';
-        return a < b ? a : b;
-    }
-    exports.min = min;
-    ;
-    function numArr(arr) {
-        'use strict';
-        var result = [];
-        for (var i = 0; i < arr.length; i++) {
-            result.push(parseFloat(arr[i]));
-        }
-        return result;
-    }
-    exports.numArr = numArr;
-    ;
-    function floatAttr(o, n) {
-        'use strict';
-        return parseFloat(o.getAttribute(n));
-    }
-    exports.floatAttr = floatAttr;
-    ;
-    function qs(e, s) {
-        'use strict';
-        if (e.querySelector)
-            return e.querySelector(s);
-        var selectors = s.split('>');
-        var curr = e;
-        var n;
-        outer: for (var i = 0; curr && i < selectors.length; i++) {
-            for (var j = 0; j < curr.childNodes.length; j++) {
-                n = curr.childNodes[j];
-                if (!n.tagName)
-                    continue;
-                if (n.tagName.toLowerCase() === selectors[i].toLowerCase()) {
-                    curr = n;
-                    continue outer;
-                }
-            }
-            curr = null;
-        }
-        return curr;
-    }
-    exports.qs = qs;
-    ;
-    function querySelectorInner(e, selectors) {
-        'use strict';
-        var sel = selectors[0];
-        var rest = selectors.slice(1);
-        var result = [];
-        var child;
-        for (var i in e.childNodes) {
-            if (!e.hasOwnProperty(i))
-                continue;
-            child = e.childNodes[i];
-            if (child.tagName && child.tagName.toLowerCase() === sel) {
-                if (rest.length) {
-                    result = result.concat(querySelectorInner(child, rest));
-                }
-                else {
-                    result.push(child);
-                }
-            }
-        }
-        return result;
-    }
-    exports.querySelectorInner = querySelectorInner;
-    function qsa(e, s) {
-        'use strict';
-        if (e.querySelectorAll)
-            return e.querySelectorAll(s);
-        var selectors = s.split('>').map(function (sel) {
-            return sel.toLowerCase();
-        });
-        return querySelectorInner(e, selectors);
-    }
-    exports.qsa = qsa;
-    ;
-    function isNaN(n) {
-        'use strict';
-        return n !== n;
-    }
-    exports.isNaN = isNaN;
+define('xmile',["require", "exports"], function (require, exports) {
     function camelCase(s) {
         'use strict';
         var i = 0;
@@ -686,13 +495,6 @@ define('util',["require", "exports"], function (require, exports) {
         return n | 0;
     }
     exports.i32 = i32;
-});
-
-// Copyright 2015 Bobby Powers. All rights reserved.
-// Use of this source code is governed by the MIT
-// license that can be found in the LICENSE file.
-
-define('xmile',["require", "exports", './util'], function (require, exports, util_1) {
     var Error = (function () {
         function Error(error) {
             this.error = error;
@@ -837,11 +639,6 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
                         break;
                 }
             }
-            console.log('version: ' + file.version);
-            console.log('namespace: ' + file.namespace);
-            console.log('header: ' + file.header);
-            console.log('sim_spec: ' + file.simSpec);
-            console.log('models: ' + file.models.length);
             return [file, err];
             var _a, _b, _c;
         };
@@ -867,7 +664,7 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
                 var child = el.childNodes.item(i);
                 if (child.nodeType !== 1)
                     continue;
-                var name_1 = util_1.camelCase(child.nodeName.toLowerCase());
+                var name_1 = camelCase(child.nodeName.toLowerCase());
                 if (!simSpec.hasOwnProperty(name_1))
                     continue;
                 if (name_1 === 'method' || name_1 === 'timeUnits') {
@@ -1057,7 +854,7 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
                 var attr_4 = el.attributes.item(i);
                 switch (attr_4.name.toLowerCase()) {
                     case 'namespace':
-                        options.namespaces = util_1.splitOnComma(attr_4.value);
+                        options.namespaces = splitOnComma(attr_4.value);
                         break;
                 }
             }
@@ -1073,7 +870,7 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
                     plen = 3;
                 if (!plen)
                     continue;
-                name_2 = util_1.camelCase(name_2);
+                name_2 = camelCase(name_2);
                 if (!options.hasOwnProperty(name_2))
                     continue;
                 options[name_2] = true;
@@ -1087,10 +884,10 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
                             console.log('bad max_dimensions( ' + val + '): ' + err.error);
                             n = 1;
                         }
-                        if (n !== util_1.i32(n)) {
+                        if (n !== i32(n)) {
                             console.log('non-int max_dimensions: ' + val);
                         }
-                        options.maximumDimensions = util_1.i32(n);
+                        options.maximumDimensions = i32(n);
                     }
                     val = attr(child, 'invalid_index_value');
                     if (val === 'NaN')
@@ -1150,6 +947,14 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
         Model.Build = function (el) {
             var model = new Model();
             var err;
+            for (var i = 0; i < el.attributes.length; i++) {
+                var attr_5 = el.attributes.item(i);
+                switch (attr_5.name.toLowerCase()) {
+                    case 'name':
+                        model.name = attr_5.value;
+                        break;
+                }
+            }
             for (var i = 0; i < el.childNodes.length; i++) {
                 var child = el.childNodes.item(i);
                 if (child.nodeType !== 1)
@@ -1244,6 +1049,7 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
     exports.Format = Format;
     var Variable = (function () {
         function Variable() {
+            this.type = '';
             this.name = '';
             this.eqn = '';
             this.connections = [];
@@ -1253,14 +1059,15 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
         Variable.Build = function (el) {
             var v = new Variable();
             var err;
+            v.type = el.nodeName.toLowerCase();
             for (var i = 0; i < el.attributes.length; i++) {
-                var attr_5 = el.attributes.item(i);
-                switch (attr_5.name.toLowerCase()) {
+                var attr_6 = el.attributes.item(i);
+                switch (attr_6.name.toLowerCase()) {
                     case 'name':
-                        v.name = attr_5.value;
+                        v.name = attr_6.value;
                         break;
                     case 'resource':
-                        v.resource = attr_5.value;
+                        v.resource = attr_6.value;
                         break;
                 }
             }
@@ -1273,10 +1080,10 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
                         v.eqn = content(child);
                         break;
                     case 'inflow':
-                        v.inflows.push(content(child));
+                        v.inflows.push(canonicalize(content(child)));
                         break;
                     case 'outflow':
-                        v.outflows.push(content(child));
+                        v.outflows.push(canonicalize(content(child)));
                         break;
                     case 'gf':
                         _a = GF.Build(child), v.gf = _a[0], err = _a[1];
@@ -1295,6 +1102,13 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
             return [v, err];
             var _a, _b;
         };
+        Object.defineProperty(Variable.prototype, "ident", {
+            get: function () {
+                return canonicalize(this.name);
+            },
+            enumerable: true,
+            configurable: true
+        });
         Variable.prototype.toXml = function (doc, parent) {
             return true;
         };
@@ -1323,10 +1137,10 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
             var table = new GF();
             var err;
             for (var i = 0; i < el.attributes.length; i++) {
-                var attr_6 = el.attributes.item(i);
-                switch (attr_6.name.toLowerCase()) {
+                var attr_7 = el.attributes.item(i);
+                switch (attr_7.name.toLowerCase()) {
                     case 'type':
-                        table.type = attr_6.value.toLowerCase();
+                        table.type = attr_7.value.toLowerCase();
                         if (!(table.type in GF.Types))
                             return [null, new Error('bad type: ' + table.type)];
                         break;
@@ -1348,10 +1162,10 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
                             return [null, new Error('yscale: ' + err.error)];
                         break;
                     case 'xpts':
-                        table.xPoints = util_1.numberize(util_1.splitOnComma(content(child)));
+                        table.xPoints = numberize(splitOnComma(content(child)));
                         break;
                     case 'ypts':
-                        table.yPoints = util_1.numberize(util_1.splitOnComma(content(child)));
+                        table.yPoints = numberize(splitOnComma(content(child)));
                         break;
                 }
             }
@@ -1376,17 +1190,17 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
             var scale = new Scale();
             var err;
             for (var i = 0; i < el.attributes.length; i++) {
-                var attr_7 = el.attributes.item(i);
-                switch (attr_7.name.toLowerCase()) {
+                var attr_8 = el.attributes.item(i);
+                switch (attr_8.name.toLowerCase()) {
                     case 'min':
-                        _a = num(attr_7.value), scale.min = _a[0], err = _a[1];
+                        _a = num(attr_8.value), scale.min = _a[0], err = _a[1];
                         if (err)
-                            return [null, new Error('bad min: ' + attr_7.value)];
+                            return [null, new Error('bad min: ' + attr_8.value)];
                         break;
                     case 'max':
-                        _b = num(attr_7.value), scale.max = _b[0], err = _b[1];
+                        _b = num(attr_8.value), scale.max = _b[0], err = _b[1];
                         if (err)
-                            return [null, new Error('bad max: ' + attr_7.value)];
+                            return [null, new Error('bad max: ' + attr_8.value)];
                         break;
                 }
             }
@@ -1409,13 +1223,13 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
             var conn = new Connection();
             var err;
             for (var i = 0; i < el.attributes.length; i++) {
-                var attr_8 = el.attributes.item(i);
-                switch (attr_8.name.toLowerCase()) {
+                var attr_9 = el.attributes.item(i);
+                switch (attr_9.name.toLowerCase()) {
                     case 'to':
-                        conn.to = attr_8.value;
+                        conn.to = canonicalize(attr_9.value);
                         break;
                     case 'from':
-                        conn.from = attr_8.value;
+                        conn.from = canonicalize(attr_9.value);
                         break;
                 }
             }
@@ -1432,13 +1246,200 @@ define('xmile',["require", "exports", './util'], function (require, exports, uti
     exports.Connection = Connection;
     function canonicalize(id) {
         'use strict';
+        var quoted = false;
+        if (id.length > 1) {
+            var f = id.slice(0, 1);
+            var l = id.slice(id.length - 1);
+            quoted = f === '"' && l === '"';
+        }
         id = id.toLowerCase();
         id = id.replace(/\\n/g, '_');
         id = id.replace(/\\\\/g, '\\');
         id = id.replace(/\\"/g, '\\');
-        return id.replace(/[_\r\n\t \xa0]+/g, '_');
+        id = id.replace(/[_\r\n\t \xa0]+/g, '_');
+        if (quoted)
+            return id.slice(1, -1);
+        return id;
     }
     exports.canonicalize = canonicalize;
+});
+
+// Copyright 2015 Bobby Powers. All rights reserved.
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE file.
+
+define('util',["require", "exports"], function (require, exports) {
+    function titleCase(str) {
+        'use strict';
+        return str.replace(/(?:^|\s)\w/g, function (match) {
+            return match.toUpperCase();
+        });
+    }
+    exports.titleCase = titleCase;
+    function dName(s) {
+        'use strict';
+        return s.replace(/\\n/g, '\n').replace(/_/g, ' ');
+    }
+    exports.dName = dName;
+    function set() {
+        'use strict';
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i - 0] = arguments[_i];
+        }
+        var result = {};
+        for (var i = 0; i < args.length; ++i)
+            result[args[i]] = true;
+        return result;
+    }
+    exports.set = set;
+    function swap(array, a, b) {
+        'use strict';
+        var tmp = array[a];
+        array[a] = array[b];
+        array[b] = tmp;
+    }
+    function partition(array, l, r, p) {
+        'use strict';
+        var pValue = array[p];
+        swap(array, p, r);
+        var store = l;
+        for (var i = l; i < r; ++i) {
+            if (array[i].lessThan(pValue)) {
+                swap(array, i, store);
+                store += 1;
+            }
+        }
+        swap(array, store, r);
+        return store;
+    }
+    exports.partition = partition;
+    function sort(array, l, r, part) {
+        'use strict';
+        if (l === void 0) { l = 0; }
+        if (r === void 0) { r = array.length - 1; }
+        if (part === void 0) { part = partition; }
+        if (l >= r)
+            return;
+        var pivot = Math.floor(l + (r - l) / 2);
+        var newPivot = part(array, l, r, pivot);
+        sort(array, l, newPivot - 1, part);
+        sort(array, newPivot + 1, r, part);
+    }
+    exports.sort = sort;
+    function lookup(table, index) {
+        'use strict';
+        var size = table.x.length;
+        if (size === 0)
+            return NaN;
+        var x = table.x;
+        var y = table.y;
+        if (index <= x[0]) {
+            return y[0];
+        }
+        else if (index >= x[size - 1]) {
+            return y[size - 1];
+        }
+        var low = 0;
+        var high = size;
+        var mid;
+        while (low < high) {
+            mid = Math.floor(low + (high - low) / 2);
+            if (x[mid] < index) {
+                low = mid + 1;
+            }
+            else {
+                high = mid;
+            }
+        }
+        var i = low;
+        if (x[i] === index) {
+            return y[i];
+        }
+        else {
+            var slope = (y[i] - y[i - 1]) / (x[i] - x[i - 1]);
+            return (index - x[i - 1]) * slope + y[i - 1];
+        }
+    }
+    exports.lookup = lookup;
+    function min(a, b) {
+        'use strict';
+        return a < b ? a : b;
+    }
+    exports.min = min;
+    function numArr(arr) {
+        'use strict';
+        var result = [];
+        for (var i = 0; i < arr.length; i++) {
+            result.push(parseFloat(arr[i]));
+        }
+        return result;
+    }
+    exports.numArr = numArr;
+    function floatAttr(o, n) {
+        'use strict';
+        return parseFloat(o.getAttribute(n));
+    }
+    exports.floatAttr = floatAttr;
+    function qs(e, s) {
+        'use strict';
+        if (e.querySelector)
+            return e.querySelector(s);
+        var selectors = s.split('>');
+        var curr = e;
+        var n;
+        outer: for (var i = 0; curr && i < selectors.length; i++) {
+            for (var j = 0; j < curr.childNodes.length; j++) {
+                n = curr.childNodes[j];
+                if (!n.tagName)
+                    continue;
+                if (n.tagName.toLowerCase() === selectors[i].toLowerCase()) {
+                    curr = n;
+                    continue outer;
+                }
+            }
+            curr = null;
+        }
+        return curr;
+    }
+    exports.qs = qs;
+    function querySelectorInner(e, selectors) {
+        'use strict';
+        var sel = selectors[0];
+        var rest = selectors.slice(1);
+        var result = [];
+        var child;
+        for (var i in e.childNodes) {
+            if (!e.hasOwnProperty(i))
+                continue;
+            child = e.childNodes[i];
+            if (child.tagName && child.tagName.toLowerCase() === sel) {
+                if (rest.length) {
+                    result = result.concat(querySelectorInner(child, rest));
+                }
+                else {
+                    result.push(child);
+                }
+            }
+        }
+        return result;
+    }
+    exports.querySelectorInner = querySelectorInner;
+    function qsa(e, s) {
+        'use strict';
+        if (e.querySelectorAll)
+            return e.querySelectorAll(s);
+        var selectors = s.split('>').map(function (sel) {
+            return sel.toLowerCase();
+        });
+        return querySelectorInner(e, selectors);
+    }
+    exports.qsa = qsa;
+    function isNaN(n) {
+        'use strict';
+        return n !== n;
+    }
+    exports.isNaN = isNaN;
 });
 
 
@@ -1678,19 +1679,16 @@ var __extends = (this && this.__extends) || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
-define('vars',["require", "exports", './common', './util', './lex'], function (require, exports, common, util, lex) {
+define('vars',["require", "exports", './common', './lex', './xmile'], function (require, exports, common, lex, xmile) {
     var Variable = (function () {
-        function Variable(model, xmile) {
+        function Variable(model, v) {
             if (arguments.length === 0)
                 return;
             this.model = model;
-            this.xmile = xmile;
-            var eqn = '';
-            if (xmile.eqn)
-                eqn = xmile.eqn.toString().toLowerCase();
-            this.eqn = eqn;
-            this.name = util.eName(xmile['@name']);
-            this._deps = lex.identifierSet(eqn);
+            this.xmile = v;
+            this.eqn = v.eqn;
+            this.ident = v.ident;
+            this._deps = lex.identifierSet(this.eqn);
         }
         ;
         Variable.prototype.initialEquation = function () {
@@ -1699,24 +1697,16 @@ define('vars',["require", "exports", './common', './util', './lex'], function (r
         ;
         Variable.prototype.code = function (v) {
             if (this.isConst())
-                return "this.initials['" + util.eName(this.name) + "']";
+                return "this.initials['" + this.ident + "']";
             var lexer = new lex.Lexer(this.eqn);
             var result = [];
             var commentDepth = 0;
             var scope;
             var tok;
             while ((tok = lexer.nextTok())) {
-                if (tok.tok === '{') {
-                    commentDepth++;
-                }
-                else if (tok.tok === '}') {
-                    commentDepth--;
-                }
-                else if (commentDepth > 0) {
-                    continue;
-                }
-                else if (tok.tok in common.reserved) {
-                    switch (tok.tok) {
+                var ident = xmile.canonicalize(tok.tok);
+                if (tok.tok in common.reserved) {
+                    switch (ident) {
                         case 'if':
                             break;
                         case 'then':
@@ -1726,25 +1716,25 @@ define('vars',["require", "exports", './common', './util', './lex'], function (r
                             result.push(':');
                             break;
                         default:
-                            console.log('ERROR: unexpected tok: ' + tok.tok);
+                            console.log('ERROR: unexpected tok: ' + ident);
                     }
                 }
                 else if (tok.type !== 1) {
                     result.push('' + tok.tok);
                 }
-                else if (tok.tok in common.builtins) {
-                    result.push('' + tok.tok);
-                    if (common.builtins[tok.tok].usesTime) {
+                else if (ident in common.builtins) {
+                    result.push('' + ident);
+                    if (common.builtins[ident].usesTime) {
                         lexer.nextTok();
-                        scope = this.model.name === 'main' ? 'curr' : 'globalCurr';
+                        scope = this.model.ident === 'main' ? 'curr' : 'globalCurr';
                         result.push('(', 'dt', ',', scope + '[0]', ',');
                     }
                 }
-                else if (tok.tok in v) {
-                    result.push("curr[" + v[tok.tok] + "]");
+                else if (ident in v) {
+                    result.push("curr[" + v[ident] + "]");
                 }
                 else {
-                    result.push('globalCurr[this.ref["' + tok.tok + '"]]');
+                    result.push('globalCurr[this.ref["' + ident + '"]]');
                 }
             }
             if (!result.length) {
@@ -1773,7 +1763,7 @@ define('vars',["require", "exports", './common', './util', './lex'], function (r
             return allDeps;
         };
         Variable.prototype.lessThan = function (that) {
-            return this.name in that.getDeps();
+            return this.ident in that.getDeps();
         };
         Variable.prototype.isConst = function () {
             return isFinite(this.eqn);
@@ -1783,37 +1773,22 @@ define('vars',["require", "exports", './common', './util', './lex'], function (r
     exports.Variable = Variable;
     var Stock = (function (_super) {
         __extends(Stock, _super);
-        function Stock(model, xmile) {
+        function Stock(model, v) {
             _super.call(this);
             this.model = model;
-            this.xmile = xmile;
-            var eqn = '';
-            if (xmile.eqn)
-                eqn = xmile.eqn.toString().toLowerCase();
-            this.name = util.eName(xmile['@name']);
-            this.initial = eqn;
-            this.eqn = eqn;
-            if (!xmile.inflow)
-                xmile.inflow = [];
-            if (!(xmile.inflow instanceof Array))
-                xmile.inflow = [xmile.inflow];
-            if (!xmile.outflow)
-                xmile.outflow = [];
-            if (!(xmile.outflow instanceof Array))
-                xmile.outflow = [xmile.outflow];
-            this.inflows = xmile.inflow.map(function (s) {
-                return util.eName(s);
-            });
-            this.outflows = xmile.outflow.map(function (s) {
-                return util.eName(s);
-            });
-            this._deps = lex.identifierSet(eqn);
+            this.xmile = v;
+            this.ident = v.ident;
+            this.initial = v.eqn;
+            this.eqn = v.eqn;
+            this.inflows = v.inflows;
+            this.outflows = v.outflows;
+            this._deps = lex.identifierSet(this.initial);
         }
         Stock.prototype.initialEquation = function () {
             return this.initial;
         };
         Stock.prototype.code = function (v) {
-            var eqn = "curr[" + v[this.name] + "] + (";
+            var eqn = "curr[" + v[this.ident] + "] + (";
             if (this.inflows.length > 0)
                 eqn += this.inflows.map(function (s) { return "curr[" + v[s] + "]"; }).join('+');
             if (this.outflows.length > 0)
@@ -1829,42 +1804,20 @@ define('vars',["require", "exports", './common', './util', './lex'], function (r
     exports.Stock = Stock;
     var Table = (function (_super) {
         __extends(Table, _super);
-        function Table(model, xmile) {
+        function Table(model, v) {
             _super.call(this);
-            this.model = model;
-            this.xmile = xmile;
-            var eqn = '';
-            if (eqn)
-                eqn = xmile.eqn.toString().toLowerCase();
-            this.eqn = eqn;
-            this.name = util.eName(xmile['@name']);
             this.x = [];
             this.y = [];
             this.ok = true;
-            if (!xmile.gf.ypts) {
-                this.ok = false;
-                return;
-            }
-            var ypts;
-            var sep;
-            if (typeof xmile.gf.ypts === 'object') {
-                sep = xmile.gf.ypts['@sep'] || ',';
-                ypts = util.numArr(xmile.gf.ypts.keyValue.split(sep));
-            }
-            else {
-                ypts = util.numArr(xmile.gf.ypts.split(','));
-            }
-            var xpts = null;
-            if (typeof xmile.gf.xpts === 'object') {
-                sep = xmile.gf.xpts['@sep'] || ',';
-                xpts = util.numArr(xmile.gf.xpts.keyValue.split(sep));
-            }
-            else if (xmile.gf.xpts) {
-                xpts = util.numArr(xmile.gf.xpts.split(','));
-            }
-            var xscale = xmile.gf.xscale;
-            var xmin = xscale ? xscale['@min'] : 0;
-            var xmax = xscale ? xscale['@max'] : 0;
+            this.model = model;
+            this.xmile = v;
+            this.eqn = v.eqn;
+            this.ident = v.ident;
+            var ypts = v.gf.yPoints;
+            var xpts = v.gf.xPoints;
+            var xscale = v.gf.xScale;
+            var xmin = xscale ? xscale.min : 0;
+            var xmax = xscale ? xscale.max : 0;
             for (var i = 0; i < ypts.length; i++) {
                 var x = void 0;
                 if (xpts) {
@@ -1876,35 +1829,31 @@ define('vars',["require", "exports", './common', './util', './lex'], function (r
                 this.x.push(x);
                 this.y.push(ypts[i]);
             }
-            this._deps = lex.identifierSet(eqn);
+            this._deps = lex.identifierSet(this.eqn);
         }
         Table.prototype.code = function (v) {
             if (!this.eqn)
                 return null;
             var index = _super.prototype.code.call(this, v);
-            return "lookup(this.tables['" + this.name + "'], " + index + ")";
+            return "lookup(this.tables['" + this.ident + "'], " + index + ")";
         };
         return Table;
     })(Variable);
     exports.Table = Table;
     var Module = (function (_super) {
         __extends(Module, _super);
-        function Module(project, parent, xmile) {
+        function Module(project, parent, v) {
             _super.call(this);
             this.project = project;
             this.parent = parent;
-            this.xmile = xmile;
-            this.name = util.eName(xmile['@name']);
-            this.modelName = this.name;
-            if (!xmile.connect)
-                xmile.connect = [];
-            if (!(xmile.connect instanceof Array))
-                xmile.connect = [xmile.connect];
+            this.xmile = v;
+            this.ident = v.ident;
+            this.modelName = this.ident;
             this.refs = {};
             this._deps = {};
-            for (var i = 0; i < xmile.connect.length; i++) {
-                var ref = new Reference(xmile.connect[i]);
-                this.refs[ref.name] = ref;
+            for (var i = 0; i < v.connections.length; i++) {
+                var ref = new Reference(v.connections[i]);
+                this.refs[ref.ident] = ref;
                 this._deps[ref.ptr] = true;
             }
         }
@@ -1967,11 +1916,12 @@ define('vars',["require", "exports", './common', './util', './lex'], function (r
     exports.Module = Module;
     var Reference = (function (_super) {
         __extends(Reference, _super);
-        function Reference(xmile) {
+        function Reference(conn) {
             _super.call(this);
-            this.xmile = xmile;
-            this.name = util.eName(xmile['@to']);
-            this.ptr = util.eName(xmile['@from']);
+            this.xmile = null;
+            this.xmileConn = conn;
+            this.ident = conn.to;
+            this.ptr = conn.from;
         }
         Reference.prototype.code = function (v) {
             return 'curr["' + this.ptr + '"]';
@@ -12638,7 +12588,7 @@ return Snap;
 // license that can be found in the LICENSE file.
 /// <reference path="../typings/tsd.d.ts" />
 
-define('draw',["require", "exports", './runtime', "./util", "../bower_components/hammerjs/hammer", "../bower_components/Snap.svg/dist/snap.svg"], function (require, exports, runtime, util_1) {
+define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower_components/hammerjs/hammer", "../bower_components/Snap.svg/dist/snap.svg"], function (require, exports, runtime, util_1, xmile_1) {
     var AUX_RADIUS = 9;
     var LABEL_PAD = 6;
     var STROKE = 1;
@@ -12924,7 +12874,7 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
         function DStock(drawing, element) {
             this.drawing = drawing;
             this.e = element;
-            this.name = util_1.eName(element['@name']);
+            this.name = xmile_1.canonicalize(element['@name']);
             this.dName = util_1.dName(element['@name']);
             this.cx = element['@x'];
             this.cy = element['@y'];
@@ -12996,7 +12946,7 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
         function DModule(drawing, element) {
             this.drawing = drawing;
             this.e = element;
-            this.name = util_1.eName(element['@name']);
+            this.name = xmile_1.canonicalize(element['@name']);
             this.dName = util_1.dName(element['@name']);
             this.cx = element['@x'];
             this.cy = element['@y'];
@@ -13034,7 +12984,7 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
         function DAux(drawing, element) {
             this.drawing = drawing;
             this.e = element;
-            this.name = util_1.eName(element['@name']);
+            this.name = xmile_1.canonicalize(element['@name']);
             this.dName = util_1.dName(element['@name']);
             this.cx = element['@x'];
             this.cy = element['@y'];
@@ -13080,7 +13030,7 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
         function DFlow(drawing, element) {
             this.drawing = drawing;
             this.e = element;
-            this.name = util_1.eName(element['@name']);
+            this.name = xmile_1.canonicalize(element['@name']);
             this.dName = util_1.dName(element['@name']);
             this.cx = element['@x'];
             this.cy = element['@y'];
@@ -13206,12 +13156,12 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
             var paper = this.drawing.paper;
             var cx = this.e['@x'];
             var cy = this.e['@y'];
-            var fromEnt = this.drawing.named_ents[util_1.eName(this.e.from)];
+            var fromEnt = this.drawing.named_ents[xmile_1.canonicalize(this.e.from)];
             if (!fromEnt)
                 return;
             var fx = fromEnt.cx;
             var fy = fromEnt.cy;
-            var toEnt = this.drawing.named_ents[util_1.eName(this.e.to)];
+            var toEnt = this.drawing.named_ents[xmile_1.canonicalize(this.e.to)];
             if (!toEnt)
                 return;
             var tx = toEnt.cx;
@@ -16274,14 +16224,14 @@ define('sim',["require", "exports", './util', './vars', './runtime', 'q', 'musta
                 var eqn = void 0;
                 var v = run_initials[i];
                 if (v instanceof vars.Module) {
-                    eqn = 'this.modules["' + v.name + '"].calcInitial(dt, curr);';
+                    eqn = 'this.modules["' + v.ident + '"].calcInitial(dt, curr);';
                 }
                 else {
-                    if (isRef(v.name))
+                    if (isRef(v.ident))
                         continue;
                     if (v.isConst())
-                        initials[v.name] = parseFloat(v.eqn);
-                    eqn = "curr[" + offsets[v.name] + "] = " + vars.Variable.prototype.code.apply(v, [offsets]) + ';';
+                        initials[v.ident] = parseFloat(v.eqn);
+                    eqn = "curr[" + offsets[v.ident] + "] = " + vars.Variable.prototype.code.apply(v, [offsets]) + ';';
                 }
                 ci.push(eqn);
             }
@@ -16290,10 +16240,10 @@ define('sim',["require", "exports", './util', './vars', './runtime', 'q', 'musta
                 var v = run_flows[i];
                 eqn = null;
                 if (v instanceof vars.Module) {
-                    eqn = 'this.modules["' + v.name + '"].calcFlows(dt, curr);';
+                    eqn = 'this.modules["' + v.ident + '"].calcFlows(dt, curr);';
                 }
-                else if (!isRef(v.name)) {
-                    eqn = "curr[" + offsets[v.name] + "] = " + v.code(offsets) + ';';
+                else if (!isRef(v.ident)) {
+                    eqn = "curr[" + offsets[v.ident] + "] = " + v.code(offsets) + ';';
                 }
                 if (!eqn)
                     continue;
@@ -16303,13 +16253,13 @@ define('sim',["require", "exports", './util', './vars', './runtime', 'q', 'musta
                 var eqn;
                 var v = run_stocks[i];
                 if (v instanceof vars.Module) {
-                    cs.push('this.modules["' + v.name + '"].calcStocks(dt, curr, next);');
+                    cs.push('this.modules["' + v.ident + '"].calcStocks(dt, curr, next);');
                 }
                 else if (!v.hasOwnProperty('initial')) {
-                    cs.push("next[" + offsets[v.name] + "] = curr[" + offsets[v.name] + '];');
+                    cs.push("next[" + offsets[v.ident] + "] = curr[" + offsets[v.ident] + '];');
                 }
                 else {
-                    cs.push("next[" + offsets[v.name] + "] = " + v.code(offsets) + ';');
+                    cs.push("next[" + offsets[v.ident] + "] = " + v.code(offsets) + ';');
                 }
             }
             for (var n in model.tables) {
@@ -16323,7 +16273,7 @@ define('sim',["require", "exports", './util', './vars', './runtime', 'q', 'musta
             var additional = '';
             var init = [];
             if (Object.keys(model.modules).length) {
-                if (model.name === 'main')
+                if (model.ident === 'main')
                     additional = ' + 1';
                 init.push('var off = Object.keys(this.offsets).length' + additional + ';');
             }
@@ -16404,13 +16354,16 @@ define('sim',["require", "exports", './util', './vars', './runtime', 'q', 'musta
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-define('model',["require", "exports", './util', './vars', './draw', './sim'], function (require, exports, util, vars, draw, sim) {
+define('model',["require", "exports", './util', './vars', './draw', './sim', './xmile'], function (require, exports, util, vars, draw, sim, xmile) {
     var VAR_TYPES = util.set('module', 'stock', 'aux', 'flow');
     var Model = (function () {
-        function Model(project, xModel) {
+        function Model(project, ident, xModel) {
+            this.modules = {};
+            this.tables = {};
+            this.vars = {};
             this.project = project;
             this.xModel = xModel;
-            this.name = xModel.ident;
+            this.name = ident;
             this.vars = {};
             this.tables = {};
             this.modules = {};
@@ -16419,6 +16372,13 @@ define('model',["require", "exports", './util', './vars', './draw', './sim'], fu
             this.valid = true;
             return;
         }
+        Object.defineProperty(Model.prototype, "ident", {
+            get: function () {
+                return xmile.canonicalize(this.name);
+            },
+            enumerable: true,
+            configurable: true
+        });
         Object.defineProperty(Model.prototype, "simSpec", {
             get: function () {
                 return this.spec || this.project.simSpec;
@@ -16450,58 +16410,52 @@ define('model',["require", "exports", './util', './vars', './draw', './sim'], fu
         Model.prototype.drawing = function (svgElementID, overrideColors, enableMousewheel) {
             return new draw.Drawing(this, this.xModel.views[0], svgElementID, overrideColors, enableMousewheel);
         };
-        Model.prototype.parseVars = function (defs) {
-            for (var type_1 in VAR_TYPES) {
-                if (defs[type_1] && !(defs[type_1] instanceof Array))
-                    defs[type_1] = [defs[type_1]];
-            }
-            if (defs.module) {
-                for (var i = 0; i < defs.module.length; i++) {
-                    var xmile_1 = defs.module[i];
-                    var module = new vars.Module(this.project, this, xmile_1);
-                    this.modules[module.name] = module;
-                    this.vars[module.name] = module;
-                }
-            }
-            if (defs.stock) {
-                for (var i = 0; i < defs.stock.length; i++) {
-                    var xmile_2 = defs.stock[i];
-                    var stock = new vars.Stock(this, xmile_2);
-                    this.vars[stock.name] = stock;
-                }
-            }
-            if (defs.aux) {
-                for (var i = 0; i < defs.aux.length; i++) {
-                    var xmile_3 = defs.aux[i];
-                    var aux = null;
-                    if (xmile_3.gf) {
-                        var table = new vars.Table(this, xmile_3);
-                        if (table.ok) {
-                            this.tables[aux.name] = table;
-                            aux = table;
+        Model.prototype.parseVars = function (variables) {
+            for (var i in variables) {
+                if (!variables.hasOwnProperty(i))
+                    continue;
+                var v = variables[i];
+                var ident = v.ident;
+                if (ident in this.vars)
+                    return new xmile.Error('duplicate var ' + ident);
+                switch (v.type) {
+                    case 'module':
+                        var module = new vars.Module(this.project, this, v);
+                        this.modules[ident] = module;
+                        this.vars[ident] = module;
+                        break;
+                    case 'stock':
+                        var stock = new vars.Stock(this, v);
+                        this.vars[ident] = stock;
+                        break;
+                    case 'aux':
+                        var aux = null;
+                        if (v.gf) {
+                            var table = new vars.Table(this, v);
+                            if (table.ok) {
+                                this.tables[ident] = table;
+                                aux = table;
+                            }
                         }
-                    }
-                    if (!aux)
-                        aux = new vars.Variable(this, xmile_3);
-                    this.vars[aux.name] = aux;
-                }
-            }
-            if (defs.flow) {
-                for (var i = 0; i < defs.flow.length; i++) {
-                    var xmile_4 = defs.flow[i];
-                    var flow = null;
-                    if (xmile_4.gf) {
-                        var table = new vars.Table(this, xmile_4);
-                        if (table.ok) {
-                            this.tables[flow.name] = table;
-                            flow = table;
+                        if (!aux)
+                            aux = new vars.Variable(this, v);
+                        this.vars[ident] = aux;
+                        break;
+                    case 'flow':
+                        var flow = null;
+                        if (v.gf) {
+                            var table = new vars.Table(this, v);
+                            if (table.ok) {
+                                this.tables[ident] = table;
+                                flow = table;
+                            }
                         }
-                    }
-                    if (!flow)
-                        flow = new vars.Variable(this, xmile_4);
-                    this.vars[flow.name] = flow;
+                        if (!flow)
+                            flow = new vars.Variable(this, v);
+                        this.vars[ident] = flow;
                 }
             }
+            return null;
         };
         return Model;
     })();
@@ -16567,9 +16521,14 @@ define('project',["require", "exports", './common', './xmile', './model', './var
                 if (!file.models.hasOwnProperty(i))
                     continue;
                 var xModel = file.models[i];
-                this.models[xModel.name] = new model_1.Model(this, xModel);
+                var ident = xModel.ident;
+                if (ident === '' && !('main' in this.models))
+                    ident = 'main';
+                this.models[ident] = new model_1.Model(this, ident, xModel);
             }
-            this.main = new vars_1.Module(this, null, { '@name': 'main' });
+            var modVar = new xmile.Variable();
+            modVar.name = 'main';
+            this.main = new vars_1.Module(this, null, modVar);
             this.valid = true;
             return true;
         };

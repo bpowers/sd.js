@@ -1,3 +1,7 @@
+export declare function camelCase(s: string): string;
+export declare function splitOnComma(str: string): string[];
+export declare function numberize(arr: string[]): number[];
+export declare function i32(n: number): number;
 export declare class Error {
     error: string;
     constructor(error: string);
@@ -167,6 +171,7 @@ export declare class Format implements XNode {
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
 export declare class Variable implements XNode {
+    type: string;
     name: string;
     eqn: string;
     gf: GF;
@@ -184,6 +189,7 @@ export declare class Variable implements XNode {
     outflows: string[];
     flowConcept: boolean;
     static Build(el: Node): [Variable, Error];
+    ident: string;
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
 export declare class View implements XNode {

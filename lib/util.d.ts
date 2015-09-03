@@ -1,6 +1,5 @@
 export declare function titleCase(str: string): string;
 export declare function dName(s: string): string;
-export declare function eName(s: string): string;
 export declare function set(...args: string[]): any;
 export declare function partition(array: any[], l: number, r: number, p: number): number;
 export declare function sort(array: any[], l?: number, r?: number, part?: typeof partition): void;
@@ -12,7 +11,3 @@ export declare function qs(e: any, s: any): any;
 export declare function querySelectorInner(e: any, selectors: any): any;
 export declare function qsa(e: any, s: any): any;
 export declare function isNaN(n: number): boolean;
-export declare function camelCase(s: string): string;
-export declare function splitOnComma(str: string): string[];
-export declare function numberize(arr: string[]): number[];
-export declare function i32(n: number): number;

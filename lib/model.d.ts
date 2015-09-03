@@ -11,10 +11,11 @@ export declare class Model implements type.Model {
     tables: type.TableMap;
     vars: type.VariableMap;
     private spec;
-    constructor(project: type.Project, xModel: xmile.Model);
+    constructor(project: type.Project, ident: string, xModel: xmile.Model);
+    ident: string;
     simSpec: type.SimSpec;
     lookup(id: string): type.Variable;
     sim(isStandalone: boolean): sim.Sim;
     drawing(svgElementID: string, overrideColors: boolean, enableMousewheel: boolean): draw.Drawing;
-    private parseVars(defs);
+    private parseVars(variables);
 }
