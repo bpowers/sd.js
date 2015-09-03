@@ -2,7 +2,9 @@ sd.js - System Dynamics for the web
 ===================================
 
 A modern, high performance, open source system dynamics engine for
-today's web, and tomorrow's.
+today's web and tomorrow's.  `sd.js` runs in all major browsers
+(IE10+, Chrome, Firefox, Safari), and on the server under
+[node.js](https://nodejs.org) and [io.js](https://iojs.org).
 
 Clean, Simple API
 -----------------
@@ -69,58 +71,70 @@ on the web, and models created or modified in `sd.js` on the desktop.
 Building
 --------
 
-Python, Make, node.js and npm are required to build `sd.js`, as are
+GNU Make, node.js and npm are required to build `sd.js`, as are
 some standard unix utilities.  Windows is not supported as a
 development platform (patches welcome).  Once those are installed on
-your system, you can simply run make to download the required
-dependencies and run the unit tests:
+your system, you can simply run `make` to build the library for node
+and the browser:
 
 ```
-[bpowers@fina sd.js]$ make check
-
-runner.js
-✔ suite - identifierSet
-✔ suite - lex
-✔ suite - lynx1
-✔ suite - var - deps
-✔ suite - var - less than
-✔ suite - var - tables
-✔ suite - var - equations
-✔ suite - sort
-✔ suite - lookup
-✔ suite - var - equations 2
-
-OK: 134 assertions (101ms)
-
-[bpowers@fina sd.js]$ make
-python quote_runtime.py >lib/runtime.js
-
-Tracing dependencies for: vendor/almond
-Uglifying file: /home/bpowers/p/sd.js/build/sd.nakid.js
-
-/home/bpowers/p/sd.js/build/sd.nakid.js
-----------------
-/home/bpowers/p/sd.js/lib/vendor/almond.js
-/home/bpowers/p/sd.js/lib/common.js
-/home/bpowers/p/sd.js/lib/util.js
-/home/bpowers/p/sd.js/lib/lex.js
-/home/bpowers/p/sd.js/lib/ast.js
-/home/bpowers/p/sd.js/lib/parse.js
-/home/bpowers/p/sd.js/lib/vars.js
-/home/bpowers/p/sd.js/lib/runtime.js
-/home/bpowers/p/sd.js/lib/draw.js
-/home/bpowers/p/sd.js/lib/sim.js
-/home/bpowers/p/sd.js/lib/model.js
-/home/bpowers/p/sd.js/lib/jxon.js
-/home/bpowers/p/sd.js/lib/compat.js
-/home/bpowers/p/sd.js/lib/project.js
-/home/bpowers/p/sd.js/lib/sd.js
+[bpowers@vyse sd.js]$ make
+  TS    build-rt
+  RT    src/runtime.ts
+  TS    lib
+  TS    build
+  R.JS  sd.js
+  R.JS  sd.min.js
 ```
 
-The standalone sd.js library is now available at `build/sd.js`, and
-includes all the dependencies (Snap.svg, Mustache and Q).
+Run `make test` to run unit tests, and `make rtest` to run regression
+tests against the XMILE models in the
+[SDXOrg/test-models](https://github.com/SDXorg/test-models) repository:
+
+```
+[bpowers@vyse sd.js]$ make test rtest
+  TS    test
+  TEST
+
+
+  lex
+    ✓ should lex a
+[...]
+    ✓ should lex "hares" * "birth fraction"
+
+
+  32 passing (16ms)
+
+  RTEST test/test-models/tests/number_handling/test_number_handling.xmile
+  RTEST test/test-models/tests/lookups/test_lookups_no-indirect.xmile
+  RTEST test/test-models/tests/logicals/test_logicals.xmile
+  RTEST test/test-models/tests/if_stmt/if_stmt.xmile
+  RTEST test/test-models/tests/exponentiation/exponentiation.xmile
+time 0.000 mismatch in output (0.0 != 2.0)
+time 1.000 mismatch in output (1.0 != 3.0)
+time 2.000 mismatch in output (4.0 != 0.0)
+time 3.000 mismatch in output (9.0 != 1.0)
+time 4.000 mismatch in output (16.0 != 6.0)
+  RTEST test/test-models/tests/eval_order/eval_order.xmile
+  RTEST test/test-models/tests/comparisons/comparisons.xmile
+  RTEST test/test-models/tests/builtin_min/builtin_min.xmile
+  RTEST test/test-models/tests/builtin_max/builtin_max.xmile
+  RTEST test/test-models/samples/teacup/teacup.xmile
+  RTEST test/test-models/samples/teacup/teacup_w_diagram.xmile
+  RTEST test/test-models/samples/bpowers-hares_and_lynxes_modules/model.xmile
+  RTEST test/test-models/samples/SIR/SIR.xmile
+Makefile:121: recipe for target 'rtest' failed
+make: *** [rtest] Error 1
+```
+
+The standalone sd.js library for use in the browser is available at `sd.js`
+and minified at `sd.min.js`, and includes all the dependencies (Snap.svg,
+Mustache and Q).  For use under node, `require('sd')` should simply use the
+CommonJS modules in the `lib/` directory.
 
 TODO
 ----
 
+- convert from old-style connector x,y center position to new-style
+  connector takeoff angle.
 - logging framework
