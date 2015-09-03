@@ -114,10 +114,30 @@ export interface XNode {
 }
 
 export class Point implements XNode {
-	X: number;
-	Y: number;
+	x: number;
+	y: number;
 
-	constructor(el: Element) {
+	static Build(el: Node): [Point, Error] {
+		let pt = new Point();
+		let err: Error;
+
+		for (let i = 0; i < el.attributes.length; i++) {
+			let attr = el.attributes.item(i);
+			switch (attr.name.toLowerCase()) {
+			case 'x':
+				[pt.x, err] = num(attr.value);
+				if (err)
+					return [null, new Error('x not num: ' + err.error)];
+				break;
+			case 'y':
+				[pt.y, err] = num(attr.value);
+				if (err)
+					return [null, new Error('y not num: ' + err.error)];
+				break;
+			}
+		}
+
+		return [pt, err];
 	}
 
 	toXml(doc: XMLDocument, parent: Element): boolean {
@@ -126,8 +146,8 @@ export class Point implements XNode {
 }
 
 export class Size implements XNode {
-	Width: number;
-	Height: number;
+	width: number;
+	height: number;
 
 	constructor(el: Element) {
 	}
@@ -138,10 +158,10 @@ export class Size implements XNode {
 }
 
 export class Rect implements Point, Size, XNode {
-	X: number;
-	Y: number;
-	Width: number;
-	Height: number;
+	x: number;
+	y: number;
+	width: number;
+	height: number;
 
 	constructor(el: Element) {
 	}
@@ -794,6 +814,7 @@ export class Shape implements XNode {
 export class ViewElement implements XNode {
 	type:              string;
 	name:              string;
+	uid:               number; // int
 	x:                 number;
 	y:                 number;
 	width:             number;
@@ -801,7 +822,7 @@ export class ViewElement implements XNode {
 	shape:             Shape;
 	borderWidth:       string; // 'thick'|'thin'|double, thick = 3, thin = 1
 	borderColor:       string; // hex|predefined-color
-	borderStyle:       string = 'none'; // 'none'|'solid'
+	borderStyle:       string; // 'none'|'solid'
 	fontFamily:        string;
 	fontWeight:        string; // 'normal'|'bold'
 	textDecoration:    string; // 'normal'|'underline'
@@ -816,9 +837,16 @@ export class ViewElement implements XNode {
 	background:        string;      // hex|predefined-color
 	zIndex:            number = -1; // range of -1 to INT_MAX
 	// "any attributes of a Text Style object"
-
 	labelSide:         string; // 'top'|'left'|'center'|'bottom'|'right'
 	labelAngle:        number; // degrees where 0 is 3 o'clock, counter-clockwise.
+	// connectors
+	from:              string; // ident
+	to:                string; // ident
+	angle:             number; // degrees
+	// flows + multi-point connectors
+	pts:               Point[] = [];
+	// alias
+	of:                string;
 
 	static Build(el: Node): [ViewElement, Error] {
 		let viewEl = new ViewElement();
@@ -863,6 +891,45 @@ export class ViewElement implements XNode {
 			case 'color':
 				viewEl.color = attr.value.toLowerCase();
 				break;
+			case 'angle':
+				[viewEl.angle, err] = num(attr.value);
+				if (err)
+					return [null, new Error('angle: ' + err.error)];
+				break;
+			}
+		}
+
+		for (let i = 0; i < el.childNodes.length; i++) {
+			let child = el.childNodes.item(i);
+			if (child.nodeType !== 1) // Element
+				continue;
+
+			switch (child.nodeName.toLowerCase()) {
+			case 'to':
+				viewEl.to = canonicalize(content(child));
+				break;
+			case 'from':
+				viewEl.from = canonicalize(content(child));
+				break;
+			case 'of':
+				viewEl.of = canonicalize(content(child));
+				break;
+			case 'pts':
+				for (let j = 0; j < child.childNodes.length; j++) {
+					let vchild = child.childNodes.item(j);
+					if (vchild.nodeType !== 1) // Element
+						continue;
+					if (vchild.nodeName.toLowerCase() !== 'pt')
+						continue;
+					let pt: Point;
+					[pt, err] = Point.Build(vchild);
+					// FIXME: real logging
+					if (err)
+						return [null, new Error('pt: ' + err.error)];
+					viewEl.pts.push(pt);
+				}
+
+				break;
 			}
 		}
 
@@ -891,6 +958,7 @@ export class View implements XNode {
 	showPages:       boolean;
 	homePage:        number        = 0;
 	homeView:        boolean       = false;
+
 	elements:        ViewElement[] = [];
 
 	static Build(el: Node): [View, Error] {

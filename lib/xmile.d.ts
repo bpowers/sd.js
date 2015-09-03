@@ -10,22 +10,22 @@ export interface XNode {
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
 export declare class Point implements XNode {
-    X: number;
-    Y: number;
-    constructor(el: Element);
+    x: number;
+    y: number;
+    static Build(el: Node): [Point, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
 export declare class Size implements XNode {
-    Width: number;
-    Height: number;
+    width: number;
+    height: number;
     constructor(el: Element);
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
 export declare class Rect implements Point, Size, XNode {
-    X: number;
-    Y: number;
-    Width: number;
-    Height: number;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
     constructor(el: Element);
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
@@ -201,6 +201,7 @@ export declare class Shape implements XNode {
 export declare class ViewElement implements XNode {
     type: string;
     name: string;
+    uid: number;
     x: number;
     y: number;
     width: number;
@@ -223,6 +224,11 @@ export declare class ViewElement implements XNode {
     zIndex: number;
     labelSide: string;
     labelAngle: number;
+    from: string;
+    to: string;
+    angle: number;
+    pts: Point[];
+    of: string;
     static Build(el: Node): [ViewElement, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
