@@ -792,16 +792,79 @@ export class Shape implements XNode {
 }
 
 export class ViewElement implements XNode {
-	name:   string;
-	x:      number;
-	y:      number;
-	width:  number;
-	height: number;
-	shape:  Shape;
+	type:              string;
+	name:              string;
+	x:                 number;
+	y:                 number;
+	width:             number;
+	height:            number;
+	shape:             Shape;
+	borderWidth:       string; // 'thick'|'thin'|double, thick = 3, thin = 1
+	borderColor:       string; // hex|predefined-color
+	borderStyle:       string = 'none'; // 'none'|'solid'
+	fontFamily:        string;
+	fontWeight:        string; // 'normal'|'bold'
+	textDecoration:    string; // 'normal'|'underline'
+	textAlign:         string; // 'left'|'right'|'center'
+	verticalTextAlign: string; // 'top'|'center'|'bottom'
+	fontColor:         string; // hex|predefined-color
+	textBackground:    string; // hex|predefined-color
+	fontSize:          number; // "<double>pt"
+	padding:           number[];
+	// "any attributes of a Border object"
+	color:             string;
+	background:        string;      // hex|predefined-color
+	zIndex:            number = -1; // range of -1 to INT_MAX
+	// "any attributes of a Text Style object"
+
+	labelSide:         string; // 'top'|'left'|'center'|'bottom'|'right'
+	labelAngle:        number; // degrees where 0 is 3 o'clock, counter-clockwise.
 
 	static Build(el: Node): [ViewElement, Error] {
 		let viewEl = new ViewElement();
 		let err: Error;
+
+		viewEl.type = el.nodeName.toLowerCase();
+
+		for (let i = 0; i < el.attributes.length; i++) {
+			let attr = el.attributes.item(i);
+			switch (attr.name.toLowerCase()) {
+			case 'name':
+				viewEl.name = canonicalize(attr.value);
+				break;
+			case 'x':
+				[viewEl.x, err] = num(attr.value);
+				if (err)
+					return [null, new Error('x: ' + err.error)];
+				break;
+			case 'y':
+				[viewEl.y, err] = num(attr.value);
+				if (err)
+					return [null, new Error('y: ' + err.error)];
+				break;
+			case 'width':
+				[viewEl.width, err] = num(attr.value);
+				if (err)
+					return [null, new Error('width: ' + err.error)];
+				break;
+			case 'height':
+				[viewEl.height, err] = num(attr.value);
+				if (err)
+					return [null, new Error('height: ' + err.error)];
+				break;
+			case 'label_side':
+				viewEl.labelSide = attr.value.toLowerCase();
+				break;
+			case 'label_angle':
+				[viewEl.labelAngle, err] = num(attr.value);
+				if (err)
+					return [null, new Error('label_angle: ' + err.error)];
+				break;
+			case 'color':
+				viewEl.color = attr.value.toLowerCase();
+				break;
+			}
+		}
 
 		return [viewEl, err];
 	}

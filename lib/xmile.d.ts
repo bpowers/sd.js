@@ -199,12 +199,30 @@ export declare class Shape implements XNode {
     toXml(doc: XMLDocument, parent: Element): boolean;
 }
 export declare class ViewElement implements XNode {
+    type: string;
     name: string;
     x: number;
     y: number;
     width: number;
     height: number;
     shape: Shape;
+    borderWidth: string;
+    borderColor: string;
+    borderStyle: string;
+    fontFamily: string;
+    fontWeight: string;
+    textDecoration: string;
+    textAlign: string;
+    verticalTextAlign: string;
+    fontColor: string;
+    textBackground: string;
+    fontSize: number;
+    padding: number[];
+    color: string;
+    background: string;
+    zIndex: number;
+    labelSide: string;
+    labelAngle: number;
     static Build(el: Node): [ViewElement, Error];
     toXml(doc: XMLDocument, parent: Element): boolean;
 }

@@ -93,3 +93,5 @@ units?  This either shouldn't be required, or needs to be much more
 specified.
 
 `page_sequence`...
+
+- `lable_angle` - counter-clockwise? `This is always specified in conjunction with label_side` -- how is that useful?  Isn't it either/or?
