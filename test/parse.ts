@@ -59,7 +59,7 @@ describe('parse', function(): void {
 			let [node, err] = parse(t.in);
 			expect(node).not.to.be.null;
 			expect(err).to.be.null;
-			// deepEqual(node, t.out);
+			expect(node).to.deep.equal(t.out);
 		});
 	});
 });
