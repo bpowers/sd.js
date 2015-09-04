@@ -7,11 +7,11 @@
 import {Node, BinaryExpr} from './ast';
 import {Lexer, Token, TokenType, SourceLoc} from './lex';
 
-export function parse(eqn: string): [Node, any] {
+export function parse(eqn: string): [Node, string[]] {
 	'use strict';
 	let p = new Parser(eqn);
 	let ast = p.parse();
-	if (p.errs.length)
+	if (p.errs)
 		return [null, p.errs];
 	return [ast, null];
 }
@@ -49,12 +49,16 @@ class Parser {
 			this.factor,
 		];
 	}
+	get errors(): string[] {
+		return this.errs;
+	}
+
 	parse(): Node {
 		return this.levels[0]();
-	};
+	}
 	factor(): Node {
 		return null;
-	};
+	}
 	consumeAnyOf(ops: string): Token {
 		let peek = this.lexer.peek();
 		if (!peek || peek.type !== TokenType.TOKEN)
@@ -62,5 +66,5 @@ class Parser {
 		if (ops.indexOf(<string>peek.tok) > -1)
 			return this.lexer.nextTok();
 		return;
-	};
+	}
 }
