@@ -17,6 +17,13 @@ import xmile = require('./xmile');
 import {dName, isNaN} from "./util";
 import {canonicalize} from './xmile';
 
+const PI = Math.PI;
+const sin = Math.sin;
+const cos = Math.cos;
+const tan = Math.tan;
+const atan2 = Math.atan2;
+const sqrt = Math.sqrt;
+
 const AUX_RADIUS = 9;
 const LABEL_PAD = 6;
 const STROKE = 1;
@@ -150,7 +157,7 @@ function circleFromPoints(p1: Point, p2: Point, p3: Point): Circle {
 	return {
 		'x': cx,
 		'y': cy,
-		'r': Math.sqrt(Math.pow(p2.x - cx, 2) + Math.pow(p2.y - cy, 2)),
+		'r': sqrt(square(p2.x - cx) + square(p2.y - cy)),
 	};
 };
 
@@ -675,7 +682,7 @@ class DFlow implements Ent {
 			if (j === pts.length-1) {
 				let dx = x - pts[j-1].x;
 				let dy = y - pts[j-1].y;
-				let θ = Math.atan2(dy, dx) * 180/Math.PI;
+				let θ = atan2(dy, dx) * 180/PI;
 				if (θ < 0)
 					θ += 360;
 				if (θ >= 315 || θ < 45) {
@@ -789,43 +796,46 @@ class DConnector implements Ent {
 		//     line:            y = mx + b || 0 = mx - y + b
 
 		// convert to radians
-		const takeoffθ = (this.e.angle%360)/180 * Math.PI;
-		// const takeoffθ = (this.e.angle % 180)/180 * Math.PI;
-		const slopeOfTangent = Math.tan(takeoffθ);
-		const perpSlopeTakeoff = -1/slopeOfTangent;
+		const takeoffθ = (this.e.angle%360)/180 * PI;
+		// const takeoffθ = (this.e.angle % 180)/180 * PI;
+		const slopeTakeoff = tan(takeoffθ);
+		// we need the slope of the line _perpendicular_ to
+		// the tangent in order to find out the x,y center of
+		// our circle
+		const slopePerpToTakeoff = -1/slopeTakeoff;
 
-		const rayX = 25*Math.sin(takeoffθ);
-		const rayY = 25*Math.cos(takeoffθ);
-		const rayPath = 'M' + fx + ',' + fy + 'L' + (fx + rayX) + ',' + (fy + rayY);
+		const takeoffPerpθ = Math.atan(slopePerpToTakeoff);
+		const psX = 30*sin(takeoffPerpθ);
+		const psY = 30*cos(takeoffPerpθ);
+		const peX = 30*sin(takeoffPerpθ - PI);
+		const peY = 30*cos(takeoffPerpθ - PI);
 
-		const perpTakeoffθ = Math.atan(perpSlopeTakeoff);
-		const prayX = 20*Math.sin(perpTakeoffθ);
-		const prayY = 20*Math.cos(perpTakeoffθ);
-		const prayPath = 'M' + fx + ',' + fy + 'L' + (fx + prayX) + ',' + (fy + prayY);
-		// find line that passes through (fx, fy)
-		// perpendicular to tangent line.
+		// the line that represents the tangent to the circle.
+		const prayPath = 'M' + (fx + psX) + ',' + (fy + psY) + 'L' + (fx + peX) + ',' + (fy + peY);
 
 		// y = slope*x + b
 		// fy = slope*fx + b
 		// fy - slope*fx = b
 		// b = fy - slope*fx
-		const bFrom = fy - perpSlopeTakeoff*fx;
+		const bFrom = fy - slopePerpToTakeoff*fx;
 
 		// find midpoint between the 2 points
 		const midx = (fx + tx) / 2;
 		const midy = (fy + ty) / 2;
 		const midPath = 'M' + fx + ',' + fy + 'L' + tx + ',' + ty;
 
-		let ourCx: number, pBisectθ: number;
+		let cx: number, perpBisectθ: number;
 		if (fy === ty) {
-			ourCx = midx;
-			pBisectθ = 0;
+			cx = midx;
+			perpBisectθ = PI/2;
 		} else {
 			// find the slope of the line between the 2 points
-			const perpBisectorSlope = (fy - ty)/(fx - tx);
-			pBisectθ = Math.atan(perpBisectorSlope); // Math.atan2(fy-ty, fx-tx);
-			const perpSlopeBisector = -1/perpBisectorSlope;
-			const bPerp = midy - perpSlopeBisector*midx;
+			const slopeBisector = (fy - ty)/(fx - tx);
+			const slopePerpToBisector = -1/slopeBisector;
+			// b = fy - slope*fx
+			const bPerp = midy - slopePerpToBisector*midx;
+
+			perpBisectθ = Math.atan(slopePerpToBisector);
 
 			// y = perpSlopeTakeoff*x + bFrom
 			// y = perpSlopeBisector*x + bPerp
@@ -833,31 +843,29 @@ class DConnector implements Ent {
 			// bFrom - bPerp = perpSlopeBisector*x - perpSlopeTakeoff*x
 			// bFrom - bPerp = (perpSlopeBisector- perpSlopeTakeoff)*x
 			// (bFrom - bPerp)/(perpSlopeBisector- perpSlopeTakeoff) = x
-
-			ourCx = (bFrom - bPerp)/(perpSlopeBisector- perpSlopeTakeoff);
+			cx = (bFrom - bPerp)/(slopePerpToBisector- slopePerpToTakeoff);
 		}
-		const pbrayY = 25*Math.sin(pBisectθ);
-		const pbrayX = -25*Math.cos(pBisectθ);
+		const pbrayY = 25*sin(perpBisectθ);
+		const pbrayX = 25*cos(perpBisectθ);
 		const pbrayPath = 'M' + midx + ',' + midy + 'L' + (midx + pbrayX) + ',' + (midy + pbrayY);
 
-		let ourCy = perpSlopeTakeoff*ourCx + bFrom;
+		let cy = slopePerpToTakeoff*cx + bFrom;
 
 		let r: number;
 
-		const fixX = midx - ourCx;
-		ourCx += 2*fixX;
-		const fixY = midy - ourCy;
-		ourCy += 2*fixY;
+		// reflect over the line between our two known points
+		const fixX = midx - cx;
+		cx += 2*fixX;
+		const fixY = midy - cy;
+		cy += 2*fixY;
 
 		// console.log(r);
 		// (x1−h)^2+(y1−k)^2=r^2
 
-		const cx = this.e.x;
-		const cy = this.e.y;
-		const cr: number = Math.sqrt(Math.pow(fx - ourCx, 2) + Math.pow(fy - ourCy, 2));
-		let circ = {r: cr, x: ourCx, y: ourCy};
-		// circleFromPoints(pt(ourCx, ourCy), pt(fx, fy), pt(tx, ty));
-		// let circ = circleFromPoints(pt(cx, cy), pt(fx, fy), pt(tx, ty));
+		const takeoffX = this.e.x;
+		const takeoffY = this.e.y;
+		const cr: number = sqrt(square(fx - cx) + square(fy - cy));
+		let circ = {r: cr, x: cx, y: cy};
 		let spath = '';
 		let inv = 0;
 		spath += 'M' + fx + ',' + fy;
@@ -869,10 +877,10 @@ class DConnector implements Ent {
 		if (circ) {
 			let dx = fx - circ.x;
 			let dy = fy - circ.y;
-			let startθ = Math.atan2(dy, dx) * 180/Math.PI;
+			let startθ = atan2(dy, dx) * 180/PI;
 			dx = tx - circ.x;
 			dy = ty - circ.y;
-			endθ = Math.atan2(dy, dx) * 180/Math.PI;
+			endθ = atan2(dy, dx) * 180/PI;
 			let spanθ = endθ - startθ;
 			while (spanθ < 0)
 				spanθ += 360;
@@ -885,15 +893,15 @@ class DConnector implements Ent {
 			} else {
 				r = AUX_RADIUS;
 			}
-			let internalθ = Math.tan(r/circ.r)*180/Math.PI;
-			// tx = circ.x + circ.r*Math.cos((endθ + (inv ? -1 : 1)*internalθ)/180*Math.PI);
-			// ty = circ.y + circ.r*Math.sin((endθ + (inv ? -1 : 1)*internalθ)/180*Math.PI);
+			let internalθ = tan(r/circ.r)*180/PI;
+			tx = circ.x + circ.r*cos((endθ + (inv ? -1 : 1)*internalθ)/180*PI);
+			ty = circ.y + circ.r*sin((endθ + (inv ? -1 : 1)*internalθ)/180*PI);
 
 			spath += 'A' + circ.r + ',' + circ.r + ' 0 0,' + (inv ? '1' : '0') + ' ' + tx + ',' + ty;
 		} else {
 			let dx = tx - fx;
 			let dy = ty - fy;
-			endθ = Math.atan2(dy, dx) * 180/Math.PI;
+			endθ = atan2(dy, dx) * 180/PI;
 			// TODO(bp) subtract AUX_RADIUS from path
 			spath += 'L' + tx + ',' + ty;
 		}
@@ -903,8 +911,8 @@ class DConnector implements Ent {
 			// from center of to aux
 			// let slope1 = (i.y - ty)/(i.x - tx);
 			// inverse from center of circ
-			const slope2 = -Math.atan2((tx - circ.x), (ty - circ.y));
-			θ = slope2*180/Math.PI; // (slope1+slope2)/2;
+			const slope2 = -atan2((tx - circ.x), (ty - circ.y));
+			θ = slope2*180/PI; // (slope1+slope2)/2;
 			if (inv)
 				θ += 180;
 		} else {
@@ -919,9 +927,9 @@ class DConnector implements Ent {
 			//}),
 			paper.path(midPath).attr({'stroke-width': .5, stroke: '#CDDC39', fill: 'none'}),
 			paper.circle(midx, midy, 2).attr({'stroke-width': 0, fill: '#CDDC39'}),
-			paper.circle(ourCx, ourCy, cr).attr({'stroke-width': .5, stroke: '#2299dd', fill: 'none'}),
-			paper.circle(ourCx, ourCy, 2).attr({'stroke-width': 0, fill: '#2299dd'}),
-			paper.circle(cx, cy, 2).attr({'stroke-width': 0, fill: '#c83639'}),
+			paper.circle(cx, cy, cr).attr({'stroke-width': .5, stroke: '#2299dd', fill: 'none'}),
+			paper.circle(cx, cy, 2).attr({'stroke-width': 0, fill: '#2299dd'}),
+			paper.circle(takeoffX, takeoffY, 2).attr({'stroke-width': 0, fill: '#c83639'}),
 			//arrowhead(paper, tx, ty, ARROWHEAD_RADIUS).attr({
 			//	'transform': 'rotate(' + (θ) + ',' + tx + ',' + ty + ')',
 			//	'stroke': this.color,
@@ -929,7 +937,7 @@ class DConnector implements Ent {
 			//	'fill': this.color,
 			//	'stroke-linejoin': 'round',
 			//}),
-			paper.path(rayPath).attr({'stroke-width': .5, stroke: '#009688', 'fill': 'none'}),
+			//paper.path(rayPath).attr({'stroke-width': .5, stroke: '#009688', 'fill': 'none'}),
 			paper.path(prayPath).attr({'stroke-width': .5, stroke: '#8BC34A', 'fill': 'none'}),
 			paper.path(pbrayPath).attr({'stroke-width': .5, stroke: '#FF9800', 'fill': 'none'})
 		);
