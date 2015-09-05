@@ -13493,20 +13493,21 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
                 var dx = fx - circ.x;
                 var dy = fy - circ.y;
                 var startθ = atan2(dy, dx) * 180 / PI;
+                var xStartθ = -startθ;
+                if (xStartθ < 0)
+                    xStartθ += 360;
                 dx = tx - circ.x;
                 dy = ty - circ.y;
                 endθ = atan2(dy, dx) * 180 / PI;
-                var spanθ = endθ - startθ;
-                while (spanθ < 0)
-                    spanθ += 360;
-                spanθ %= 360;
-                inv = 0;
-                if (toEnt instanceof DModule) {
+                var xEndθ = -endθ;
+                if (xEndθ < 0)
+                    xEndθ += 360;
+                var spanθ = xEndθ - xStartθ;
+                inv = +(spanθ < 0);
+                if (toEnt instanceof DModule)
                     r = 25;
-                }
-                else {
+                else
                     r = AUX_RADIUS;
-                }
                 var internalθ = tan(r / circ.r) * 180 / PI;
                 tx = circ.x + circ.r * cos((endθ + (inv ? -1 : 1) * internalθ) / 180 * PI);
                 ty = circ.y + circ.r * sin((endθ + (inv ? -1 : 1) * internalθ) / 180 * PI);
@@ -13528,7 +13529,17 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
             else {
                 θ = endθ;
             }
-            this.set = this.drawing.group(paper.path(midPath).attr({ 'stroke-width': .5, stroke: '#CDDC39', fill: 'none' }), paper.circle(midx, midy, 2).attr({ 'stroke-width': 0, fill: '#CDDC39' }), paper.circle(cx, cy, cr).attr({ 'stroke-width': .5, stroke: '#2299dd', fill: 'none' }), paper.circle(cx, cy, 2).attr({ 'stroke-width': 0, fill: '#2299dd' }), paper.circle(takeoffX, takeoffY, 2).attr({ 'stroke-width': 0, fill: '#c83639' }), paper.path(prayPath).attr({ 'stroke-width': .5, stroke: '#8BC34A', 'fill': 'none' }), paper.path(pbrayPath).attr({ 'stroke-width': .5, stroke: '#FF9800', 'fill': 'none' }));
+            this.set = this.drawing.group(paper.path(midPath).attr({ 'stroke-width': .5, stroke: '#CDDC39', fill: 'none' }), paper.circle(midx, midy, 2).attr({ 'stroke-width': 0, fill: '#CDDC39' }), paper.circle(cx, cy, cr).attr({ 'stroke-width': .5, stroke: '#2299dd', fill: 'none' }), paper.circle(cx, cy, 2).attr({ 'stroke-width': 0, fill: '#2299dd' }), paper.path(spath).attr({
+                'stroke-width': STROKE / 2,
+                'stroke': this.color,
+                'fill': 'none',
+            }), paper.circle(takeoffX, takeoffY, 2).attr({ 'stroke-width': 0, fill: '#c83639' }), arrowhead(paper, tx, ty, ARROWHEAD_RADIUS).attr({
+                'transform': 'rotate(' + (θ) + ',' + tx + ',' + ty + ')',
+                'stroke': this.color,
+                'stroke-width': 1,
+                'fill': this.color,
+                'stroke-linejoin': 'round',
+            }), paper.path(prayPath).attr({ 'stroke-width': .5, stroke: '#8BC34A', 'fill': 'none' }), paper.path(pbrayPath).attr({ 'stroke-width': .5, stroke: '#FF9800', 'fill': 'none' }));
         };
         DConnector.prototype.drawLabel = function () { };
         DConnector.prototype.visualize = function () { };
