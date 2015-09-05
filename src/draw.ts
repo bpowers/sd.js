@@ -789,26 +789,41 @@ class DConnector implements Ent {
 		//     line:            y = mx + b || 0 = mx - y + b
 
 		// convert to radians
-		const takeoffθ = (this.e.angle % 180)/180 * Math.PI;
+		const takeoffθ = (this.e.angle%360)/180 * Math.PI;
+		// const takeoffθ = (this.e.angle % 180)/180 * Math.PI;
 		const slopeOfTangent = Math.tan(takeoffθ);
 		const perpSlopeTakeoff = -1/slopeOfTangent;
 
+		const rayX = 25*Math.sin(takeoffθ);
+		const rayY = 25*Math.cos(takeoffθ);
+		const rayPath = 'M' + fx + ',' + fy + 'L' + (fx + rayX) + ',' + (fy + rayY);
+
+		const perpTakeoffθ = Math.atan(perpSlopeTakeoff);
+		const prayX = 20*Math.sin(perpTakeoffθ);
+		const prayY = 20*Math.cos(perpTakeoffθ);
+		const prayPath = 'M' + fx + ',' + fy + 'L' + (fx + prayX) + ',' + (fy + prayY);
 		// find line that passes through (fx, fy)
 		// perpendicular to tangent line.
 
-		// y - fy = slope*(x - fx)
-		// y = slope*x - fx*slope + fy
-		// b = -fx*slope + fy
+		// y = slope*x + b
+		// fy = slope*fx + b
+		// fy - slope*fx = b
+		// b = fy - slope*fx
 		const bFrom = fy - perpSlopeTakeoff*fx;
 
 		// find midpoint between the 2 points
 		const midx = (fx + tx) / 2;
 		const midy = (fy + ty) / 2;
-		// find the slope of the line between the 2 points
-		const perpBisectorSlope = (fy - ty)/(fx - tx);
+		const midPath = 'M' + fx + ',' + fy + 'L' + tx + ',' + ty;
 
-		let ourCx = midx;
-		if (perpBisectorSlope !== 0) {
+		let ourCx: number, pBisectθ: number;
+		if (fy === ty) {
+			ourCx = midx;
+			pBisectθ = 0;
+		} else {
+			// find the slope of the line between the 2 points
+			const perpBisectorSlope = (fy - ty)/(fx - tx);
+			pBisectθ = Math.atan(perpBisectorSlope); // Math.atan2(fy-ty, fx-tx);
 			const perpSlopeBisector = -1/perpBisectorSlope;
 			const bPerp = midy - perpSlopeBisector*midx;
 
@@ -821,16 +836,27 @@ class DConnector implements Ent {
 
 			ourCx = (bFrom - bPerp)/(perpSlopeBisector- perpSlopeTakeoff);
 		}
+		const pbrayY = 25*Math.sin(pBisectθ);
+		const pbrayX = -25*Math.cos(pBisectθ);
+		const pbrayPath = 'M' + midx + ',' + midy + 'L' + (midx + pbrayX) + ',' + (midy + pbrayY);
+
 		let ourCy = perpSlopeTakeoff*ourCx + bFrom;
 
 		let r: number;
+
+		const fixX = midx - ourCx;
+		ourCx += 2*fixX;
+		const fixY = midy - ourCy;
+		ourCy += 2*fixY;
 
 		// console.log(r);
 		// (x1−h)^2+(y1−k)^2=r^2
 
 		const cx = this.e.x;
 		const cy = this.e.y;
-		let circ = circleFromPoints(pt(ourCx, ourCy), pt(fx, fy), pt(tx, ty));
+		const cr: number = Math.sqrt(Math.pow(fx - ourCx, 2) + Math.pow(fy - ourCy, 2));
+		let circ = {r: cr, x: ourCx, y: ourCy};
+		// circleFromPoints(pt(ourCx, ourCy), pt(fx, fy), pt(tx, ty));
 		// let circ = circleFromPoints(pt(cx, cy), pt(fx, fy), pt(tx, ty));
 		let spath = '';
 		let inv = 0;
@@ -886,19 +912,26 @@ class DConnector implements Ent {
 		}
 
 		this.set = this.drawing.group(
-			paper.path(spath).attr({
-				'stroke-width': STROKE/2,
-				'stroke': this.color,
-				'fill': 'none',
-			}),
+			//paper.path(spath).attr({
+			//	'stroke-width': STROKE/2,
+			//	'stroke': this.color,
+			//	'fill': 'none',
+			//}),
+			paper.path(midPath).attr({'stroke-width': .5, stroke: '#CDDC39', fill: 'none'}),
+			paper.circle(midx, midy, 2).attr({'stroke-width': 0, fill: '#CDDC39'}),
+			paper.circle(ourCx, ourCy, cr).attr({'stroke-width': .5, stroke: '#2299dd', fill: 'none'}),
+			paper.circle(ourCx, ourCy, 2).attr({'stroke-width': 0, fill: '#2299dd'}),
 			paper.circle(cx, cy, 2).attr({'stroke-width': 0, fill: '#c83639'}),
-			arrowhead(paper, tx, ty, ARROWHEAD_RADIUS).attr({
-				'transform': 'rotate(' + (θ) + ',' + tx + ',' + ty + ')',
-				'stroke': this.color,
-				'stroke-width': 1,
-				'fill': this.color,
-				'stroke-linejoin': 'round',
-			})
+			//arrowhead(paper, tx, ty, ARROWHEAD_RADIUS).attr({
+			//	'transform': 'rotate(' + (θ) + ',' + tx + ',' + ty + ')',
+			//	'stroke': this.color,
+			//	'stroke-width': 1,
+			//	'fill': this.color,
+			//	'stroke-linejoin': 'round',
+			//}),
+			paper.path(rayPath).attr({'stroke-width': .5, stroke: '#009688', 'fill': 'none'}),
+			paper.path(prayPath).attr({'stroke-width': .5, stroke: '#8BC34A', 'fill': 'none'}),
+			paper.path(pbrayPath).attr({'stroke-width': .5, stroke: '#FF9800', 'fill': 'none'})
 		);
 	}
 

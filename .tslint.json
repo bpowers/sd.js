@@ -6,8 +6,7 @@
         "statements"],
     "ban": false,
     "class-name": true,
-    "comment-format": [true,
-        "check-space"
+    "comment-format": [true
     ],
     "curly": false,
     "eofline": true,
