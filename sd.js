@@ -13431,8 +13431,6 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
         DConnector.prototype.init = function () { };
         DConnector.prototype.draw = function () {
             var paper = this.drawing.paper;
-            var cx = this.e.x;
-            var cy = this.e.y;
             var fromEnt = this.drawing.named_ents[xmile_1.canonicalize(this.e.from)];
             if (!fromEnt)
                 return;
@@ -13443,11 +13441,28 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
                 return;
             var tx = toEnt.cx;
             var ty = toEnt.cy;
-            var circ = circleFromPoints(pt(cx, cy), pt(fx, fy), pt(tx, ty));
+            var takeoffθ = (this.e.angle % 180) / 180 * Math.PI;
+            var slopeOfTangent = Math.tan(takeoffθ);
+            var perpSlopeTakeoff = -1 / slopeOfTangent;
+            var bFrom = fy - perpSlopeTakeoff * fx;
+            var midx = (fx + tx) / 2;
+            var midy = (fy + ty) / 2;
+            var perpBisectorSlope = (fy - ty) / (fx - tx);
+            var ourCx = midx;
+            if (perpBisectorSlope !== 0) {
+                var perpSlopeBisector = -1 / perpBisectorSlope;
+                var bPerp = midy - perpSlopeBisector * midx;
+                ourCx = (bFrom - bPerp) / (perpSlopeBisector - perpSlopeTakeoff);
+            }
+            var ourCy = perpSlopeTakeoff * ourCx + bFrom;
+            var r;
+            var cx = this.e.x;
+            var cy = this.e.y;
+            var circ = circleFromPoints(pt(ourCx, ourCy), pt(fx, fy), pt(tx, ty));
             var spath = '';
             var inv = 0;
-            spath += 'M' + cx + ',' + cy;
-            var r, endθ;
+            spath += 'M' + fx + ',' + fy;
+            var endθ;
             if (circ) {
                 var dx = fx - circ.x;
                 var dy = fy - circ.y;
@@ -13459,7 +13474,7 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
                 while (spanθ < 0)
                     spanθ += 360;
                 spanθ %= 360;
-                inv = +(spanθ <= 180 - INVERSE_FUZZ);
+                inv = 0;
                 if (toEnt instanceof DModule) {
                     r = 25;
                 }
@@ -13467,8 +13482,6 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
                     r = AUX_RADIUS;
                 }
                 var internalθ = Math.tan(r / circ.r) * 180 / Math.PI;
-                tx = circ.x + circ.r * Math.cos((endθ + (inv ? -1 : 1) * internalθ) / 180 * Math.PI);
-                ty = circ.y + circ.r * Math.sin((endθ + (inv ? -1 : 1) * internalθ) / 180 * Math.PI);
                 spath += 'A' + circ.r + ',' + circ.r + ' 0 0,' + (inv ? '1' : '0') + ' ' + tx + ',' + ty;
             }
             else {

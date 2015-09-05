@@ -767,24 +767,79 @@ class DConnector implements Ent {
 
 	draw(): void {
 		let paper = this.drawing.paper;
-		const cx = this.e.x;
-		const cy = this.e.y;
+
 		let fromEnt = this.drawing.named_ents[canonicalize(this.e.from)];
 		if (!fromEnt)
 			return;
-		let fx = fromEnt.cx;
-		let fy = fromEnt.cy;
+		const fx = fromEnt.cx;
+		const fy = fromEnt.cy;
+
 		let toEnt = this.drawing.named_ents[canonicalize(this.e.to)];
 		if (!toEnt)
 			return;
 		let tx = toEnt.cx;
 		let ty = toEnt.cy;
-		let circ = circleFromPoints(pt(cx, cy), pt(fx, fy), pt(tx, ty));
+
+		// Find cx, cy from 'takeoff angle', and center of
+		// 'from', and center of 'to'.  This means we have 2
+		// points on the edge of a cirlce, and the tangent at
+		// point 1.
+		//
+		//     eqn of a circle: (x - cx)^2 + (y - cy)^2 = r^2
+		//     line:            y = mx + b || 0 = mx - y + b
+
+		// convert to radians
+		const takeoffθ = (this.e.angle % 180)/180 * Math.PI;
+		const slopeOfTangent = Math.tan(takeoffθ);
+		const perpSlopeTakeoff = -1/slopeOfTangent;
+
+		// find line that passes through (fx, fy)
+		// perpendicular to tangent line.
+
+		// y - fy = slope*(x - fx)
+		// y = slope*x - fx*slope + fy
+		// b = -fx*slope + fy
+		const bFrom = fy - perpSlopeTakeoff*fx;
+
+		// find midpoint between the 2 points
+		const midx = (fx + tx) / 2;
+		const midy = (fy + ty) / 2;
+		// find the slope of the line between the 2 points
+		const perpBisectorSlope = (fy - ty)/(fx - tx);
+
+		let ourCx = midx;
+		if (perpBisectorSlope !== 0) {
+			const perpSlopeBisector = -1/perpBisectorSlope;
+			const bPerp = midy - perpSlopeBisector*midx;
+
+			// y = perpSlopeTakeoff*x + bFrom
+			// y = perpSlopeBisector*x + bPerp
+			// perpSlopeTakeoff*x + bFrom = perpSlopeBisector*x + bPerp
+			// bFrom - bPerp = perpSlopeBisector*x - perpSlopeTakeoff*x
+			// bFrom - bPerp = (perpSlopeBisector- perpSlopeTakeoff)*x
+			// (bFrom - bPerp)/(perpSlopeBisector- perpSlopeTakeoff) = x
+
+			ourCx = (bFrom - bPerp)/(perpSlopeBisector- perpSlopeTakeoff);
+		}
+		let ourCy = perpSlopeTakeoff*ourCx + bFrom;
+
+		let r: number;
+
+		// console.log(r);
+		// (x1−h)^2+(y1−k)^2=r^2
+
+		const cx = this.e.x;
+		const cy = this.e.y;
+		let circ = circleFromPoints(pt(ourCx, ourCy), pt(fx, fy), pt(tx, ty));
+		// let circ = circleFromPoints(pt(cx, cy), pt(fx, fy), pt(tx, ty));
 		let spath = '';
 		let inv = 0;
-		spath += 'M' + cx + ',' + cy;
+		spath += 'M' + fx + ',' + fy;
 
-		let r: number, endθ: number;
+		let endθ: number;
+		// FIXME: instead of checking for circ, we should
+		// check if the takeoff angle is +- 2 of the
+		// bisector's angle.
 		if (circ) {
 			let dx = fx - circ.x;
 			let dy = fy - circ.y;
@@ -796,7 +851,7 @@ class DConnector implements Ent {
 			while (spanθ < 0)
 				spanθ += 360;
 			spanθ %= 360;
-			inv = +(spanθ <= 180 - INVERSE_FUZZ);
+			inv = 0; // +(this.e.angle >= 90 && this.e.angle < 270);
 
 			// FIXME(bp) this is an approximation, a bad one.
 			if (toEnt instanceof DModule) {
@@ -805,8 +860,8 @@ class DConnector implements Ent {
 				r = AUX_RADIUS;
 			}
 			let internalθ = Math.tan(r/circ.r)*180/Math.PI;
-			tx = circ.x + circ.r*Math.cos((endθ + (inv ? -1 : 1)*internalθ)/180*Math.PI);
-			ty = circ.y + circ.r*Math.sin((endθ + (inv ? -1 : 1)*internalθ)/180*Math.PI);
+			// tx = circ.x + circ.r*Math.cos((endθ + (inv ? -1 : 1)*internalθ)/180*Math.PI);
+			// ty = circ.y + circ.r*Math.sin((endθ + (inv ? -1 : 1)*internalθ)/180*Math.PI);
 
 			spath += 'A' + circ.r + ',' + circ.r + ' 0 0,' + (inv ? '1' : '0') + ' ' + tx + ',' + ty;
 		} else {
