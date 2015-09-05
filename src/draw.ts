@@ -23,6 +23,7 @@ const cos = Math.cos;
 const tan = Math.tan;
 const atan2 = Math.atan2;
 const sqrt = Math.sqrt;
+const abs = Math.abs;
 
 const AUX_RADIUS = 9;
 const LABEL_PAD = 6;
@@ -796,7 +797,8 @@ class DConnector implements Ent {
 		//     line:            y = mx + b || 0 = mx - y + b
 
 		// convert to radians
-		const takeoffθ = (this.e.angle%360)/180 * PI;
+		const origθ = this.e.angle%360;
+		const takeoffθ = (origθ)/180 * PI;
 		// const takeoffθ = (this.e.angle % 180)/180 * PI;
 		const slopeTakeoff = tan(takeoffθ);
 		// we need the slope of the line _perpendicular_ to
@@ -851,9 +853,11 @@ class DConnector implements Ent {
 
 		let cy = slopePerpToTakeoff*cx + bFrom;
 
-		let r: number;
+		const r: number = toEnt instanceof DModule ? 25 : AUX_RADIUS;
 
-		// reflect over the line between our two known points
+		// FIXME: reflect over the line between our two known
+		// points.  I'm sure this means I'm misunderstanding
+		// something.
 		const fixX = midx - cx;
 		cx += 2*fixX;
 		const fixY = midy - cy;
@@ -870,11 +874,18 @@ class DConnector implements Ent {
 		let inv = 0;
 		spath += 'M' + fx + ',' + fy;
 
+		let xMidθ = atan2(tx-fx, ty-fy)*180/PI - 90;
+		if (xMidθ < 0)
+			xMidθ += 360;
+		console.log(fromEnt.ident + ': ' + xMidθ);
+
+		const straightLine = abs(xMidθ - origθ) < 5;
+
 		let endθ: number;
 		// FIXME: instead of checking for circ, we should
 		// check if the takeoff angle is +- $FUDGE of the
 		// bisector's angle.
-		if (circ) {
+		if (!straightLine) {
 			let dx = fx - circ.x;
 			let dy = fy - circ.y;
 			let startθ = atan2(dy, dx)*180/PI;
@@ -891,12 +902,6 @@ class DConnector implements Ent {
 			let spanθ = xEndθ - xStartθ;
 			inv = +(spanθ < 0);
 
-			// FIXME(bp) this is an approximation, a bad one.
-			if (toEnt instanceof DModule)
-				r = 25;
-			else
-				r = AUX_RADIUS;
-
 			let internalθ = tan(r/circ.r)*180/PI;
 			tx = circ.x + circ.r*cos((endθ + (inv ? -1 : 1)*internalθ)/180*PI);
 			ty = circ.y + circ.r*sin((endθ + (inv ? -1 : 1)*internalθ)/180*PI);
@@ -906,12 +911,14 @@ class DConnector implements Ent {
 			let dx = tx - fx;
 			let dy = ty - fy;
 			endθ = atan2(dy, dx) * 180/PI;
+			tx += r*sin(atan2(dy, dx));
+			ty += r*cos(atan2(dy, dx));
 			// TODO(bp) subtract AUX_RADIUS from path
 			spath += 'L' + tx + ',' + ty;
 		}
 
 		let θ = 0;
-		if (circ) {
+		if (!straightLine) {
 			// from center of to aux
 			// let slope1 = (i.y - ty)/(i.x - tx);
 			// inverse from center of circ
