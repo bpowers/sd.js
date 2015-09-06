@@ -1,2 +1,2 @@
 import { Node } from './ast';
-export declare function parse(eqn: string): [Node, string[]];
+export declare function eqn(eqn: string): [Node, string[]];

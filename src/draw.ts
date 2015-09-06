@@ -797,7 +797,7 @@ class DConnector implements Ent {
 		//     line:            y = mx + b || 0 = mx - y + b
 
 		// convert to radians
-		const origθ = this.e.angle%360;
+		const origθ = (this.e.angle)%360;
 		const takeoffθ = (origθ)/180 * PI;
 		// const takeoffθ = (this.e.angle % 180)/180 * PI;
 		const slopeTakeoff = tan(takeoffθ);

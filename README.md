@@ -135,9 +135,9 @@ CommonJS modules in the `lib/` directory.
 TODO
 ----
 
-- convert from old-style connector x,y center position to new-style
-  connector takeoff angle.
 - finish equation parser
+- convert from old-style connector x,y center position to new-style
+  connector takeoff angle (partially done).
 - add-back isee compat support
 - logging framework
 - vensim diagrams

@@ -13448,7 +13448,7 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
                 return;
             var tx = toEnt.cx;
             var ty = toEnt.cy;
-            var origθ = this.e.angle % 360;
+            var origθ = (this.e.angle) % 360;
             var takeoffθ = (origθ) / 180 * PI;
             var slopeTakeoff = tan(takeoffθ);
             var slopePerpToTakeoff = -1 / slopeTakeoff;

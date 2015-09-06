@@ -9,7 +9,7 @@
 import chai = require('chai');
 
 import {Node, Constant, Ident, BinaryExpr} from '../lib/ast';
-import {parse} from '../lib/parse';
+import * as parse from '../lib/parse';
 
 const expect = chai.expect;
 
@@ -56,7 +56,7 @@ const PARSE_TEST_FAILURES = [
 describe('parse', function(): void {
 	PARSE_TESTS.forEach(function(t: ParseTestData): void {
 		it('should parse ' + t.in, function(): void {
-			let [node, err] = parse(t.in);
+			let [node, err] = parse.eqn(t.in);
 			expect(node).not.to.be.null;
 			expect(err).to.be.null;
 			expect(node).to.deep.equal(t.out);
@@ -67,7 +67,7 @@ describe('parse', function(): void {
 describe('parse-failures', function(): void {
 	PARSE_TEST_FAILURES.forEach(function(eqn: string): void {
 		it('shouldn\'t parse ' + eqn, function(): void {
-			let [node, err] = parse(eqn);
+			let [node, err] = parse.eqn(eqn);
 			expect(node).to.be.null;
 			expect(err).not.to.be.null;
 		});
