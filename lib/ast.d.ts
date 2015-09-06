@@ -6,6 +6,7 @@ export interface Node {
 export declare class Ident implements Node {
     name: string;
     _pos: SourceLoc;
+    _len: number;
     constructor(pos: SourceLoc, name: string);
     pos: SourceLoc;
     end: SourceLoc;

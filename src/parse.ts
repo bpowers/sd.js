@@ -4,7 +4,8 @@
 
 'use strict';
 
-import {Node, BinaryExpr, ParenExpr, Ident, Constant} from './ast';
+import {Node, BinaryExpr, UnaryExpr, ParenExpr, IfExpr, CallExpr,
+	Ident, Constant} from './ast';
 import {Lexer, Token, TokenType, SourceLoc} from './lex';
 
 
@@ -38,7 +39,7 @@ export function eqn(eqn: string): [Node, string[]] {
 	'use strict';
 	let p = new Parser(eqn);
 	let ast = p.expr();
-	if (p.errs)
+	if (p.errs && p.errs.length)
 		return [null, p.errs];
 	return [ast, null];
 }
@@ -58,8 +59,10 @@ function binaryLevel(n: number, p: Parser, ops: string): ()=>Node {
 			// must call the next precedence level to
 			// preserve left-associativity
 			let rhs = next();
-			if (!rhs)
+			if (!rhs) {
+				p.errs.push('expected rhs of expr after "' + op.tok + '"');
 				return null;
+			}
 
 			lhs = new BinaryExpr(lhs, op.startLoc, op.tok, rhs);
 		}
@@ -90,41 +93,148 @@ class Parser {
 		let lhs: Node;
 		if (this.consumeTok('(')) {
 			lhs = this.expr();
-			if (!lhs)
+			if (!lhs) {
+				this.errs.push('expected an expression after an opening paren');
 				return null;
-			if (!this.consumeTok(')'))
+			}
+			if (!this.consumeTok(')')) {
+				this.errs.push('expected ")", not end-of-equation');
 				return null;
+			}
 			return new ParenExpr(new SourceLoc(0, 0), lhs, new SourceLoc(0, 0));
 		}
 
 		let op: Token;
 		if ((op = this.consumeAnyOf(UNARY))) {
+			lhs = this.expr();
+			if (!lhs) {
+				this.errs.push('unary operator "' + op.tok + '" without operand.');
+				return null;
+			}
+			return new UnaryExpr(op.startLoc, op.tok, lhs);
 		}
 
+		if ((lhs = this.num()))
+			return lhs;
+
+		if (this.consumeReserved('if')) {
+			let cond = this.expr();
+			if (!cond) {
+				this.errs.push('expected an expr to follow "IF"');
+				return null;
+			}
+			if (!this.consumeReserved('then')) {
+				this.errs.push('expected "THEN"');
+				return null;
+			}
+			let t = this.expr();
+			if (!t) {
+				this.errs.push('expected an expr to follow "THEN"');
+				return null;
+			}
+			if (!this.consumeReserved('then')) {
+				this.errs.push('expected "THEN"');
+				return null;
+			}
+			let f = this.expr();
+			if (!f) {
+				this.errs.push('expected an expr to follow "ELSE"');
+				return null;
+			}
+			// FIXME: record SourceLocs for IF/THEN/ELSE
+			let l = new SourceLoc(0, 0);
+			return new IfExpr(l, cond, l, t, l, f);
+		}
+
+		if ((lhs = this.ident())) {
+			// check if this is a function call
+			if (this.consumeTok('('))
+				return this.call(lhs);
+			else
+				return lhs;
+		}
+
+		// an empty expression isn't necessarily an error
 		return null;
 	}
+
 	consumeAnyOf(ops: string): Token {
 		let peek = this.lexer.peek();
 		if (!peek || peek.type !== TokenType.TOKEN)
-			return;
+			return null;
 		if (ops.indexOf(<string>peek.tok) > -1)
 			return this.lexer.nextTok();
-		return;
+		return null;
 	}
+
 	consumeTok(s: string): boolean {
 		let t = this.lexer.peek();
 		if (!t) {
-			this.errs.push('expected "' + s + '", not end-of-equation.');
+			//this.errs.push('expected "' + s + '", not end-of-equation.');
 			return false;
 		} else if (t.type !== TokenType.TOKEN) {
-			this.errs.push('expected "' + s + '", not ' + t.type + '("' + t.tok + '").');
+			//this.errs.push('expected "' + s + '", not ' + t.type + '("' + t.tok + '").');
 			return false;
 		} else if (s !== t.tok) {
-			this.errs.push('expected "' + s + '", not "' + t.tok + '".');
+			//this.errs.push('expected "' + s + '", not "' + t.tok + '".');
 			return false;
 		}
 		// consume match
 		this.lexer.nextTok();
 		return true;
+	}
+
+	consumeReserved(s: string): boolean {
+		let t = this.lexer.peek();
+		if (!t || t.type !== TokenType.RESERVED || t.tok !== s)
+			return false;
+		// consume match
+		this.lexer.nextTok();
+		return true;
+	}
+
+	num(): Node {
+		let t = this.lexer.peek();
+		if (!t || t.type !== TokenType.NUMBER)
+			return null;
+		// consume number
+		this.lexer.nextTok();
+		return new Constant(t.startLoc, t.tok);
+	}
+
+	ident(): Node {
+		let t = this.lexer.peek();
+		if (!t || t.type !== TokenType.IDENT)
+			return null;
+		// consume ident
+		this.lexer.nextTok();
+		return new Ident(t.startLoc, t.tok);
+	}
+
+	call(fn: Node): Node {
+		let args: Node[] = [];
+		// FIXME real source locs
+		let l = new SourceLoc(0, 0);
+
+		// no-arg call - simplifies logic to special case this.
+		if (this.consumeTok(')'))
+			return new CallExpr(fn, l, args, l);
+
+		while (true) {
+			let arg = this.expr();
+			if (!arg) {
+				this.errs.push('expected expression as arg in function call');
+				return null;
+			}
+			args.push(arg);
+			if (this.consumeTok(','))
+				continue;
+			if (this.consumeTok(')'))
+				break;
+			this.errs.push('call: expected "," or ")"');
+			return null;
+		}
+
+		return new CallExpr(fn, l, args, l);
 	}
 }

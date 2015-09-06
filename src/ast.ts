@@ -4,7 +4,8 @@
 
 'use strict';
 
-import {SourceLoc} from './lex';
+import {Token, SourceLoc} from './lex';
+import {canonicalize} from './xmile';
 
 export interface Node {
 	pos: SourceLoc;
@@ -14,14 +15,18 @@ export interface Node {
 export class Ident implements Node {
 	name: string;
 	_pos: SourceLoc;
+	_len: number;
 
 	constructor(pos: SourceLoc, name: string) {
-		this.name = name;
+		this.name = canonicalize(name);
 		this._pos = pos;
+		// this.name is canonicalized, so we need to store the
+		// original length.
+		this._len = name.length;
 	}
 
 	get pos(): SourceLoc { return this._pos; }
-	get end(): SourceLoc { return this._pos.off(this.name.length); }
+	get end(): SourceLoc { return this._pos.off(this._len); }
 }
 
 export class Constant implements Node {

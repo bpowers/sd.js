@@ -57,6 +57,10 @@ describe('parse', function(): void {
 	PARSE_TESTS.forEach(function(t: ParseTestData): void {
 		it('should parse ' + t.in, function(): void {
 			let [node, err] = parse.eqn(t.in);
+			if (err) {
+				for (let i = 0; i < err.length; i++)
+					console.log(err[i]);
+			}
 			expect(node).not.to.be.null;
 			expect(err).to.be.null;
 			expect(node).to.deep.equal(t.out);
