@@ -94,42 +94,70 @@ const PARSE_TESTS: ParseTestData[] = [
 			new Ident(l(0, 10), 'b'),
 			l(0, 12),
 			new Ident(l(0, 17), 'c'))
-	}
-/*
-	{"a > 1", {
-		{N_BINARY, '>', NULL},
-		{N_IDENT, 0, "a"},
-		{N_FLOATLIT, 0, "1"},
-	}},
-	{"a = 1", {
-		{N_BINARY, '=', NULL},
-		{N_IDENT, 0, "a"},
-		{N_FLOATLIT, 0, "1"},
-	}},
-	{"IF a > 1 THEN b ELSE c", {
-		{N_IF, 0, NULL},
-		{N_BINARY, '>', NULL},
-		{N_IDENT, 0, "a"},
-		{N_FLOATLIT, 0, "1"},
-		{N_IDENT, 0, "b"},
-		{N_IDENT, 0, "c"},
-	}},
-	{"IF a >= 1 THEN b ELSE c", {
-		{N_IF, 0, NULL},
-		{N_BINARY, u'≥', NULL},
-		{N_IDENT, 0, "a"},
-		{N_FLOATLIT, 0, "1"},
-		{N_IDENT, 0, "b"},
-		{N_IDENT, 0, "c"},
-	}},
-	{"4 - 5 + 6", {
-		{N_BINARY, '+', NULL},
-		{N_BINARY, '-', NULL},
-		{N_FLOATLIT, 0, "4"},
-		{N_FLOATLIT, 0, "5"},
-		{N_FLOATLIT, 0, "6"},
-	}},
-	*/
+	},
+	{
+		in: "a > 1",
+		out: new BinaryExpr(
+			new Ident(l(0, 0), 'a'),
+			l(0, 2), '>',
+			new Constant(l(0, 4), "1"))
+	},
+	{
+		in: "a = 1",
+		out: new BinaryExpr(
+			new Ident(l(0, 0), 'a'),
+			l(0, 2), '=',
+			new Constant(l(0, 4), "1"))
+	},
+	{
+		in: "IF a > 0 THEN b ELSE c",
+		out: new IfExpr(
+			l(0, 0),
+			new BinaryExpr(
+				new Ident(l(0, 3), 'a'),
+				l(0, 5), '>',
+				new Constant(l(0, 7), "0")),
+			l(0, 9),
+			new Ident(l(0, 14), 'b'),
+			l(0, 16),
+			new Ident(l(0, 21), 'c'))
+	},
+	{
+		in: "IF 0 > a THEN b ELSE c",
+		out: new IfExpr(
+			l(0, 0),
+			new BinaryExpr(
+				new Constant(l(0, 3), "0"),
+				l(0, 5), '>',
+				new Ident(l(0, 7), 'a')),
+			l(0, 9),
+			new Ident(l(0, 14), 'b'),
+			l(0, 16),
+			new Ident(l(0, 21), 'c'))
+	},
+	{
+		in: "IF 1 >= a THEN b ELSE c",
+		out: new IfExpr(
+			l(0, 0),
+			new BinaryExpr(
+				new Constant(l(0, 3), "1"),
+				l(0, 5), '≥',
+				new Ident(l(0, 8), 'a')),
+			l(0, 10),
+			new Ident(l(0, 15), 'b'),
+			l(0, 17),
+			new Ident(l(0, 22), 'c'))
+	},
+	{
+		in: "4 - 5 + 6",
+		out: new BinaryExpr(
+			new BinaryExpr(
+				new Constant(l(0, 0), '4'),
+				l(0, 2), '-',
+				new Constant(l(0, 4), '5')),
+			l(0, 6), '+',
+			new Constant(l(0, 8), "6"))
+	},
 ];
 
 const PARSE_TEST_FAILURES = [
