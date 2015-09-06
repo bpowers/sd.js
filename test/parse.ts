@@ -9,7 +9,8 @@
 import chai = require('chai');
 
 import {SourceLoc} from '../lib/lex';
-import {Node, Constant, Ident, BinaryExpr} from '../lib/ast';
+import {Node, BinaryExpr, UnaryExpr, ParenExpr, IfExpr, CallExpr,
+	Ident, Constant} from '../lib/ast';
 import * as parse from '../lib/parse';
 
 const expect = chai.expect;
@@ -42,7 +43,82 @@ const PARSE_TESTS: ParseTestData[] = [
 			new Ident(l(0, 0), "hares"),
 			l(0, 6), '*',
 			new Ident(l(0, 8), 'birth_fraction'))
+	},
+	{
+		in: "(5. * åbc)",
+		out: new ParenExpr(
+			l(0, 0),
+			new BinaryExpr(
+				new Constant(l(0, 1), "5."),
+				l(0, 4), '*',
+				new Ident(l(0, 6), 'åbc')),
+			l(0, 9))
+	},
+	{
+		in: "(5. * åbc4)",
+		out: new ParenExpr(
+			l(0, 0),
+			new BinaryExpr(
+				new Constant(l(0, 1), "5."),
+				l(0, 4), '*',
+				new Ident(l(0, 6), 'åbc4')),
+			l(0, 10))
 	}
+/*
+	}},
+	{"smooth()", {
+		{N_CALL, 0, NULL},
+		{N_IDENT, 0, "smooth"},
+	}},
+	{"smooth(1, 2 + 3, d)", {
+		{N_CALL, 0, NULL},
+		{N_IDENT, 0, "smooth"},
+		{N_FLOATLIT, 0, "1"},
+		{N_BINARY, '+', NULL},
+		{N_FLOATLIT, 0, "2"},
+		{N_FLOATLIT, 0, "3"},
+		{N_IDENT, 0, "d"},
+	}},
+	{"IF a THEN b ELSE c", {
+		{N_IF, 0, NULL},
+		{N_IDENT, 0, "a"},
+		{N_IDENT, 0, "b"},
+		{N_IDENT, 0, "c"},
+	}},
+	{"a > 1", {
+		{N_BINARY, '>', NULL},
+		{N_IDENT, 0, "a"},
+		{N_FLOATLIT, 0, "1"},
+	}},
+	{"a = 1", {
+		{N_BINARY, '=', NULL},
+		{N_IDENT, 0, "a"},
+		{N_FLOATLIT, 0, "1"},
+	}},
+	{"IF a > 1 THEN b ELSE c", {
+		{N_IF, 0, NULL},
+		{N_BINARY, '>', NULL},
+		{N_IDENT, 0, "a"},
+		{N_FLOATLIT, 0, "1"},
+		{N_IDENT, 0, "b"},
+		{N_IDENT, 0, "c"},
+	}},
+	{"IF a >= 1 THEN b ELSE c", {
+		{N_IF, 0, NULL},
+		{N_BINARY, u'≥', NULL},
+		{N_IDENT, 0, "a"},
+		{N_FLOATLIT, 0, "1"},
+		{N_IDENT, 0, "b"},
+		{N_IDENT, 0, "c"},
+	}},
+	{"4 - 5 + 6", {
+		{N_BINARY, '+', NULL},
+		{N_BINARY, '-', NULL},
+		{N_FLOATLIT, 0, "4"},
+		{N_FLOATLIT, 0, "5"},
+		{N_FLOATLIT, 0, "6"},
+	}},
+	*/
 ];
 
 const PARSE_TEST_FAILURES = [

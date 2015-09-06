@@ -91,17 +91,19 @@ class Parser {
 	}
 	factor(): Node {
 		let lhs: Node;
-		if (this.consumeTok('(')) {
+		let pos: SourceLoc;
+		if ((pos = this.consumeTok('('))) {
 			lhs = this.expr();
 			if (!lhs) {
 				this.errs.push('expected an expression after an opening paren');
 				return null;
 			}
-			if (!this.consumeTok(')')) {
+			let closing: SourceLoc;
+			if (!(closing = this.consumeTok(')'))) {
 				this.errs.push('expected ")", not end-of-equation');
 				return null;
 			}
-			return new ParenExpr(new SourceLoc(0, 0), lhs, new SourceLoc(0, 0));
+			return new ParenExpr(pos, lhs, closing);
 		}
 
 		let op: Token;
@@ -169,30 +171,22 @@ class Parser {
 		return null;
 	}
 
-	consumeTok(s: string): boolean {
+	consumeTok(s: string): SourceLoc {
 		let t = this.lexer.peek();
-		if (!t) {
-			//this.errs.push('expected "' + s + '", not end-of-equation.');
-			return false;
-		} else if (t.type !== TokenType.TOKEN) {
-			//this.errs.push('expected "' + s + '", not ' + t.type + '("' + t.tok + '").');
-			return false;
-		} else if (s !== t.tok) {
-			//this.errs.push('expected "' + s + '", not "' + t.tok + '".');
-			return false;
-		}
+		if (!t || t.type !== TokenType.TOKEN || t.tok !== s)
+			return null;
 		// consume match
 		this.lexer.nextTok();
-		return true;
+		return t.startLoc;
 	}
 
-	consumeReserved(s: string): boolean {
+	consumeReserved(s: string): SourceLoc {
 		let t = this.lexer.peek();
 		if (!t || t.type !== TokenType.RESERVED || t.tok !== s)
-			return false;
+			return null;
 		// consume match
 		this.lexer.nextTok();
-		return true;
+		return t.startLoc;
 	}
 
 	num(): Node {
