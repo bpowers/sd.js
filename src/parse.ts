@@ -119,13 +119,15 @@ class Parser {
 		if ((lhs = this.num()))
 			return lhs;
 
-		if (this.consumeReserved('if')) {
+		let ifLoc: SourceLoc;
+		if ((ifLoc = this.consumeReserved('if'))) {
 			let cond = this.expr();
 			if (!cond) {
 				this.errs.push('expected an expr to follow "IF"');
 				return null;
 			}
-			if (!this.consumeReserved('then')) {
+			let thenLoc: SourceLoc;
+			if (!(thenLoc = this.consumeReserved('then'))) {
 				this.errs.push('expected "THEN"');
 				return null;
 			}
@@ -134,8 +136,9 @@ class Parser {
 				this.errs.push('expected an expr to follow "THEN"');
 				return null;
 			}
-			if (!this.consumeReserved('then')) {
-				this.errs.push('expected "THEN"');
+			let elseLoc: SourceLoc;
+			if (!(elseLoc = this.consumeReserved('else'))) {
+				this.errs.push('expected "ELSE"');
 				return null;
 			}
 			let f = this.expr();
@@ -143,15 +146,14 @@ class Parser {
 				this.errs.push('expected an expr to follow "ELSE"');
 				return null;
 			}
-			// FIXME: record SourceLocs for IF/THEN/ELSE
-			let l = new SourceLoc(0, 0);
-			return new IfExpr(l, cond, l, t, l, f);
+			return new IfExpr(ifLoc, cond, thenLoc, t, elseLoc, f);
 		}
 
 		if ((lhs = this.ident())) {
 			// check if this is a function call
-			if (this.consumeTok('('))
-				return this.call(lhs);
+			let lParenLoc: SourceLoc;
+			if ((lParenLoc = this.consumeTok('(')))
+				return this.call(lhs, lParenLoc);
 			else
 				return lhs;
 		}
@@ -207,14 +209,13 @@ class Parser {
 		return new Ident(t.startLoc, t.tok);
 	}
 
-	call(fn: Node): Node {
+	call(fn: Node, lParenLoc: SourceLoc): Node {
 		let args: Node[] = [];
-		// FIXME real source locs
-		let l = new SourceLoc(0, 0);
 
 		// no-arg call - simplifies logic to special case this.
-		if (this.consumeTok(')'))
-			return new CallExpr(fn, l, args, l);
+		let rParenLoc: SourceLoc;
+		if ((rParenLoc = this.consumeTok(')')))
+			return new CallExpr(fn, lParenLoc, args, rParenLoc);
 
 		while (true) {
 			let arg = this.expr();
@@ -225,12 +226,12 @@ class Parser {
 			args.push(arg);
 			if (this.consumeTok(','))
 				continue;
-			if (this.consumeTok(')'))
+			if ((rParenLoc = this.consumeTok(')')))
 				break;
 			this.errs.push('call: expected "," or ")"');
 			return null;
 		}
 
-		return new CallExpr(fn, l, args, l);
+		return new CallExpr(fn, lParenLoc, args, rParenLoc);
 	}
 }

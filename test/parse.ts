@@ -63,28 +63,39 @@ const PARSE_TESTS: ParseTestData[] = [
 				l(0, 4), '*',
 				new Ident(l(0, 6), 'åbc4')),
 			l(0, 10))
+	},
+	{
+		in: "smooth()",
+		out: new CallExpr(
+			new Ident(l(0, 0), 'smooth'),
+			l(0, 6), [], l(0, 7))
+	},
+	{
+		in: "smooth(1, 2 + 3, d)",
+		out: new CallExpr(
+			new Ident(l(0, 0), 'smooth'),
+			l(0, 6),
+			[
+				new Constant(l(0, 7), '1'),
+				new BinaryExpr(
+					new Constant(l(0, 10), "2"),
+					l(0, 12), '+',
+					new Constant(l(0, 14), "3")),
+				new Ident(l(0, 17), 'd'),
+			],
+			l(0, 18))
+	},
+	{
+		in: "IF a THEN b ELSE c",
+		out: new IfExpr(
+			l(0, 0),
+			new Ident(l(0, 3), 'a'),
+			l(0, 5),
+			new Ident(l(0, 10), 'b'),
+			l(0, 12),
+			new Ident(l(0, 17), 'c'))
 	}
 /*
-	}},
-	{"smooth()", {
-		{N_CALL, 0, NULL},
-		{N_IDENT, 0, "smooth"},
-	}},
-	{"smooth(1, 2 + 3, d)", {
-		{N_CALL, 0, NULL},
-		{N_IDENT, 0, "smooth"},
-		{N_FLOATLIT, 0, "1"},
-		{N_BINARY, '+', NULL},
-		{N_FLOATLIT, 0, "2"},
-		{N_FLOATLIT, 0, "3"},
-		{N_IDENT, 0, "d"},
-	}},
-	{"IF a THEN b ELSE c", {
-		{N_IF, 0, NULL},
-		{N_IDENT, 0, "a"},
-		{N_IDENT, 0, "b"},
-		{N_IDENT, 0, "c"},
-	}},
 	{"a > 1", {
 		{N_BINARY, '>', NULL},
 		{N_IDENT, 0, "a"},
