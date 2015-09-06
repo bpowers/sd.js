@@ -1783,7 +1783,7 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
             if (this.tpeek) {
                 var tpeek = this.tpeek;
                 this.tpeek = null;
-                return this.tpeek;
+                return tpeek;
             }
             this.skipWhitespace();
             var peek = this.rpeek;

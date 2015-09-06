@@ -8,6 +8,7 @@
 
 import chai = require('chai');
 
+import {SourceLoc} from '../lib/lex';
 import {Node, Constant, Ident, BinaryExpr} from '../lib/ast';
 import * as parse from '../lib/parse';
 
@@ -18,24 +19,29 @@ interface ParseTestData {
 	out: Node;
 }
 
+function l(line: number, pos: number): SourceLoc {
+	'use strict';
+	return new SourceLoc(line, pos);
+}
+
 const PARSE_TESTS: ParseTestData[] = [
 	{
 		in: "a",
-		out: new Ident(null, "a")
+		out: new Ident(l(0, 0), "a")
 	},
 	{
 		in: "3.2 <> åbc",
 		out: new BinaryExpr(
-			new Constant(null, "3.2"),
-			null, '≠',
-			new Ident(null, 'åbc'))
+			new Constant(l(0, 0), "3.2"),
+			l(0, 4), '≠',
+			new Ident(l(0, 7), 'åbc'))
 	},
 	{
 		in: "hares * birth_fraction",
 		out: new BinaryExpr(
-			new Ident(null, "hares"),
-			null, '*',
-			new Ident(null, 'birth_fraction'))
+			new Ident(l(0, 0), "hares"),
+			l(0, 6), '*',
+			new Ident(l(0, 8), 'birth_fraction'))
 	}
 ];
 

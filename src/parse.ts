@@ -162,8 +162,10 @@ class Parser {
 		let peek = this.lexer.peek();
 		if (!peek || peek.type !== TokenType.TOKEN)
 			return null;
-		if (ops.indexOf(<string>peek.tok) > -1)
-			return this.lexer.nextTok();
+		for (let i = 0; i < ops.length; i++) {
+			if (peek.tok === ops[i])
+				return this.lexer.nextTok();
+		}
 		return null;
 	}
 

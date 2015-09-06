@@ -113,7 +113,7 @@ export class Lexer {
 		if (this.tpeek) {
 			let tpeek = this.tpeek;
 			this.tpeek = null;
-			return this.tpeek;
+			return tpeek;
 		}
 
 		this.skipWhitespace();
