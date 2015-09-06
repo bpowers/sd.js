@@ -10,23 +10,38 @@ import {canonicalize} from './xmile';
 export interface Node {
 	pos: SourceLoc;
 	end: SourceLoc; // the char after this token
+
+	walk(v: Visitor): boolean;
+}
+
+export interface Visitor {
+	ident(n: Ident): boolean;
+	constant(n: Constant): boolean;
+	call(n: CallExpr): boolean;
+	if(n: IfExpr): boolean;
+	paren(n: ParenExpr): boolean;
+	unary(n: UnaryExpr): boolean;
+	binary(n: BinaryExpr): boolean;
 }
 
 export class Ident implements Node {
-	name: string;
-	_pos: SourceLoc;
-	_len: number;
+	ident: string;
+	pos: SourceLoc;
+	private len: number;
 
 	constructor(pos: SourceLoc, name: string) {
-		this.name = canonicalize(name);
-		this._pos = pos;
+		this.ident = canonicalize(name);
+		this.pos = pos;
 		// this.name is canonicalized, so we need to store the
 		// original length.
-		this._len = name.length;
+		this.len = name.length;
 	}
 
-	get pos(): SourceLoc { return this._pos; }
-	get end(): SourceLoc { return this._pos.off(this._len); }
+	get end(): SourceLoc { return this.pos.off(this.len); }
+
+	walk(v: Visitor): boolean {
+		return v.ident(this);
+	}
 }
 
 export class Constant implements Node {
@@ -42,6 +57,10 @@ export class Constant implements Node {
 
 	get pos(): SourceLoc { return this._pos; }
 	get end(): SourceLoc { return this._pos.off(this._len); }
+
+	walk(v: Visitor): boolean {
+		return v.constant(this);
+	}
 }
 
 export class ParenExpr implements Node {
@@ -57,6 +76,10 @@ export class ParenExpr implements Node {
 
 	get pos(): SourceLoc { return this._lPos; }
 	get end(): SourceLoc { return this._rPos.off(1); }
+
+	walk(v: Visitor): boolean {
+		return v.paren(this);
+	}
 }
 
 export class CallExpr implements Node {
@@ -75,6 +98,10 @@ export class CallExpr implements Node {
 
 	get pos(): SourceLoc { return this.fun.pos; }
 	get end(): SourceLoc { return this._rParenPos.off(1); }
+
+	walk(v: Visitor): boolean {
+		return v.call(this);
+	}
 }
 
 export class UnaryExpr implements Node {
@@ -90,6 +117,10 @@ export class UnaryExpr implements Node {
 
 	get pos(): SourceLoc { return this._opPos; }
 	get end(): SourceLoc { return this.x.end; }
+
+	walk(v: Visitor): boolean {
+		return v.unary(this);
+	}
 }
 
 export class BinaryExpr implements Node {
@@ -107,6 +138,10 @@ export class BinaryExpr implements Node {
 
 	get pos(): SourceLoc { return this.l.pos; }
 	get end(): SourceLoc { return this.r.end; }
+
+	walk(v: Visitor): boolean {
+		return v.binary(this);
+	}
 }
 
 export class IfExpr implements Node {
@@ -128,4 +163,8 @@ export class IfExpr implements Node {
 
 	get pos(): SourceLoc { return this._ifPos; }
 	get end(): SourceLoc { return this.f.end; }
+
+	walk(v: Visitor): boolean {
+		return v.if(this);
+	}
 }

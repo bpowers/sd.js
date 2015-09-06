@@ -1939,14 +1939,380 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
+define('ast',["require", "exports", './xmile'], function (require, exports, xmile_1) {
+    var Ident = (function () {
+        function Ident(pos, name) {
+            this.ident = xmile_1.canonicalize(name);
+            this.pos = pos;
+            this.len = name.length;
+        }
+        Object.defineProperty(Ident.prototype, "end", {
+            get: function () { return this.pos.off(this.len); },
+            enumerable: true,
+            configurable: true
+        });
+        Ident.prototype.walk = function (v) {
+            return v.ident(this);
+        };
+        return Ident;
+    })();
+    exports.Ident = Ident;
+    var Constant = (function () {
+        function Constant(pos, value) {
+            this.value = parseFloat(value);
+            this._pos = pos;
+            this._len = value.length;
+        }
+        Object.defineProperty(Constant.prototype, "pos", {
+            get: function () { return this._pos; },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(Constant.prototype, "end", {
+            get: function () { return this._pos.off(this._len); },
+            enumerable: true,
+            configurable: true
+        });
+        Constant.prototype.walk = function (v) {
+            return v.constant(this);
+        };
+        return Constant;
+    })();
+    exports.Constant = Constant;
+    var ParenExpr = (function () {
+        function ParenExpr(lPos, x, rPos) {
+            this.x = x;
+            this._lPos = lPos;
+            this._rPos = rPos;
+        }
+        Object.defineProperty(ParenExpr.prototype, "pos", {
+            get: function () { return this._lPos; },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(ParenExpr.prototype, "end", {
+            get: function () { return this._rPos.off(1); },
+            enumerable: true,
+            configurable: true
+        });
+        ParenExpr.prototype.walk = function (v) {
+            return v.paren(this);
+        };
+        return ParenExpr;
+    })();
+    exports.ParenExpr = ParenExpr;
+    var CallExpr = (function () {
+        function CallExpr(fun, lParenPos, args, rParenPos) {
+            this.fun = fun;
+            this.args = args;
+            this._lParenPos = lParenPos;
+            this._rParenPos = rParenPos;
+        }
+        Object.defineProperty(CallExpr.prototype, "pos", {
+            get: function () { return this.fun.pos; },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(CallExpr.prototype, "end", {
+            get: function () { return this._rParenPos.off(1); },
+            enumerable: true,
+            configurable: true
+        });
+        CallExpr.prototype.walk = function (v) {
+            return v.call(this);
+        };
+        return CallExpr;
+    })();
+    exports.CallExpr = CallExpr;
+    var UnaryExpr = (function () {
+        function UnaryExpr(opPos, op, x) {
+            this.op = op;
+            this.x = x;
+            this._opPos = opPos;
+        }
+        Object.defineProperty(UnaryExpr.prototype, "pos", {
+            get: function () { return this._opPos; },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(UnaryExpr.prototype, "end", {
+            get: function () { return this.x.end; },
+            enumerable: true,
+            configurable: true
+        });
+        UnaryExpr.prototype.walk = function (v) {
+            return v.unary(this);
+        };
+        return UnaryExpr;
+    })();
+    exports.UnaryExpr = UnaryExpr;
+    var BinaryExpr = (function () {
+        function BinaryExpr(l, opPos, op, r) {
+            this.l = l;
+            this.op = op;
+            this.r = r;
+            this._opPos = opPos;
+        }
+        Object.defineProperty(BinaryExpr.prototype, "pos", {
+            get: function () { return this.l.pos; },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(BinaryExpr.prototype, "end", {
+            get: function () { return this.r.end; },
+            enumerable: true,
+            configurable: true
+        });
+        BinaryExpr.prototype.walk = function (v) {
+            return v.binary(this);
+        };
+        return BinaryExpr;
+    })();
+    exports.BinaryExpr = BinaryExpr;
+    var IfExpr = (function () {
+        function IfExpr(ifPos, cond, thenPos, t, elsePos, f) {
+            this.cond = cond;
+            this.t = t;
+            this.f = f;
+            this._ifPos = ifPos;
+            this._thenPos = thenPos;
+            this._elsePos = elsePos;
+        }
+        Object.defineProperty(IfExpr.prototype, "pos", {
+            get: function () { return this._ifPos; },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(IfExpr.prototype, "end", {
+            get: function () { return this.f.end; },
+            enumerable: true,
+            configurable: true
+        });
+        IfExpr.prototype.walk = function (v) {
+            return v.if(this);
+        };
+        return IfExpr;
+    })();
+    exports.IfExpr = IfExpr;
+});
+
+// Copyright 2015 Bobby Powers. All rights reserved.
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE file.
+
+define('parse',["require", "exports", './ast', './lex'], function (require, exports, ast_1, lex_1) {
+    var RESERVED = [
+        "if",
+        "then",
+        "else"
+    ];
+    var WORD_OPS = {
+        "not": "!",
+        "and": "&",
+        "or": "|",
+        "mod": "%"
+    };
+    var UNARY = "+-!";
+    var BINARY = [
+        "^",
+        "!",
+        "*/%",
+        "+-",
+        "><≥≤",
+        "=≠",
+        "&",
+        "|",
+    ];
+    function eqn(eqn) {
+        'use strict';
+        var p = new Parser(eqn);
+        var ast = p.expr();
+        if (p.errs && p.errs.length)
+            return [null, p.errs];
+        return [ast, null];
+    }
+    exports.eqn = eqn;
+    function binaryLevel(n, p, ops) {
+        'use strict';
+        return function () {
+            var t = p.lexer.peek();
+            if (!t)
+                return null;
+            var next = p.levels[n + 1];
+            var lhs = next();
+            if (!lhs)
+                return null;
+            for (var op = p.consumeAnyOf(ops); op; op = p.consumeAnyOf(ops)) {
+                var rhs = next();
+                if (!rhs) {
+                    p.errs.push('expected rhs of expr after "' + op.tok + '"');
+                    return null;
+                }
+                lhs = new ast_1.BinaryExpr(lhs, op.startLoc, op.tok, rhs);
+            }
+            return lhs;
+        };
+    }
+    var Parser = (function () {
+        function Parser(eqn) {
+            this.errs = [];
+            this.levels = [];
+            this.lexer = new lex_1.Lexer(eqn);
+            for (var i = 0; i < BINARY.length; i++) {
+                this.levels.push(binaryLevel(i, this, BINARY[i]));
+            }
+            this.levels.push(this.factor.bind(this));
+        }
+        Object.defineProperty(Parser.prototype, "errors", {
+            get: function () {
+                return this.errs;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Parser.prototype.expr = function () {
+            return this.levels[0]();
+        };
+        Parser.prototype.factor = function () {
+            var lhs;
+            var pos;
+            if ((pos = this.consumeTok('('))) {
+                lhs = this.expr();
+                if (!lhs) {
+                    this.errs.push('expected an expression after an opening paren');
+                    return null;
+                }
+                var closing;
+                if (!(closing = this.consumeTok(')'))) {
+                    this.errs.push('expected ")", not end-of-equation');
+                    return null;
+                }
+                return new ast_1.ParenExpr(pos, lhs, closing);
+            }
+            var op;
+            if ((op = this.consumeAnyOf(UNARY))) {
+                lhs = this.expr();
+                if (!lhs) {
+                    this.errs.push('unary operator "' + op.tok + '" without operand.');
+                    return null;
+                }
+                return new ast_1.UnaryExpr(op.startLoc, op.tok, lhs);
+            }
+            if ((lhs = this.num()))
+                return lhs;
+            var ifLoc;
+            if ((ifLoc = this.consumeReserved('if'))) {
+                var cond = this.expr();
+                if (!cond) {
+                    this.errs.push('expected an expr to follow "IF"');
+                    return null;
+                }
+                var thenLoc;
+                if (!(thenLoc = this.consumeReserved('then'))) {
+                    this.errs.push('expected "THEN"');
+                    return null;
+                }
+                var t = this.expr();
+                if (!t) {
+                    this.errs.push('expected an expr to follow "THEN"');
+                    return null;
+                }
+                var elseLoc;
+                if (!(elseLoc = this.consumeReserved('else'))) {
+                    this.errs.push('expected "ELSE"');
+                    return null;
+                }
+                var f = this.expr();
+                if (!f) {
+                    this.errs.push('expected an expr to follow "ELSE"');
+                    return null;
+                }
+                return new ast_1.IfExpr(ifLoc, cond, thenLoc, t, elseLoc, f);
+            }
+            if ((lhs = this.ident())) {
+                var lParenLoc;
+                if ((lParenLoc = this.consumeTok('(')))
+                    return this.call(lhs, lParenLoc);
+                else
+                    return lhs;
+            }
+            return null;
+        };
+        Parser.prototype.consumeAnyOf = function (ops) {
+            var peek = this.lexer.peek();
+            if (!peek || peek.type !== 0)
+                return null;
+            for (var i = 0; i < ops.length; i++) {
+                if (peek.tok === ops[i])
+                    return this.lexer.nextTok();
+            }
+            return null;
+        };
+        Parser.prototype.consumeTok = function (s) {
+            var t = this.lexer.peek();
+            if (!t || t.type !== 0 || t.tok !== s)
+                return null;
+            this.lexer.nextTok();
+            return t.startLoc;
+        };
+        Parser.prototype.consumeReserved = function (s) {
+            var t = this.lexer.peek();
+            if (!t || t.type !== 2 || t.tok !== s)
+                return null;
+            this.lexer.nextTok();
+            return t.startLoc;
+        };
+        Parser.prototype.num = function () {
+            var t = this.lexer.peek();
+            if (!t || t.type !== 3)
+                return null;
+            this.lexer.nextTok();
+            return new ast_1.Constant(t.startLoc, t.tok);
+        };
+        Parser.prototype.ident = function () {
+            var t = this.lexer.peek();
+            if (!t || t.type !== 1)
+                return null;
+            this.lexer.nextTok();
+            return new ast_1.Ident(t.startLoc, t.tok);
+        };
+        Parser.prototype.call = function (fn, lParenLoc) {
+            var args = [];
+            var rParenLoc;
+            if ((rParenLoc = this.consumeTok(')')))
+                return new ast_1.CallExpr(fn, lParenLoc, args, rParenLoc);
+            while (true) {
+                var arg = this.expr();
+                if (!arg) {
+                    this.errs.push('expected expression as arg in function call');
+                    return null;
+                }
+                args.push(arg);
+                if (this.consumeTok(','))
+                    continue;
+                if ((rParenLoc = this.consumeTok(')')))
+                    break;
+                this.errs.push('call: expected "," or ")"');
+                return null;
+            }
+            return new ast_1.CallExpr(fn, lParenLoc, args, rParenLoc);
+        };
+        return Parser;
+    })();
+});
+
+// Copyright 2015 Bobby Powers. All rights reserved.
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE file.
+
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     __.prototype = b.prototype;
     d.prototype = new __();
 };
-define('vars',["require", "exports", './common', './lex', './xmile'], function (require, exports, common, lex, xmile) {
-    var opMap = {
+define('vars',["require", "exports", './common', './lex', './parse'], function (require, exports, common, lex_1, parse) {
+    var JS_OP = {
         '&': '&&',
         '|': '||',
         '≥': '>=',
@@ -1954,6 +2320,107 @@ define('vars',["require", "exports", './common', './lex', './xmile'], function (
         '≠': '!==',
         '=': '===',
     };
+    var CodegenVisitor = (function () {
+        function CodegenVisitor(offsets, isMain) {
+            this.code = '';
+            this.offsets = offsets;
+            this.isMain = isMain;
+            this.scope = isMain ? 'curr' : 'globalCurr';
+        }
+        CodegenVisitor.prototype.ident = function (n) {
+            if (n.ident in this.offsets) {
+                this.code += 'curr[';
+                this.code += this.offsets[n.ident];
+                this.code += ']';
+            }
+            else if (n.ident === 'time') {
+                this.code += this.scope;
+                this.code += '[0]';
+            }
+            else {
+                this.code += 'globalCurr[this.ref["';
+                this.code += n.ident;
+                this.code += '"]]';
+            }
+            return true;
+        };
+        CodegenVisitor.prototype.constant = function (n) {
+            this.code += ('' + n.value);
+            return true;
+        };
+        CodegenVisitor.prototype.call = function (n) {
+            var fn;
+            if (!n.fun.hasOwnProperty('ident')) {
+                console.log('// for now, only idents can be used as fns:');
+                console.log(n);
+                return false;
+            }
+            fn = n.fun.ident;
+            if (!(fn in common.builtins)) {
+                console.log('// unknown builtin: ' + fn);
+                return false;
+            }
+            this.code += fn;
+            this.code += '(';
+            if (common.builtins[fn].usesTime) {
+                this.code += 'dt, ';
+                this.code += this.scope;
+                this.code += '[0]';
+                if (n.args.length)
+                    this.code += ', ';
+            }
+            for (var i = 0; i < n.args.length; i++) {
+                n.args[i].walk(this);
+                if (i !== n.args.length - 1)
+                    this.code += ', ';
+            }
+            this.code += ')';
+            return true;
+        };
+        CodegenVisitor.prototype.if = function (n) {
+            this.code += '(';
+            n.cond.walk(this);
+            this.code += ' ? ';
+            n.t.walk(this);
+            this.code += ' : ';
+            n.f.walk(this);
+            this.code += ')';
+            return true;
+        };
+        CodegenVisitor.prototype.paren = function (n) {
+            this.code += '(';
+            n.x.walk(this);
+            this.code += ')';
+            return true;
+        };
+        CodegenVisitor.prototype.unary = function (n) {
+            var op = n.op === '!' ? '+!' : n.op;
+            this.code += op;
+            n.x.walk(this);
+            return true;
+        };
+        CodegenVisitor.prototype.binary = function (n) {
+            if (n.op === '^') {
+                this.code += 'Math.pow(';
+                n.l.walk(this);
+                this.code += ',';
+                n.r.walk(this);
+                this.code += ')';
+                return true;
+            }
+            var op = n.op;
+            if (n.op in JS_OP)
+                op = JS_OP[n.op];
+            this.code += '(';
+            n.l.walk(this);
+            this.code += op;
+            n.r.walk(this);
+            this.code += ')';
+            return true;
+        };
+        return CodegenVisitor;
+    })();
+    exports.CodegenVisitor = CodegenVisitor;
     var Variable = (function () {
         function Variable(model, v) {
             if (arguments.length === 0)
@@ -1962,66 +2429,31 @@ define('vars',["require", "exports", './common', './lex', './xmile'], function (
             this.xmile = v;
             this.eqn = v.eqn;
             this.ident = v.ident;
-            this._deps = lex.identifierSet(this.eqn);
+            this._deps = lex_1.identifierSet(this.eqn);
         }
         ;
         Variable.prototype.initialEquation = function () {
             return this.eqn;
         };
         ;
-        Variable.prototype.code = function (v) {
+        Variable.prototype.code = function (offsets) {
             if (this.isConst())
                 return "this.initials['" + this.ident + "']";
-            var lexer = new lex.Lexer(this.eqn);
-            var result = [];
-            var commentDepth = 0;
-            var scope;
-            var tok;
-            while ((tok = lexer.nextTok())) {
-                var ident = xmile.canonicalize(tok.tok);
-                if (tok.tok in common.reserved) {
-                    switch (ident) {
-                        case 'if':
-                            break;
-                        case 'then':
-                            result.push('?');
-                            break;
-                        case 'else':
-                            result.push(':');
-                            break;
-                        default:
-                            console.log('ERROR: unexpected tok: ' + ident);
-                    }
-                }
-                else if (tok.type !== 1) {
-                    var op = tok.tok;
-                    if (op in opMap)
-                        op = opMap[op];
-                    result.push('' + op);
-                }
-                else if (ident in common.builtins) {
-                    result.push('' + ident);
-                    if (common.builtins[ident].usesTime) {
-                        lexer.nextTok();
-                        scope = this.model.ident === 'main' ? 'curr' : 'globalCurr';
-                        result.push('(', 'dt', ',', scope + '[0]', ',');
-                    }
-                }
-                else if (ident in v) {
-                    result.push("curr[" + v[ident] + "]");
-                }
-                else if (ident === 'time') {
-                    scope = this.model.ident === 'main' ? 'curr' : 'globalCurr';
-                    result.push(scope + '[0]');
-                }
-                else {
-                    result.push('globalCurr[this.ref["' + ident + '"]]');
-                }
+            var visitor = new CodegenVisitor(offsets, this.model.ident === 'main');
+            var expr;
+            var errs;
+            _a = parse.eqn(this.eqn), expr = _a[0], errs = _a[1];
+            if (errs) {
+                console.log('// parse failed for ' + this.ident + ': ' + errs[0]);
+                return '';
             }
-            if (!result.length) {
-                result.push('0');
+            var ok = expr.walk(visitor);
+            if (!ok) {
+                console.log('// codegen failed for ' + this.ident);
+                return '';
             }
-            return result.join(' ');
+            return visitor.code;
+            var _a;
         };
         Variable.prototype.getDeps = function () {
             if (this._allDeps)
@@ -2063,7 +2495,7 @@ define('vars',["require", "exports", './common', './lex', './xmile'], function (
             this.eqn = v.eqn;
             this.inflows = v.inflows;
             this.outflows = v.outflows;
-            this._deps = lex.identifierSet(this.initial);
+            this._deps = lex_1.identifierSet(this.initial);
         }
         Stock.prototype.initialEquation = function () {
             return this.initial;
@@ -2110,7 +2542,7 @@ define('vars',["require", "exports", './common', './lex', './xmile'], function (
                 this.x.push(x);
                 this.y.push(ypts[i]);
             }
-            this._deps = lex.identifierSet(this.eqn);
+            this._deps = lex_1.identifierSet(this.eqn);
         }
         Table.prototype.code = function (v) {
             if (!this.eqn)

@@ -2,14 +2,24 @@ import { SourceLoc } from './lex';
 export interface Node {
     pos: SourceLoc;
     end: SourceLoc;
+    walk(v: Visitor): boolean;
+}
+export interface Visitor {
+    ident(n: Ident): boolean;
+    constant(n: Constant): boolean;
+    call(n: CallExpr): boolean;
+    if(n: IfExpr): boolean;
+    paren(n: ParenExpr): boolean;
+    unary(n: UnaryExpr): boolean;
+    binary(n: BinaryExpr): boolean;
 }
 export declare class Ident implements Node {
-    name: string;
-    _pos: SourceLoc;
-    _len: number;
-    constructor(pos: SourceLoc, name: string);
+    ident: string;
     pos: SourceLoc;
+    private len;
+    constructor(pos: SourceLoc, name: string);
     end: SourceLoc;
+    walk(v: Visitor): boolean;
 }
 export declare class Constant implements Node {
     value: number;
@@ -18,6 +28,7 @@ export declare class Constant implements Node {
     constructor(pos: SourceLoc, value: string);
     pos: SourceLoc;
     end: SourceLoc;
+    walk(v: Visitor): boolean;
 }
 export declare class ParenExpr implements Node {
     x: Node;
@@ -26,6 +37,7 @@ export declare class ParenExpr implements Node {
     constructor(lPos: SourceLoc, x: Node, rPos: SourceLoc);
     pos: SourceLoc;
     end: SourceLoc;
+    walk(v: Visitor): boolean;
 }
 export declare class CallExpr implements Node {
     fun: Node;
@@ -35,6 +47,7 @@ export declare class CallExpr implements Node {
     constructor(fun: Node, lParenPos: SourceLoc, args: Node[], rParenPos: SourceLoc);
     pos: SourceLoc;
     end: SourceLoc;
+    walk(v: Visitor): boolean;
 }
 export declare class UnaryExpr implements Node {
     op: string;
@@ -43,6 +56,7 @@ export declare class UnaryExpr implements Node {
     constructor(opPos: SourceLoc, op: string, x: Node);
     pos: SourceLoc;
     end: SourceLoc;
+    walk(v: Visitor): boolean;
 }
 export declare class BinaryExpr implements Node {
     op: string;
@@ -52,6 +66,7 @@ export declare class BinaryExpr implements Node {
     constructor(l: Node, opPos: SourceLoc, op: string, r: Node);
     pos: SourceLoc;
     end: SourceLoc;
+    walk(v: Visitor): boolean;
 }
 export declare class IfExpr implements Node {
     cond: Node;
@@ -63,4 +78,5 @@ export declare class IfExpr implements Node {
     constructor(ifPos: SourceLoc, cond: Node, thenPos: SourceLoc, t: Node, elsePos: SourceLoc, f: Node);
     pos: SourceLoc;
     end: SourceLoc;
+    walk(v: Visitor): boolean;
 }

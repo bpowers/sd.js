@@ -1,5 +1,20 @@
-import type = require('./type');
-import xmile = require('./xmile');
+import * as type from './type';
+import * as xmile from './xmile';
+import * as ast from './ast';
+export declare class CodegenVisitor implements ast.Visitor {
+    offsets: type.Offsets;
+    code: string;
+    isMain: boolean;
+    scope: string;
+    constructor(offsets: type.Offsets, isMain: boolean);
+    ident(n: ast.Ident): boolean;
+    constant(n: ast.Constant): boolean;
+    call(n: ast.CallExpr): boolean;
+    if(n: ast.IfExpr): boolean;
+    paren(n: ast.ParenExpr): boolean;
+    unary(n: ast.UnaryExpr): boolean;
+    binary(n: ast.BinaryExpr): boolean;
+}
 export declare class Variable implements type.Variable {
     xmile: xmile.Variable;
     ident: string;
@@ -11,7 +26,7 @@ export declare class Variable implements type.Variable {
     _allDeps: type.StringSet;
     constructor(model?: type.Model, v?: xmile.Variable);
     initialEquation(): string;
-    code(v: type.Offsets): string;
+    code(offsets: type.Offsets): string;
     getDeps(): type.StringSet;
     lessThan(that: Variable): boolean;
     isConst(): boolean;

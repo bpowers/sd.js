@@ -7,13 +7,15 @@
 // FIXME: this seems to fix a bug in Typescript 1.5
 declare function isFinite(n: string|number): boolean;
 
-import common = require('./common');
-import util = require('./util');
-import lex = require('./lex');
-import type = require('./type');
-import xmile = require('./xmile');
+import * as common from './common';
+import * as util from './util';
+import {identifierSet} from './lex';
+import * as parse from './parse';
+import * as type from './type';
+import * as xmile from './xmile';
+import * as ast from './ast';
 
-const opMap: {[op: string]: string} = {
+const JS_OP: {[op: string]: string} = {
 	'&': '&&',
 	'|': '||',
 	'≥': '>=',
@@ -21,6 +23,113 @@ const opMap: {[op: string]: string} = {
 	'≠': '!==',
 	'=': '===',
 };
+
+export class CodegenVisitor implements ast.Visitor {
+	offsets: type.Offsets;
+	code: string = '';
+	isMain: boolean;
+	scope: string;
+
+	constructor(offsets: type.Offsets, isMain: boolean) {
+		this.offsets = offsets;
+		this.isMain = isMain;
+		this.scope = isMain ? 'curr' : 'globalCurr';
+	}
+
+	ident(n: ast.Ident): boolean {
+		if (n.ident in this.offsets) {
+			this.code += 'curr[';
+			this.code += this.offsets[n.ident];
+			this.code += ']';
+		} else if (n.ident === 'time') {
+			this.code += this.scope;
+			this.code += '[0]';
+		} else {
+			this.code += 'globalCurr[this.ref["';
+			this.code += n.ident;
+			this.code += '"]]';
+		}
+		return true;
+	}
+	constant(n: ast.Constant): boolean {
+		this.code += (''+n.value);
+		return true;
+	}
+	call(n: ast.CallExpr): boolean {
+		let fn: string;
+		if (!n.fun.hasOwnProperty('ident')) {
+			console.log('// for now, only idents can be used as fns:');
+			console.log(n);
+			return false;
+		}
+		fn = (<ast.Ident>n.fun).ident;
+		if (!(fn in common.builtins)) {
+			console.log('// unknown builtin: ' + fn);
+			return false;
+		}
+		this.code += fn;
+		this.code += '(';
+		if (common.builtins[fn].usesTime) {
+			this.code += 'dt, ';
+			this.code += this.scope;
+			this.code += '[0]';
+			if (n.args.length)
+				this.code += ', ';
+		}
+
+		for (let i = 0; i < n.args.length; i++) {
+			n.args[i].walk(this);
+			if (i !== n.args.length-1)
+				this.code += ', ';
+		}
+		this.code += ')';
+		return true;
+	}
+	if(n: ast.IfExpr): boolean {
+		this.code += '(';
+		n.cond.walk(this);
+		this.code += ' ? ';
+		n.t.walk(this);
+		this.code += ' : ';
+		n.f.walk(this);
+		this.code += ')';
+		return true;
+	}
+	paren(n: ast.ParenExpr): boolean {
+		this.code += '(';
+		n.x.walk(this);
+		this.code += ')';
+		return true;
+	}
+	unary(n: ast.UnaryExpr): boolean {
+		// if we're doing 'not', explicitly convert the result
+		// back to a number.
+		let op = n.op === '!' ? '+!' : n.op;
+		this.code += op;
+		n.x.walk(this);
+		return true;
+	}
+	binary(n: ast.BinaryExpr): boolean {
+		if (n.op === '^') {
+			this.code += 'Math.pow(';
+			n.l.walk(this);
+			this.code += ',';
+			n.r.walk(this);
+			this.code += ')';
+			return true;
+		}
+		let op = n.op;
+		// only need to convert some of them
+		if (n.op in JS_OP)
+			op = JS_OP[n.op];
+		this.code += '(';
+		n.l.walk(this);
+		this.code += op;
+		n.r.walk(this);
+		this.code += ')';
+		return true;
+	}
+}
 
 export class Variable implements type.Variable {
 	xmile: xmile.Variable;
@@ -48,64 +157,32 @@ export class Variable implements type.Variable {
 
 		// for a flow or aux, we depend on variables that aren't built
 		// in functions in the equation.
-		this._deps = lex.identifierSet(this.eqn);
+		this._deps = identifierSet(this.eqn);
 	};
 	// returns a string of this variables initial equation. suitable for
 	// exec()'ing
 	initialEquation(): string {
 		return this.eqn;
 	};
-	code(v: type.Offsets): string {
+	code(offsets: type.Offsets): string {
 		if (this.isConst())
 			return "this.initials['" + this.ident + "']";
-		let lexer = new lex.Lexer(this.eqn);
-		let result: string[] = [];
-		let commentDepth = 0;
-		let scope: string;
-		let tok: lex.Token;
-		while ((tok = lexer.nextTok())) {
-			let ident = xmile.canonicalize(tok.tok);
-			if (tok.tok in common.reserved) {
-				switch (ident) {
-				case 'if':
-					break; // skip
-				case 'then':
-					result.push('?');
-					break;
-				case 'else':
-					result.push(':');
-					break;
-				default:
-					console.log('ERROR: unexpected tok: ' + ident);
-				}
-			} else if (tok.type !== lex.TokenType.IDENT) {
-				// FIXME :(
-				let op = tok.tok;
-				if (op in opMap)
-					op = opMap[op];
-				result.push(''+op);
-			} else if (ident in common.builtins) {
-				// FIXME :(
-				result.push(''+ident);
-				if (common.builtins[ident].usesTime) {
-					lexer.nextTok(); // is '('
-					scope = this.model.ident === 'main' ? 'curr' : 'globalCurr';
-					result.push('(', 'dt', ',', scope + '[0]', ',');
-				}
-			} else if (ident in v) {
-				result.push("curr[" + v[ident] + "]");
-			} else if (ident === 'time') {
-				scope = this.model.ident === 'main' ? 'curr' : 'globalCurr';
-				result.push(scope + '[0]');
-			} else {
-				result.push('globalCurr[this.ref["' + ident + '"]]');
-			}
+		let visitor = new CodegenVisitor(offsets, this.model.ident === 'main');
+		let expr: ast.Node;
+		let errs: string[];
+		[expr, errs] = parse.eqn(this.eqn);
+		if (errs) {
+			console.log('// parse failed for ' + this.ident + ': ' + errs[0]);
+			return '';
 		}
-		if (!result.length) {
-			// console.log('COMPAT empty equation for ' + this.name);
-			result.push('0');
+
+		let ok = expr.walk(visitor);
+		if (!ok) {
+			console.log('// codegen failed for ' + this.ident);
+			return '';
 		}
-		return result.join(' ');
+
+		return visitor.code;
 	}
 
 	getDeps(): type.StringSet {
@@ -159,7 +236,7 @@ export class Stock extends Variable {
 		// aren't references to builtin functions) in the initial
 		// variable string.  Deps are used for sorting equations into
 		// the right order, so for now we don't add any of the flows.
-		this._deps = lex.identifierSet(this.initial);
+		this._deps = identifierSet(this.initial);
 	}
 
 	// FIXME: returns a string of this variables initial equation. suitable for
@@ -218,7 +295,7 @@ export class Table extends Variable {
 			this.y.push(ypts[i]);
 		}
 
-		this._deps = lex.identifierSet(this.eqn);
+		this._deps = identifierSet(this.eqn);
 	}
 
 	code(v: type.Offsets): string {
