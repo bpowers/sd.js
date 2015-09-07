@@ -1,6 +1,6 @@
 /// <reference path="../typings/tsd.d.ts" />
-import type = require('./type');
-import Q = require('q');
+import * as type from './type';
+import * as Q from 'q';
 export declare class TemplateContext {
     name: string;
     className: string;

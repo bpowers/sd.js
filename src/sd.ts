@@ -4,7 +4,7 @@
 
 'use strict';
 
-import common = require('./common');
+import * as common from './common';
 
 import {Project} from './project';
 import {Model} from './model';

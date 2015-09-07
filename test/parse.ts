@@ -6,12 +6,11 @@
 
 'use strict';
 
-import chai = require('chai');
-
+import * as chai from 'chai';
+import * as parse from '../lib/parse';
 import {SourceLoc} from '../lib/lex';
 import {Node, BinaryExpr, UnaryExpr, ParenExpr, IfExpr, CallExpr,
 	Ident, Constant} from '../lib/ast';
-import * as parse from '../lib/parse';
 
 const expect = chai.expect;
 

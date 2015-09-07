@@ -6,13 +6,13 @@
 
 'use strict';
 
-import util = require('./util');
-import type = require('./type');
-import vars = require('./vars');
-import runtime = require('./runtime');
+import * as util from './util';
+import * as type from './type';
+import * as vars from './vars';
+import * as runtime from './runtime';
 
-import Q = require('q');
-import Mustache = require('mustache');
+import * as Q from 'q';
+import * as Mustache from 'mustache';
 
 // whether we map names -> offsets in a Float64Array, or use names
 // as object property lookups.  With DEBUG = true, equations are

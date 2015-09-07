@@ -4,7 +4,7 @@
 
 'use strict';
 
-import type = require('./type');
+import * as type from './type';
 
 export function titleCase(str: string): string {
 	'use strict';

@@ -1,6 +1,6 @@
 /// <reference path="../typings/tsd.d.ts" />
-import type = require('./type');
-import xmile = require('./xmile');
+import * as type from './type';
+import * as xmile from './xmile';
 export interface EntStatic {
     new (drawing: Drawing, element: xmile.ViewElement): Ent;
 }

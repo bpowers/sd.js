@@ -6,8 +6,7 @@
 
 'use strict';
 
-import chai = require('chai');
-
+import * as chai from 'chai';
 import {Lexer, Token, TokenType} from '../lib/lex';
 
 const expect = chai.expect;

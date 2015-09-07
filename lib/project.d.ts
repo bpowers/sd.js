@@ -1,4 +1,4 @@
-import type = require('./type');
+import * as type from './type';
 export declare class Project implements type.Project {
     name: string;
     valid: boolean;

@@ -9,10 +9,10 @@
 
 'use strict';
 
-import type = require('./type');
-import vars = require('./vars');
-import runtime = require('./runtime');
-import xmile = require('./xmile');
+import * as type from './type';
+import * as vars from './vars';
+import * as runtime from './runtime';
+import * as xmile from './xmile';
 
 import {dName, isNaN} from "./util";
 import {canonicalize} from './xmile';

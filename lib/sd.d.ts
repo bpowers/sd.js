@@ -1,4 +1,4 @@
-import common = require('./common');
+import * as common from './common';
 import { Model } from './model';
 export { Project } from './project';
 export { Model } from './model';

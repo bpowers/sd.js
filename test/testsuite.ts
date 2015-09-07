@@ -10,10 +10,10 @@
 /* tslint:disable: typedef:call-signature */
 /* tslint:disable: no-string-literal */
 
-import chai = require('chai');
 
-import sd = require('../lib/sd');
-import lex = require('../lib/lex');
+import * as chai from 'chai';
+import * as sd from '../lib/sd';
+import * as lex from '../lib/lex';
 
 import {set} from '../lib/util';
 

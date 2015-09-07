@@ -1,7 +1,7 @@
-import type = require('./type');
-import draw = require('./draw');
-import sim = require('./sim');
-import xmile = require('./xmile');
+import * as type from './type';
+import * as draw from './draw';
+import * as sim from './sim';
+import * as xmile from './xmile';
 export declare class Model implements type.Model {
     name: string;
     valid: boolean;

@@ -4,13 +4,13 @@
 
 'use strict';
 
-import common = require('./common');
-import type = require('./type');
-import util = require('./util');
-import vars = require('./vars');
-import draw = require('./draw');
-import sim = require('./sim');
-import xmile = require('./xmile');
+import * as common from './common';
+import * as type from './type';
+import * as util from './util';
+import * as vars from './vars';
+import * as draw from './draw';
+import * as sim from './sim';
+import * as xmile from './xmile';
 
 
 const VAR_TYPES = util.set('module', 'stock', 'aux', 'flow');

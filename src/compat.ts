@@ -4,7 +4,7 @@
 
 'use strict';
 
-import util = require('./util');
+import * as util from './util';
 
 const VENDOR = 'SDLabs';
 const PRODUCT = 'sd.js';

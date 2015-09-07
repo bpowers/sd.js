@@ -1,4 +1,4 @@
-import xmile = require('./xmile');
+import * as xmile from './xmile';
 export interface StringSet {
     [name: string]: boolean;
 }

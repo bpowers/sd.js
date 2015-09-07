@@ -4,10 +4,10 @@
 
 'use strict';
 
-import common = require('./common');
-import type = require('./type');
-import xmile = require('./xmile');
-import compat = require('./compat');
+import * as common from './common';
+import * as type from './type';
+import * as xmile from './xmile';
+import * as compat from './compat';
 
 import {Model} from './model';
 import {Module} from './vars';
