@@ -86,9 +86,9 @@ function addCSSClass(o: any, newClass: string): void {
 	}
 }
 
-function isZero(n: number): boolean {
+function isZero(n: number, tolerance = 0.0000001): boolean {
 	'use strict';
-	return Math.abs(n) < 0.0000001;
+	return Math.abs(n) < tolerance;
 }
 
 function square(n: number): number {
@@ -821,9 +821,7 @@ class DConnector implements Ent {
 		//     eqn of a circle: (x - cx)^2 + (y - cy)^2 = r^2
 		//     line:            y = mx + b || 0 = mx - y + b
 
-		// convert to radians
-		const xmileTakeoffθ = this.e.angle;
-		const takeoffθ = degToRad(xmileToCanvasAngle(xmileTakeoffθ));
+		const takeoffθ = degToRad(xmileToCanvasAngle(this.e.angle));
 		const slopeTakeoff = tan(takeoffθ);
 		// we need the slope of the line _perpendicular_ to
 		// the tangent in order to find out the x,y center of
@@ -879,20 +877,22 @@ class DConnector implements Ent {
 
 		const r: number = toEnt instanceof DModule ? 25 : AUX_RADIUS;
 
-		const takeoffX = this.e.x;
-		const takeoffY = this.e.y;
+		let takeoffX: number;
+		let takeoffY: number;
+
 		const cr: number = sqrt(square(fx - cx) + square(fy - cy));
 		let circ = {r: cr, x: cx, y: cy};
 		let spath = '';
-		let inv = 0;
-		spath += 'M' + fx + ',' + fy;
+		let inv = false;
+		let sweep = false;
 
-		let xMidθ = atan2(tx-fx, ty-fy)*180/PI - 90;
-		if (xMidθ < 0)
-			xMidθ += 360;
-		console.log(fromEnt.ident + ': ' + xMidθ);
+		let midθ = atan2(ty-fy, tx-fx);
+		if (midθ < 0)
+			midθ += 2*PI;
+		console.log(fromEnt.ident + ': ' + (midθ*180/PI));
 
-		const straightLine = abs(xMidθ - xmileTakeoffθ) < 5;
+		const straightLine = abs(midθ - takeoffθ) < degToRad(5);
+		console.log(fromEnt.ident + ' straight?: ' + straightLine);
 
 		let endθ: number;
 		// FIXME: instead of checking for circ, we should
@@ -902,31 +902,50 @@ class DConnector implements Ent {
 			let dx = fx - circ.x;
 			let dy = fy - circ.y;
 			let startθ = atan2(dy, dx)*180/PI;
-			let xStartθ = -startθ;
-			if (xStartθ < 0)
-				xStartθ += 360;
 			dx = tx - circ.x;
 			dy = ty - circ.y;
 			endθ = atan2(dy, dx)*180/PI;
-			let xEndθ = -endθ;
-			if (xEndθ < 0)
-				xEndθ += 360;
+			startθ = atan2(fy - circ.y, fx - circ.x)*180/PI;
 
-			let spanθ = xEndθ - xStartθ;
-			inv = +(spanθ < 0);
+			let spanθ = endθ - startθ;
+			inv = spanθ >= 0;
+			console.log('inv: ' + inv);
 
 			let internalθ = tan(r/circ.r)*180/PI;
+
 			tx = circ.x + circ.r*cos((endθ + (inv ? -1 : 1)*internalθ)/180*PI);
 			ty = circ.y + circ.r*sin((endθ + (inv ? -1 : 1)*internalθ)/180*PI);
 
-			spath += 'A' + circ.r + ',' + circ.r + ' 0 0,' + (inv ? '1' : '0') + ' ' + tx + ',' + ty;
+			takeoffX = circ.x + circ.r*cos((startθ + (inv ? 1 : -1)*internalθ)/180*PI);
+			takeoffY = circ.y + circ.r*sin((startθ + (inv ? 1 : -1)*internalθ)/180*PI);
+
+			// this isn't precise - the arc moves out from
+			// the center of the AUX on an angle, while
+			// this calculates where the tangent line
+			// intersects with the edge of the AUX.
+			const origTakeoffX = fx + AUX_RADIUS*cos(takeoffθ);
+			const origTakeoffY = fy + AUX_RADIUS*sin(takeoffθ);
+
+			// FIXME: this could be more exact?
+			sweep = !isZero(takeoffX - origTakeoffX, 1) && !isZero(takeoffY - origTakeoffY, 1);
+			if (sweep) {
+				inv = !inv;
+				tx = circ.x + circ.r*cos((endθ + (inv ? -1 : 1)*internalθ)/180*PI);
+				ty = circ.y + circ.r*sin((endθ + (inv ? -1 : 1)*internalθ)/180*PI);
+
+				takeoffX = circ.x + circ.r*cos((startθ + (inv ? 1 : -1)*internalθ)/180*PI);
+				takeoffY = circ.y + circ.r*sin((startθ + (inv ? 1 : -1)*internalθ)/180*PI);
+			}
+
+			spath += 'M' + takeoffX + ',' + takeoffY;
+			spath += 'A' + circ.r + ',' + circ.r + ' 0 ' + (+sweep) + ',' + (+inv) + ' ' + tx + ',' + ty;
 		} else {
 			let dx = tx - fx;
 			let dy = ty - fy;
 			endθ = atan2(dy, dx) * 180/PI;
-			tx += r*sin(atan2(dy, dx));
-			ty += r*cos(atan2(dy, dx));
-			// TODO(bp) subtract AUX_RADIUS from path
+			tx += r*cos(atan2(dy, dx));
+			ty += r*sin(atan2(dy, dx));
+			spath += 'M' + fx + ',' + fy;
 			spath += 'L' + tx + ',' + ty;
 		}
 
@@ -935,8 +954,8 @@ class DConnector implements Ent {
 			// from center of to aux
 			// let slope1 = (i.y - ty)/(i.x - tx);
 			// inverse from center of circ
-			const slope2 = -atan2((tx - circ.x), (ty - circ.y));
-			θ = slope2*180/PI; // (slope1+slope2)/2;
+			const slope2 = atan2(ty - circ.y, tx - circ.x);
+			θ = slope2*180/PI - 90; // (slope1+slope2)/2;
 			if (inv)
 				θ += 180;
 		} else {
@@ -944,10 +963,10 @@ class DConnector implements Ent {
 		}
 
 		this.set = this.drawing.group(
-			paper.path(midPath).attr({'stroke-width': .5, stroke: '#CDDC39', fill: 'none'}),
-			paper.circle(midx, midy, 2).attr({'stroke-width': 0, fill: '#CDDC39'}),
-			paper.circle(cx, cy, cr).attr({'stroke-width': .5, stroke: '#2299dd', fill: 'none'}),
-			paper.circle(cx, cy, 2).attr({'stroke-width': 0, fill: '#2299dd'}),
+			//paper.path(midPath).attr({'stroke-width': .5, stroke: '#CDDC39', fill: 'none'}),
+			//paper.circle(midx, midy, 2).attr({'stroke-width': 0, fill: '#CDDC39'}),
+			//paper.circle(cx, cy, cr).attr({'stroke-width': .5, stroke: '#2299dd', fill: 'none'}),
+			//paper.circle(cx, cy, 2).attr({'stroke-width': 0, fill: '#2299dd'}),
 			paper.path(spath).attr({
 				'stroke-width': STROKE/2,
 				'stroke': this.color,
@@ -960,10 +979,10 @@ class DConnector implements Ent {
 				'stroke-width': 1,
 				'fill': this.color,
 				'stroke-linejoin': 'round',
-			}),
+			})
 			//paper.path(rayPath).attr({'stroke-width': .5, stroke: '#009688', 'fill': 'none'}),
-			paper.path(prayPath).attr({'stroke-width': .5, stroke: '#8BC34A', 'fill': 'none'}),
-			paper.path(pbrayPath).attr({'stroke-width': .5, stroke: '#FF9800', 'fill': 'none'})
+			//paper.path(prayPath).attr({'stroke-width': .5, stroke: '#8BC34A', 'fill': 'none'}),
+			//paper.path(pbrayPath).attr({'stroke-width': .5, stroke: '#FF9800', 'fill': 'none'})
 		);
 	}
 
