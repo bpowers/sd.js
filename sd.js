@@ -13961,9 +13961,11 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
                 var dx = tx - fx;
                 var dy = ty - fy;
                 endθ = atan2(dy, dx) * 180 / PI;
-                tx += r * cos(atan2(dy, dx));
-                ty += r * sin(atan2(dy, dx));
-                spath += 'M' + fx + ',' + fy;
+                tx -= r * cos(atan2(dy, dx));
+                ty -= r * sin(atan2(dy, dx));
+                takeoffX = fx + r * cos(atan2(dy, dx));
+                takeoffY = fy + r * sin(atan2(dy, dx));
+                spath += 'M' + takeoffX + ',' + takeoffY;
                 spath += 'L' + tx + ',' + ty;
             }
             var θ = 0;
