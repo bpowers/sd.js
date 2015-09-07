@@ -91,6 +91,13 @@ function isZero(n: number, tolerance = 0.0000001): boolean {
 	return Math.abs(n) < tolerance;
 }
 
+// FIXME: this is sort of gross, but works.  The main use is to check
+// the result
+function isInf(n: number): boolean {
+	'use strict';
+	return !isFinite(n) || n > 2e14;
+}
+
 function square(n: number): number {
 	'use strict';
 	return Math.pow(n, 2);
@@ -826,7 +833,9 @@ class DConnector implements Ent {
 		// we need the slope of the line _perpendicular_ to
 		// the tangent in order to find out the x,y center of
 		// our circle
-		const slopePerpToTakeoff = -1/slopeTakeoff;
+		let slopePerpToTakeoff = -1/slopeTakeoff;
+		if (isZero(slopePerpToTakeoff))
+			slopePerpToTakeoff = 0;
 
 		const takeoffPerpθ = Math.atan(slopePerpToTakeoff);
 		const psX = 30*cos(takeoffPerpθ);
@@ -908,7 +917,7 @@ class DConnector implements Ent {
 			startθ = atan2(fy - circ.y, fx - circ.x)*180/PI;
 
 			let spanθ = endθ - startθ;
-			inv = spanθ >= 0;
+			inv = spanθ > 0 || spanθ <= -180;
 			console.log('inv: ' + inv);
 
 			let internalθ = tan(r/circ.r)*180/PI;
@@ -928,6 +937,7 @@ class DConnector implements Ent {
 
 			// FIXME: this could be more exact?
 			sweep = !isZero(takeoffX - origTakeoffX, 1) && !isZero(takeoffY - origTakeoffY, 1);
+			console.log('sweep: ' + sweep);
 			if (sweep) {
 				inv = !inv;
 				tx = circ.x + circ.r*cos((endθ + (inv ? -1 : 1)*internalθ)/180*PI);

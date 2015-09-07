@@ -13367,6 +13367,10 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
         if (tolerance === void 0) { tolerance = 0.0000001; }
         return Math.abs(n) < tolerance;
     }
+    function isInf(n) {
+        'use strict';
+        return !isFinite(n) || n > 2e14;
+    }
     function square(n) {
         'use strict';
         return Math.pow(n, 2);
@@ -13887,6 +13891,8 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
             var takeoffθ = degToRad(xmileToCanvasAngle(this.e.angle));
             var slopeTakeoff = tan(takeoffθ);
             var slopePerpToTakeoff = -1 / slopeTakeoff;
+            if (isZero(slopePerpToTakeoff))
+                slopePerpToTakeoff = 0;
             var takeoffPerpθ = Math.atan(slopePerpToTakeoff);
             var psX = 30 * cos(takeoffPerpθ);
             var psY = 30 * sin(takeoffPerpθ);
@@ -13937,7 +13943,7 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
                 endθ = atan2(dy, dx) * 180 / PI;
                 startθ = atan2(fy - circ.y, fx - circ.x) * 180 / PI;
                 var spanθ = endθ - startθ;
-                inv = spanθ >= 0;
+                inv = spanθ > 0 || spanθ <= -180;
                 console.log('inv: ' + inv);
                 var internalθ = tan(r / circ.r) * 180 / PI;
                 tx = circ.x + circ.r * cos((endθ + (inv ? -1 : 1) * internalθ) / 180 * PI);
@@ -13947,6 +13953,7 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
                 var origTakeoffX = fx + AUX_RADIUS * cos(takeoffθ);
                 var origTakeoffY = fy + AUX_RADIUS * sin(takeoffθ);
                 sweep = !isZero(takeoffX - origTakeoffX, 1) && !isZero(takeoffY - origTakeoffY, 1);
+                console.log('sweep: ' + sweep);
                 if (sweep) {
                     inv = !inv;
                     tx = circ.x + circ.r * cos((endθ + (inv ? -1 : 1) * internalθ) / 180 * PI);
