@@ -67,7 +67,14 @@ const Z_ORDER: {[n: string]: number} = {
 };
 const MIN_SCALE = .2;
 const Z_MAX = 6;
-const IS_CHROME = typeof navigator !== 'undefined' && navigator.userAgent.match(/Chrome/);
+// FIXME: The new IE packaged with Windows 10 helpfully identifies
+// itself as 'Chrome', but doesn't implement the same SVG extensions
+// (getBBox on a tspan).  Instead of this hack, should do feature
+// detection.
+const IS_CHROME =
+	typeof navigator !== 'undefined' &&
+	navigator.userAgent.match(/Chrome/) &&
+	!navigator.userAgent.match(/Edge/);
 
 function addCSSClass(o: any, newClass: string): void {
 	'use strict';
@@ -77,17 +84,17 @@ function addCSSClass(o: any, newClass: string): void {
 	} else {
 		o.setAttribute('class', newClass);
 	}
-};
+}
 
 function isZero(n: number): boolean {
 	'use strict';
 	return Math.abs(n) < 0.0000001;
-};
+}
 
 function square(n: number): number {
 	'use strict';
 	return Math.pow(n, 2);
-};
+}
 
 interface Point {
 	x: number;
@@ -101,7 +108,7 @@ interface Circle extends Point {
 function pt(x: number, y: number): Point {
 	'use strict';
 	return {'x': x, 'y': y};
-};
+}
 
 const SIDE_MAP: {[index: number]: string} = {
 	0: 'right',
@@ -126,7 +133,7 @@ function findSide(element: xmile.ViewElement, defaultSide = 'bottom'): string {
 		return SIDE_MAP[i];
 	}
 	return defaultSide;
-};
+}
 
 function cloudAt(paper: Snap.Paper, x: number, y: number): Snap.Element {
 	'use strict';
@@ -140,7 +147,7 @@ function cloudAt(paper: Snap.Paper, x: number, y: number): Snap.Element {
 		'stroke-linejoin': 'round',
 		'stroke-miterlimit': 4,
 	}).transform(t);
-};
+}
 
 function circleFromPoints(p1: Point, p2: Point, p3: Point): Circle {
 	'use strict';
@@ -160,7 +167,7 @@ function circleFromPoints(p1: Point, p2: Point, p3: Point): Circle {
 		'y': cy,
 		'r': sqrt(square(p2.x - cx) + square(p2.y - cy)),
 	};
-};
+}
 
 function label(
 	paper: Snap.Paper, cx: number, cy: number, side: string, text: string,
@@ -275,19 +282,37 @@ function label(
 		console.log('unknown case ' + side);
 	}
 	return lbl;
-};
+}
+
+// converts an angle associated with a connector (in degrees) into an
+// angle in the coordinate system of SVG canvases where the origin is
+// in the upper-left of the screen and Y grows down.
+function xmileToCanvasAngle(a: number): number {
+	'use strict';
+	return (360 - a) % 360;
+}
+
+function degToRad(d: number): number {
+	'use strict';
+	return d/180*PI;
+}
+
+function radToDeg(r: number): number {
+	'use strict';
+	return r*180/PI;
+}
 
 function last<T>(arr: Array<T>): T {
 	'use strict';
 	return arr[arr.length-1];
-};
+}
 
 function arrowhead(paper: Snap.Paper, x: number, y: number, r: number): Snap.Element {
 	'use strict';
 	const head = 'M' + x + ',' + y + 'L' + (x-r) + ',' + (y + r/2) +
 		'A' + r*3 + ',' + r*3 + ' 0 0,1 ' + (x-r) + ',' + (y - r/2) + 'z';
 	return paper.path(head);
-};
+}
 
 function sparkline(
 	paper: Snap.Paper, cx: number, cy: number, w: number, h: number,
@@ -332,7 +357,7 @@ function sparkline(
 		line.setAttribute('d', p);
 		return graph;
 	}
-};
+}
 
 export interface EntStatic {
 	new (drawing: Drawing, element: xmile.ViewElement): Ent;
@@ -797,9 +822,8 @@ class DConnector implements Ent {
 		//     line:            y = mx + b || 0 = mx - y + b
 
 		// convert to radians
-		const origθ = (this.e.angle)%360;
-		const takeoffθ = (origθ)/180 * PI;
-		// const takeoffθ = (this.e.angle % 180)/180 * PI;
+		const xmileTakeoffθ = this.e.angle;
+		const takeoffθ = degToRad(xmileToCanvasAngle(xmileTakeoffθ));
 		const slopeTakeoff = tan(takeoffθ);
 		// we need the slope of the line _perpendicular_ to
 		// the tangent in order to find out the x,y center of
@@ -807,10 +831,10 @@ class DConnector implements Ent {
 		const slopePerpToTakeoff = -1/slopeTakeoff;
 
 		const takeoffPerpθ = Math.atan(slopePerpToTakeoff);
-		const psX = 30*sin(takeoffPerpθ);
-		const psY = 30*cos(takeoffPerpθ);
-		const peX = 30*sin(takeoffPerpθ - PI);
-		const peY = 30*cos(takeoffPerpθ - PI);
+		const psX = 30*cos(takeoffPerpθ);
+		const psY = 30*sin(takeoffPerpθ);
+		const peX = 30*cos(takeoffPerpθ - PI);
+		const peY = 30*sin(takeoffPerpθ - PI);
 
 		// the line that represents the tangent to the circle.
 		const prayPath = 'M' + (fx + psX) + ',' + (fy + psY) + 'L' + (fx + peX) + ',' + (fy + peY);
@@ -847,24 +871,13 @@ class DConnector implements Ent {
 			// (bFrom - bPerp)/(perpSlopeBisector- perpSlopeTakeoff) = x
 			cx = (bFrom - bPerp)/(slopePerpToBisector- slopePerpToTakeoff);
 		}
-		const pbrayY = 25*sin(perpBisectθ);
 		const pbrayX = 25*cos(perpBisectθ);
+		const pbrayY = 25*sin(perpBisectθ);
 		const pbrayPath = 'M' + midx + ',' + midy + 'L' + (midx + pbrayX) + ',' + (midy + pbrayY);
 
 		let cy = slopePerpToTakeoff*cx + bFrom;
 
 		const r: number = toEnt instanceof DModule ? 25 : AUX_RADIUS;
-
-		// FIXME: reflect over the line between our two known
-		// points.  I'm sure this means I'm misunderstanding
-		// something.
-		const fixX = midx - cx;
-		cx += 2*fixX;
-		const fixY = midy - cy;
-		cy += 2*fixY;
-
-		// console.log(r);
-		// (x1−h)^2+(y1−k)^2=r^2
 
 		const takeoffX = this.e.x;
 		const takeoffY = this.e.y;
@@ -879,7 +892,7 @@ class DConnector implements Ent {
 			xMidθ += 360;
 		console.log(fromEnt.ident + ': ' + xMidθ);
 
-		const straightLine = abs(xMidθ - origθ) < 5;
+		const straightLine = abs(xMidθ - xmileTakeoffθ) < 5;
 
 		let endθ: number;
 		// FIXME: instead of checking for circ, we should

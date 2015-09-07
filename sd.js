@@ -13349,7 +13349,9 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
     };
     var MIN_SCALE = .2;
     var Z_MAX = 6;
-    var IS_CHROME = typeof navigator !== 'undefined' && navigator.userAgent.match(/Chrome/);
+    var IS_CHROME = typeof navigator !== 'undefined' &&
+        navigator.userAgent.match(/Chrome/) &&
+        !navigator.userAgent.match(/Edge/);
     function addCSSClass(o, newClass) {
         'use strict';
         var existingClass = o.getAttribute('class');
@@ -13360,22 +13362,18 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
             o.setAttribute('class', newClass);
         }
     }
-    ;
     function isZero(n) {
         'use strict';
         return Math.abs(n) < 0.0000001;
     }
-    ;
     function square(n) {
         'use strict';
         return Math.pow(n, 2);
     }
-    ;
     function pt(x, y) {
         'use strict';
         return { 'x': x, 'y': y };
     }
-    ;
     var SIDE_MAP = {
         0: 'right',
         1: 'bottom',
@@ -13398,7 +13396,6 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
         }
         return defaultSide;
     }
-    ;
     function cloudAt(paper, x, y) {
         'use strict';
         var scale = (AUX_RADIUS * 2 / CLOUD_WIDTH);
@@ -13412,7 +13409,6 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
             'stroke-miterlimit': 4,
         }).transform(t);
     }
-    ;
     function circleFromPoints(p1, p2, p3) {
         'use strict';
         var off = square(p2.x) + square(p2.y);
@@ -13432,7 +13428,6 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
             'r': sqrt(square(p2.x - cx) + square(p2.y - cy)),
         };
     }
-    ;
     function label(paper, cx, cy, side, text, rw, rh) {
         'use strict';
         if (rw === void 0) { rw = AUX_RADIUS; }
@@ -13532,19 +13527,28 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
         }
         return lbl;
     }
-    ;
+    function xmileToCanvasAngle(a) {
+        'use strict';
+        return (360 - a) % 360;
+    }
+    function degToRad(d) {
+        'use strict';
+        return d / 180 * PI;
+    }
+    function radToDeg(r) {
+        'use strict';
+        return r * 180 / PI;
+    }
     function last(arr) {
         'use strict';
         return arr[arr.length - 1];
     }
-    ;
     function arrowhead(paper, x, y, r) {
         'use strict';
         var head = 'M' + x + ',' + y + 'L' + (x - r) + ',' + (y + r / 2) +
             'A' + r * 3 + ',' + r * 3 + ' 0 0,1 ' + (x - r) + ',' + (y - r / 2) + 'z';
         return paper.path(head);
     }
-    ;
     function sparkline(paper, cx, cy, w, h, time, values, graph) {
         'use strict';
         var x = cx - w / 2;
@@ -13584,7 +13588,6 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
             return graph;
         }
     }
-    ;
     var DStock = (function () {
         function DStock(drawing, element) {
             this.drawing = drawing;
@@ -13880,15 +13883,15 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
                 return;
             var tx = toEnt.cx;
             var ty = toEnt.cy;
-            var origθ = (this.e.angle) % 360;
-            var takeoffθ = (origθ) / 180 * PI;
+            var xmileTakeoffθ = this.e.angle;
+            var takeoffθ = degToRad(xmileToCanvasAngle(xmileTakeoffθ));
             var slopeTakeoff = tan(takeoffθ);
             var slopePerpToTakeoff = -1 / slopeTakeoff;
             var takeoffPerpθ = Math.atan(slopePerpToTakeoff);
-            var psX = 30 * sin(takeoffPerpθ);
-            var psY = 30 * cos(takeoffPerpθ);
-            var peX = 30 * sin(takeoffPerpθ - PI);
-            var peY = 30 * cos(takeoffPerpθ - PI);
+            var psX = 30 * cos(takeoffPerpθ);
+            var psY = 30 * sin(takeoffPerpθ);
+            var peX = 30 * cos(takeoffPerpθ - PI);
+            var peY = 30 * sin(takeoffPerpθ - PI);
             var prayPath = 'M' + (fx + psX) + ',' + (fy + psY) + 'L' + (fx + peX) + ',' + (fy + peY);
             var bFrom = fy - slopePerpToTakeoff * fx;
             var midx = (fx + tx) / 2;
@@ -13906,15 +13909,11 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
                 perpBisectθ = Math.atan(slopePerpToBisector);
                 cx = (bFrom - bPerp) / (slopePerpToBisector - slopePerpToTakeoff);
             }
-            var pbrayY = 25 * sin(perpBisectθ);
             var pbrayX = 25 * cos(perpBisectθ);
+            var pbrayY = 25 * sin(perpBisectθ);
             var pbrayPath = 'M' + midx + ',' + midy + 'L' + (midx + pbrayX) + ',' + (midy + pbrayY);
             var cy = slopePerpToTakeoff * cx + bFrom;
             var r = toEnt instanceof DModule ? 25 : AUX_RADIUS;
-            var fixX = midx - cx;
-            cx += 2 * fixX;
-            var fixY = midy - cy;
-            cy += 2 * fixY;
             var takeoffX = this.e.x;
             var takeoffY = this.e.y;
             var cr = sqrt(square(fx - cx) + square(fy - cy));
@@ -13926,7 +13925,7 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
             if (xMidθ < 0)
                 xMidθ += 360;
             console.log(fromEnt.ident + ': ' + xMidθ);
-            var straightLine = abs(xMidθ - origθ) < 5;
+            var straightLine = abs(xMidθ - xmileTakeoffθ) < 5;
             var endθ;
             if (!straightLine) {
                 var dx = fx - circ.x;
