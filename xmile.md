@@ -8,6 +8,11 @@ compatability with isee software.  This document contains notes on
 where [sd.js](https://github.com/sdlabs/sd.js) and
 [libsd](https://github.com/sdlabs/libsd) diverge from the spec.
 
+namespace
+---------
+
+The namespace should support HTTPS.
+
 Header
 ------
 

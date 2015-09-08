@@ -5,3 +5,4 @@
 /// <reference path="q/Q.d.ts" />
 /// <reference path="snapsvg/snapsvg.d.ts" />
 /// <reference path="touch-events/touch-events.d.ts" />
+/// <reference path="xmldom/xmldom.d.ts" />

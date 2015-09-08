@@ -1,3 +1,4 @@
+export declare const XML_ROOT: string;
 export declare function camelCase(s: string): string;
 export declare function splitOnComma(str: string): string[];
 export declare function numberize(arr: string[]): number[];

@@ -4,6 +4,10 @@
 
 'use strict';
 
+export const XML_ROOT =
+	`<?xml version="1.0" encoding="UTF-8"?>` +
+	`<xmile version="1.0" xmlns="https://docs.oasis-open.org/xmile/ns/XMILE/v1.0"/>`;
+
 export function camelCase(s: string): string {
 	'use strict';
 	let i = 0;
