@@ -135,9 +135,10 @@ CommonJS modules in the `lib/` directory.
 TODO
 ----
 
-- finish equation parser
-- convert from old-style connector x,y center position to new-style
-  connector takeoff angle (partially done).
+- fix sweep/inverse flags in connectors
+- intersection of arc w/ rectangle for takeoff from stock
+- intersection of arc w/ rounded-rect for takeoff from module
+- refactor/add-in support for old-style connectors w/o `angle` attrib
 - add-back isee compat support
 - logging framework
 - vensim diagrams
