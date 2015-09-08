@@ -13,3 +13,6 @@ v8.log
 /test/*.d.ts
 /test/*.map
 /test/.stamp
+.#*
+\#*#
+*.3vm
