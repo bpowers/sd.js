@@ -184,3 +184,13 @@ Arrays TODO
   - array builtins: `MIN`, `MEAN`, `MAX`, `RANK`, `SIZE`, `STDDEV`, `SUM`.
   - be able to enumerate all subscripted values for CSV output
   - be able to return results for `arrayed_variable[int_or_named_dimension]`
+  - right now, the runtime is pretty dead-simple.  Every builtin
+    function expects one or more numbers as input.  With the array
+    builtins, this is no longer the case.
+    - index into arrays with non-constant offsets:
+      `constants[INT(RANDOM(1, SIZE(foods)))]`
+    - create slices of arrays: `SUM(array[chosen_dim, *])`, where
+      `chosen_dim` is an auxiliary variable.
+    - this means runtime type checking, and I think runtime memory
+      allocation (right now memory is allocated once, in one chunk, when a
+      simulation is created, which is fast and optimial).
