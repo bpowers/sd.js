@@ -1,0 +1,30 @@
+{
+    "compilerOptions": {
+        "target": "es5",
+        "module": "commonjs",
+        "noImplicitAny": true,
+        "removeComments": true,
+        "newLine": "LF",
+        "outDir": "lib"
+    },
+    "filesGlob": [
+        "./src/*.ts"
+    ],
+    "files": [
+        "./src/ast.ts",
+        "./src/common.ts",
+        "./src/compat.ts",
+        "./src/draw.ts",
+        "./src/lex.ts",
+        "./src/model.ts",
+        "./src/parse.ts",
+        "./src/project.ts",
+        "./src/runtime.ts",
+        "./src/sd.ts",
+        "./src/sim.ts",
+        "./src/type.ts",
+        "./src/util.ts",
+        "./src/vars.ts",
+        "./src/xmile.ts"
+    ]
+}
