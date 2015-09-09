@@ -62,7 +62,7 @@ $(TSC) $(BOWER) $(TSLINT) $(REQUIRE): node_modules
 
 bower_components: $(BOWER) bower.json
 	@echo "  BOWER"
-	bower install --silent
+	$(BOWER) install --silent
 	touch -c $@
 
 $(ALMOND): bower_components
