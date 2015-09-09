@@ -26,7 +26,7 @@ SDJS_DIR="`pwd -P`"
 popd >/dev/null
 
 
-OUT=`mktemp --suffix=.js`
+OUT=`mktemp /tmp/sdjs.XXXXXX.js`
 
 node "$SDJS_DIR/emit_sim.js" "$model" >"$OUT"
 #time ~/src/v8/out/native/d8 --use-strict --harmony worker.js
