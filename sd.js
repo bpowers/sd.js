@@ -2328,20 +2328,12 @@ define('vars',["require", "exports", './common', './lex', './parse'], function (
             this.scope = isMain ? 'curr' : 'globalCurr';
         }
         CodegenVisitor.prototype.ident = function (n) {
-            if (n.ident in this.offsets) {
-                this.code += 'curr[';
-                this.code += this.offsets[n.ident];
-                this.code += ']';
-            }
-            else if (n.ident === 'time') {
-                this.code += this.scope;
-                this.code += '[0]';
-            }
-            else {
-                this.code += 'globalCurr[this.ref["';
-                this.code += n.ident;
-                this.code += '"]]';
-            }
+            if (n.ident === 'time')
+                this.refTime();
+            else if (n.ident in this.offsets)
+                this.refDirect(n.ident);
+            else
+                this.refIndirect(n.ident);
             return true;
         };
         CodegenVisitor.prototype.constant = function (n) {
@@ -2349,13 +2341,12 @@ define('vars',["require", "exports", './common', './lex', './parse'], function (
             return true;
         };
         CodegenVisitor.prototype.call = function (n) {
-            var fn;
             if (!n.fun.hasOwnProperty('ident')) {
-                console.log('// for now, only idents can be used as fns:');
+                console.log('// for now, only idents can be used as fns.');
                 console.log(n);
                 return false;
             }
-            fn = n.fun.ident;
+            var fn = n.fun.ident;
             if (!(fn in common.builtins)) {
                 console.log('// unknown builtin: ' + fn);
                 return false;
@@ -2364,8 +2355,7 @@ define('vars',["require", "exports", './common', './lex', './parse'], function (
             this.code += '(';
             if (common.builtins[fn].usesTime) {
                 this.code += 'dt, ';
-                this.code += this.scope;
-                this.code += '[0]';
+                this.refTime();
                 if (n.args.length)
                     this.code += ', ';
             }
@@ -2418,18 +2408,42 @@ define('vars',["require", "exports", './common', './lex', './parse'], function (
             this.code += ')';
             return true;
         };
+        CodegenVisitor.prototype.refTime = function () {
+            this.code += this.scope;
+            this.code += '[0]';
+        };
+        CodegenVisitor.prototype.refDirect = function (ident) {
+            this.code += 'curr[';
+            this.code += this.offsets[ident];
+            this.code += ']';
+        };
+        CodegenVisitor.prototype.refIndirect = function (ident) {
+            this.code += "globalCurr[this.ref['";
+            this.code += ident;
+            this.code += "']]";
+        };
         return CodegenVisitor;
     })();
     exports.CodegenVisitor = CodegenVisitor;
     var Variable = (function () {
         function Variable(model, v) {
-            if (arguments.length === 0)
+            if (!arguments.length)
                 return;
             this.model = model;
             this.xmile = v;
-            this.eqn = v.eqn;
             this.ident = v.ident;
+            this.eqn = v.eqn;
+            var errs;
+            _a = parse.eqn(this.eqn), this.ast = _a[0], errs = _a[1];
+            if (errs) {
+                console.log('// parse failed for ' + this.ident + ': ' + errs[0]);
+                this.valid = false;
+            }
+            else {
+                this.valid = true;
+            }
             this._deps = lex_1.identifierSet(this.eqn);
+            var _a;
         }
         ;
         Variable.prototype.initialEquation = function () {
@@ -2440,20 +2454,12 @@ define('vars',["require", "exports", './common', './lex', './parse'], function (
             if (this.isConst())
                 return "this.initials['" + this.ident + "']";
             var visitor = new CodegenVisitor(offsets, this.model.ident === 'main');
-            var expr;
-            var errs;
-            _a = parse.eqn(this.eqn), expr = _a[0], errs = _a[1];
-            if (errs) {
-                console.log('// parse failed for ' + this.ident + ': ' + errs[0]);
-                return '';
-            }
-            var ok = expr.walk(visitor);
+            var ok = this.ast.walk(visitor);
             if (!ok) {
                 console.log('// codegen failed for ' + this.ident);
                 return '';
             }
             return visitor.code;
-            var _a;
         };
         Variable.prototype.getDeps = function () {
             if (this._allDeps)
@@ -2487,15 +2493,10 @@ define('vars',["require", "exports", './common', './lex', './parse'], function (
     var Stock = (function (_super) {
         __extends(Stock, _super);
         function Stock(model, v) {
-            _super.call(this);
-            this.model = model;
-            this.xmile = v;
-            this.ident = v.ident;
+            _super.call(this, model, v);
             this.initial = v.eqn;
-            this.eqn = v.eqn;
             this.inflows = v.inflows;
             this.outflows = v.outflows;
-            this._deps = lex_1.identifierSet(this.initial);
         }
         Stock.prototype.initialEquation = function () {
             return this.initial;
@@ -2518,14 +2519,10 @@ define('vars',["require", "exports", './common', './lex', './parse'], function (
     var Table = (function (_super) {
         __extends(Table, _super);
         function Table(model, v) {
-            _super.call(this);
+            _super.call(this, model, v);
             this.x = [];
             this.y = [];
             this.ok = true;
-            this.model = model;
-            this.xmile = v;
-            this.eqn = v.eqn;
-            this.ident = v.ident;
             var ypts = v.gf.yPoints;
             var xpts = v.gf.xPoints;
             var xscale = v.gf.xScale;
@@ -2542,7 +2539,6 @@ define('vars',["require", "exports", './common', './lex', './parse'], function (
                 this.x.push(x);
                 this.y.push(ypts[i]);
             }
-            this._deps = lex_1.identifierSet(this.eqn);
         }
         Table.prototype.code = function (v) {
             if (!this.eqn)

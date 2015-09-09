@@ -24,6 +24,10 @@ const JS_OP: {[op: string]: string} = {
 	'=': '===',
 };
 
+// An AST visitor. after calling walk() on the root of an equation's
+// AST with an instance of this class, the visitor.code member will
+// contain a string with valid JS code to be emitted into the
+// Simulation Worker.
 export class CodegenVisitor implements ast.Visitor {
 	offsets: type.Offsets;
 	code: string = '';
@@ -37,18 +41,12 @@ export class CodegenVisitor implements ast.Visitor {
 	}
 
 	ident(n: ast.Ident): boolean {
-		if (n.ident in this.offsets) {
-			this.code += 'curr[';
-			this.code += this.offsets[n.ident];
-			this.code += ']';
-		} else if (n.ident === 'time') {
-			this.code += this.scope;
-			this.code += '[0]';
-		} else {
-			this.code += 'globalCurr[this.ref["';
-			this.code += n.ident;
-			this.code += '"]]';
-		}
+		if (n.ident === 'time')
+			this.refTime();
+		else if (n.ident in this.offsets)
+			this.refDirect(n.ident);
+		else
+			this.refIndirect(n.ident);
 		return true;
 	}
 	constant(n: ast.Constant): boolean {
@@ -56,13 +54,12 @@ export class CodegenVisitor implements ast.Visitor {
 		return true;
 	}
 	call(n: ast.CallExpr): boolean {
-		let fn: string;
 		if (!n.fun.hasOwnProperty('ident')) {
-			console.log('// for now, only idents can be used as fns:');
+			console.log('// for now, only idents can be used as fns.');
 			console.log(n);
 			return false;
 		}
-		fn = (<ast.Ident>n.fun).ident;
+		let fn = (<ast.Ident>n.fun).ident;
 		if (!(fn in common.builtins)) {
 			console.log('// unknown builtin: ' + fn);
 			return false;
@@ -71,8 +68,7 @@ export class CodegenVisitor implements ast.Visitor {
 		this.code += '(';
 		if (common.builtins[fn].usesTime) {
 			this.code += 'dt, ';
-			this.code += this.scope;
-			this.code += '[0]';
+			this.refTime();
 			if (n.args.length)
 				this.code += ', ';
 		}
@@ -86,6 +82,7 @@ export class CodegenVisitor implements ast.Visitor {
 		return true;
 	}
 	if(n: ast.IfExpr): boolean {
+		// use the ternary operator for if statements
 		this.code += '(';
 		n.cond.walk(this);
 		this.code += ' ? ';
@@ -110,6 +107,8 @@ export class CodegenVisitor implements ast.Visitor {
 		return true;
 	}
 	binary(n: ast.BinaryExpr): boolean {
+		// exponentiation isn't a builtin operator in JS, it
+		// is implemented as a function in the Math module.
 		if (n.op === '^') {
 			this.code += 'Math.pow(';
 			n.l.walk(this);
@@ -118,6 +117,7 @@ export class CodegenVisitor implements ast.Visitor {
 			this.code += ')';
 			return true;
 		}
+
 		let op = n.op;
 		// only need to convert some of them
 		if (n.op in JS_OP)
@@ -129,12 +129,34 @@ export class CodegenVisitor implements ast.Visitor {
 		this.code += ')';
 		return true;
 	}
+
+	// the value of time in the current simulation step
+	private refTime(): void {
+		this.code += this.scope;
+		this.code += '[0]';
+	}
+
+	// the value of an aux, stock, or flow in the current module
+	private refDirect(ident: string): void {
+		this.code += 'curr[';
+		this.code += this.offsets[ident];
+		this.code += ']';
+	}
+
+	// the value of an overridden module input
+	private refIndirect(ident: string): void {
+		this.code += "globalCurr[this.ref['";
+		this.code += ident;
+		this.code += "']]";
+	}
 }
 
 export class Variable implements type.Variable {
 	xmile: xmile.Variable;
+	valid: boolean;
 	ident: string;
 	eqn: string;
+	ast: ast.Node;
 
 	project: type.Project;
 	parent: type.Model;
@@ -145,15 +167,22 @@ export class Variable implements type.Variable {
 	_allDeps: type.StringSet;
 
 	constructor(model?: type.Model, v?: xmile.Variable) {
-		// for subclasses, when instantiated for their prototypes
-		if (arguments.length === 0)
+		if (!arguments.length)
 			return;
-
 		this.model = model;
 		this.xmile = v;
 
-		this.eqn = v.eqn;
 		this.ident = v.ident;
+		this.eqn = v.eqn;
+
+		let errs: string[];
+		[this.ast, errs] = parse.eqn(this.eqn);
+		if (errs) {
+			console.log('// parse failed for ' + this.ident + ': ' + errs[0]);
+			this.valid = false;
+		} else {
+			this.valid = true;
+		}
 
 		// for a flow or aux, we depend on variables that aren't built
 		// in functions in the equation.
@@ -168,15 +197,8 @@ export class Variable implements type.Variable {
 		if (this.isConst())
 			return "this.initials['" + this.ident + "']";
 		let visitor = new CodegenVisitor(offsets, this.model.ident === 'main');
-		let expr: ast.Node;
-		let errs: string[];
-		[expr, errs] = parse.eqn(this.eqn);
-		if (errs) {
-			console.log('// parse failed for ' + this.ident + ': ' + errs[0]);
-			return '';
-		}
 
-		let ok = expr.walk(visitor);
+		let ok = this.ast.walk(visitor);
 		if (!ok) {
 			console.log('// codegen failed for ' + this.ident);
 			return '';
@@ -221,22 +243,11 @@ export class Stock extends Variable {
 	outflows: string[];
 
 	constructor(model: type.Model, v: xmile.Variable) {
-		super();
+		super(model, v);
 
-		this.model = model;
-		this.xmile = v;
-		this.ident = v.ident;
 		this.initial = v.eqn;
-		// FIXME: I don't think this is necessary - commented out to find out.
-		this.eqn = v.eqn;
 		this.inflows = v.inflows;
 		this.outflows = v.outflows;
-
-		// for a stock, the dependencies are any identifiers (that
-		// aren't references to builtin functions) in the initial
-		// variable string.  Deps are used for sorting equations into
-		// the right order, so for now we don't add any of the flows.
-		this._deps = identifierSet(this.initial);
 	}
 
 	// FIXME: returns a string of this variables initial equation. suitable for
@@ -266,12 +277,7 @@ export class Table extends Variable {
 	ok: boolean = true;
 
 	constructor(model: type.Model, v: xmile.Variable) {
-		super();
-
-		this.model = model;
-		this.xmile = v;
-		this.eqn = v.eqn;
-		this.ident = v.ident;
+		super(model, v);
 
 		let ypts = v.gf.yPoints;
 
@@ -294,8 +300,6 @@ export class Table extends Variable {
 			this.x.push(x);
 			this.y.push(ypts[i]);
 		}
-
-		this._deps = identifierSet(this.eqn);
 	}
 
 	code(v: type.Offsets): string {

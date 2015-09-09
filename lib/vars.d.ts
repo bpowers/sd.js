@@ -14,11 +14,16 @@ export declare class CodegenVisitor implements ast.Visitor {
     paren(n: ast.ParenExpr): boolean;
     unary(n: ast.UnaryExpr): boolean;
     binary(n: ast.BinaryExpr): boolean;
+    private refTime();
+    private refDirect(ident);
+    private refIndirect(ident);
 }
 export declare class Variable implements type.Variable {
     xmile: xmile.Variable;
+    valid: boolean;
     ident: string;
     eqn: string;
+    ast: ast.Node;
     project: type.Project;
     parent: type.Model;
     model: type.Model;
