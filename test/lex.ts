@@ -260,6 +260,28 @@ const LEX_TESTS: LexTestData[] = [
 			new Token("\"birth fraction\"", TokenType.IDENT),
 		]
 	},
+	{
+		in: "sales[pizza, spinach]",
+		out: [
+			new Token("sales", TokenType.IDENT),
+			new Token("[", TokenType.TOKEN),
+			new Token("pizza", TokenType.IDENT),
+			new Token(",", TokenType.TOKEN),
+			new Token("spinach", TokenType.IDENT),
+			new Token("]", TokenType.TOKEN),
+		]
+	},
+	{
+		in: "sales[pizza, *]",
+		out: [
+			new Token("sales", TokenType.IDENT),
+			new Token("[", TokenType.TOKEN),
+			new Token("pizza", TokenType.IDENT),
+			new Token(",", TokenType.TOKEN),
+			new Token("*", TokenType.TOKEN),
+			new Token("]", TokenType.TOKEN),
+		]
+	}
 ];
 
 describe('lex', function(): void {
