@@ -63,7 +63,14 @@ var Simulation = (function () {
         return result;
     };
     Simulation.prototype.getNVars = function () {
-        var nVars = Object.keys(this.offsets).length;
+        var nVars = 0;
+	var i;
+	for (var name in this.offsets) {
+	    if (name in this.varDimensions)
+		nVars += this.dimensions[this.varDimensions[name]].length;
+	    else
+		nVars++;
+	}
         for (var n in this.modules) {
             if (this.modules.hasOwnProperty(n))
                 nVars += this.modules[n].getNVars();
@@ -298,7 +305,7 @@ var Main = function Main(name, parent, offset, symRefs) {
 Main.prototype = new Simulation();
 Main.prototype.initials = {
 	"price": 9,
-	"revenue": 9
+	"revenue": 10
 };
 Main.prototype.simSpec = {
 	"start": 1,
@@ -309,25 +316,47 @@ Main.prototype.simSpec = {
 	"timeUnits": "",
 	"dtReciprocal": 4
 };
+Main.prototype.dimensions = {
+	'Product': ['Pizza', 'Salad']
+};
+Main.prototype.varDimensions = {
+    'price': 'Product',
+    'revenue': 'Product',
+    'sales': 'Product',
+};
 Main.prototype.offsets = {
 	"price": 1,
-	"revenue": 2,
-	"sales": 3
+	"revenue": 3,
+	"sales": 5
 };
 Main.prototype.tables = {};
+// XXX: merge adjacent for loops together?
 Main.prototype.calcInitial = function(dt, curr) {
-	dt = +dt;
-	curr[1/*price*/] = this.initials['price'];
-	curr[2/*revenue*/] = this.initials['revenue'];
+    dt = +dt;
+    var i;
+    for (i = 0; i < this.dimensions['Product'].length; i++) {
+	curr[1/*price*/ + i] = this.initials['price'];
+    }
+    for (i = 0; i < this.dimensions['Product'].length; i++) {
+	console.log('irev ' + (3+i) + ': ' + this.initials['revenue']);
+	curr[3/*revenue*/ + i] = this.initials['revenue'];
+    }
 };
 Main.prototype.calcFlows = function(dt, curr) {
-	dt = +dt;
-	curr[3/*sales*/] = (curr[1/*price*/]*curr[2/*revenue*/]);
+    dt = +dt;
+    for (i = 0; i < this.dimensions['Product'].length; i++) {
+	console.log('sales(' + i + '): ' + curr[1/*price*/ + i] + ' * ' + curr[3 + i]);
+	curr[5/*sales*/ + i] = (curr[1/*price*/ + i]*curr[3/*revenue*/ + i]);
+    }
 };
 Main.prototype.calcStocks = function(dt, curr, next) {
-	dt = +dt;
-	next[1/*price*/] = curr[1/*price*/];
-	next[2/*revenue*/] = curr[2/*revenue*/];
+    dt = +dt;
+    for (i = 0; i < this.dimensions['Product'].length; i++) {
+	next[1/*price*/ + i] = curr[1/*price*/ + i];
+    }
+    for (i = 0; i < this.dimensions['Product'].length; i++) {
+	next[3/*revenue*/ + i] = curr[3/*revenue*/ + i];
+    }
 };
 
 var main = new Main('main');
