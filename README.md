@@ -141,6 +141,46 @@ TODO
 - refactor/add-in support for old-style connectors w/o `angle` attrib
 - add-back isee compat support
 - logging framework
-- vensim diagrams
-- vensim models
-- arrays
+
+Vensim TODO
+-----------
+
+- parse equations - should be pretty similar to XMILE, except logical
+  ops are `:NOT:`, `:OR:`, etc.
+- determine types (stocks and flows aren't explicitly defined as
+  such. Stocks can be determined by use of the `INTEG` function, and
+  flows are variables that are referenced inside of `INTEG` functions.
+- read display section
+  - read style
+  - convert elements to XMILE display concepts.
+
+
+Arrays TODO
+-----------
+
+- diagram changes (minimal)
+- figure out if it makes sense to do single-dimensional first, or multi-
+  dimensional from the start
+- parser:
+  - array reference/slicing
+  - transpose operator
+- semantic analysis/validation:
+  - validate indexing
+  - validate slicing
+  - transpose using dimension names
+  - transpose using positions
+  - array slicing (`A[1, *]`)
+- codegen:
+  - apply-to-all equations
+    - nested for loop
+  - non-A2A equations
+  - non-A2A graphical functions
+  - array slicing (`A[1, *]`)
+  - transpose using dimension names
+  - transpose using positions
+- runtime:
+  - know about defined dimensions + their subscripts
+  - allocate correct amount of space for arrayed variables
+  - array builtins: `MIN`, `MEAN`, `MAX`, `RANK`, `SIZE`, `STDDEV`, `SUM`.
+  - be able to enumerate all subscripted values for CSV output
+  - be able to return results for `arrayed_variable[int_or_named_dimension]`
