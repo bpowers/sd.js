@@ -170,6 +170,13 @@ Arrays TODO
   - transpose using dimension names
   - transpose using positions
   - array slicing (`A[1, *]`)
+- optimization?
+  - the simple thing to do is have a nest of for loops for each individual
+    variable.  This is simple, I worry it will be slow for large models (which
+    are very common users of arrays).  If we're doing operations on multiple
+    variables with the same dimensions in a row, we can merge them into a
+    single loop.  This is straightforward logically, but there is no
+    optimization framework in place yet, so that would need to be added.
 - codegen:
   - apply-to-all equations
     - nested for loop

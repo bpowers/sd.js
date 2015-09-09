@@ -205,12 +205,12 @@ function label(
 	}
 
 	let lbl = paper.text(x, y, text.split('\n')).attr(TEXT_ATTR);
-	let linesAttr: string|string[] = lbl.attr('text');
+	let linesAttr: any = lbl.attr('text');
 	let lines: string[];
 	if (typeof linesAttr === 'string') {
 		lines = [linesAttr];
 	} else {
-		lines = linesAttr;
+		lines = <string[]>linesAttr;
 	}
 	let spans = lbl.node.getElementsByTagName('tspan');
 	let maxH = Number.MIN_VALUE, maxW = Number.MIN_VALUE;
