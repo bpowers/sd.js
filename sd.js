@@ -14017,14 +14017,10 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
             var inv = spanθ > 0 || spanθ <= degToRad(-180);
             var start = this.intersectEntArc(from, circ, inv);
             var end = this.intersectEntArc(to, circ, !inv);
-            console.log(from.ident + ' (takeoff: ' + this.e.angle + ')');
-            console.log('  inv: ' + inv + ' (' + radToDeg(spanθ) +
-                ' = ' + radToDeg(toθ) + ' - ' + radToDeg(fromθ) + ')');
             var startR = sqrt(square(start.x - from.cx) + square(start.y - from.cy));
             var expectedStartX = from.cx + startR * cos(takeoffθ);
             var expectedStartY = from.cy + startR * sin(takeoffθ);
-            var sweep = !isEqual(expectedStartX, start.x, 1) && !isEqual(expectedStartY, start.y);
-            console.log('  sweep: ' + sweep);
+            var sweep = !isEqual(expectedStartX, start.x, 5) || !isEqual(expectedStartY, start.y, 5);
             if (sweep) {
                 inv = !inv;
                 start = this.intersectEntArc(from, circ, inv);
@@ -14037,7 +14033,7 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
             var arrowheadAngle = radToDeg(atan2(end.y - circ.y, end.x - circ.x)) - 90;
             if (inv)
                 arrowheadAngle += 180;
-            this.set = this.drawing.group(paper.circle(circ.x, circ.y, circ.r).attr({ 'stroke-width': .5, stroke: '#2299dd', fill: 'none' }), paper.circle(circ.x, circ.y, 2).attr({ 'stroke-width': 0, fill: '#2299dd' }), paper.path(spath).attr({
+            this.set = this.drawing.group(paper.path(spath).attr({
                 'stroke-width': STROKE / 2,
                 'stroke': this.color,
                 'fill': 'none',
@@ -14104,6 +14100,8 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
             this.namedEnts = {};
             for (var i = 0; i < view.elements.length; i++) {
                 var e = view.elements[i];
+                if (e.type === 'style')
+                    continue;
                 if (!DTypes.hasOwnProperty(e.type)) {
                     console.log('unknown draw ent type ' + e.type);
                     continue;

@@ -1028,10 +1028,10 @@ class DConnector implements Ent {
 		let start = this.intersectEntArc(from, circ, inv);
 		let end = this.intersectEntArc(to, circ, !inv);
 
-		console.log(from.ident + ' (takeoff: ' + this.e.angle + ')');
-		console.log(
-			'  inv: ' + inv + ' (' + radToDeg(spanθ) +
-			' = ' + radToDeg(toθ) + ' - ' + radToDeg(fromθ) + ')');
+		//console.log(from.ident + ' (takeoff: ' + this.e.angle + ')');
+		//console.log(
+		//	'  inv: ' + inv + ' (' + radToDeg(spanθ) +
+		//	' = ' + radToDeg(toθ) + ' - ' + radToDeg(fromθ) + ')');
 
 		const startR = sqrt(square(start.x - from.cx) + square(start.y - from.cy));
 		// this isn't precise - the arc moves out from the
@@ -1041,9 +1041,13 @@ class DConnector implements Ent {
 		let expectedStartX = from.cx + startR*cos(takeoffθ);
 		let expectedStartY = from.cy + startR*sin(takeoffθ);
 
-		// FIXME: this could be more exact?
-		let sweep: boolean = !isEqual(expectedStartX, start.x, 1) && !isEqual(expectedStartY, start.y);
-		console.log('  sweep: ' + sweep);
+		// FIXME: this could be more exact?  It is especially wrong
+		// inexact for stocks + modules because I don't actually
+		// calculate the intersection of the arc with the shape
+		let sweep: boolean = !isEqual(expectedStartX, start.x, 5) || !isEqual(expectedStartY, start.y, 5);
+		//console.log('  sweep: ' + sweep);
+		//console.log('    x? ' + isEqual(expectedStartX, start.x, 5) + ' = isEqual(' + expectedStartX + ', ' + start.x);
+		//console.log('    y? ' + isEqual(expectedStartY, start.y, 5) + ' = isEqual(' + expectedStartY + ', ' + start.y);
 		if (sweep) {
 			inv = !inv;
 			start = this.intersectEntArc(from, circ, inv);
@@ -1063,8 +1067,8 @@ class DConnector implements Ent {
 		this.set = this.drawing.group(
 			//paper.path(midPath).attr({'stroke-width': .5, stroke: '#CDDC39', fill: 'none'}),
 			//paper.circle(midx, midy, 2).attr({'stroke-width': 0, fill: '#CDDC39'}),
-			paper.circle(circ.x, circ.y, circ.r).attr({'stroke-width': .5, stroke: '#2299dd', fill: 'none'}),
-			paper.circle(circ.x, circ.y, 2).attr({'stroke-width': 0, fill: '#2299dd'}),
+			//paper.circle(circ.x, circ.y, circ.r).attr({'stroke-width': .5, stroke: '#2299dd', fill: 'none'}),
+			//paper.circle(circ.x, circ.y, 2).attr({'stroke-width': 0, fill: '#2299dd'}),
 			paper.path(spath).attr({
 				'stroke-width': STROKE/2,
 				'stroke': this.color,
@@ -1176,6 +1180,9 @@ export class Drawing {
 		// create a drawing entity for each known tag in the display
 		for (let i = 0; i < view.elements.length; i++) {
 			let e = view.elements[i];
+			// TODO: handle the mess that is styles
+			if (e.type === 'style')
+				continue;
 			if (!DTypes.hasOwnProperty(e.type)) {
 				console.log('unknown draw ent type ' + e.type);
 				continue;
