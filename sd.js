@@ -13926,49 +13926,34 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
         DConnector.prototype.drawLabel = function () { };
         DConnector.prototype.visualize = function () { };
         DConnector.prototype.arcCircle = function () {
-            if (!this.e.hasOwnProperty('angle'))
+            if (!this.e.hasOwnProperty('angle')) {
+                console.log('FIXME: support non-spec x,y connectors');
                 return null;
-            var fromEnt = this.drawing.namedEnts[this.e.from];
-            if (!fromEnt)
+            }
+            var from = this.drawing.namedEnts[this.e.from];
+            var to = this.drawing.namedEnts[this.e.to];
+            if (!from || !to)
                 return;
-            var fx = fromEnt.cx;
-            var fy = fromEnt.cy;
-            var toEnt = this.drawing.namedEnts[this.e.to];
-            if (!toEnt)
-                return;
-            var tx = toEnt.cx;
-            var ty = toEnt.cy;
             var slopeTakeoff = tan(this.takeoffθ());
             var slopePerpToTakeoff = -1 / slopeTakeoff;
             if (isZero(slopePerpToTakeoff))
                 slopePerpToTakeoff = 0;
             var takeoffPerpθ = Math.atan(slopePerpToTakeoff);
-            var psX = 30 * cos(takeoffPerpθ);
-            var psY = 30 * sin(takeoffPerpθ);
-            var peX = 30 * cos(takeoffPerpθ - PI);
-            var peY = 30 * sin(takeoffPerpθ - PI);
-            var prayPath = 'M' + (fx + psX) + ',' + (fy + psY) + 'L' + (fx + peX) + ',' + (fy + peY);
-            var bFrom = fy - slopePerpToTakeoff * fx;
-            var midx = (fx + tx) / 2;
-            var midy = (fy + ty) / 2;
-            var midPath = 'M' + fx + ',' + fy + 'L' + tx + ',' + ty;
-            var cx, perpBisectθ;
-            if (fy === ty) {
-                cx = midx;
-                perpBisectθ = PI / 2;
+            var bFrom = from.cy - slopePerpToTakeoff * from.cx;
+            var cx;
+            if (from.cy === to.cy) {
+                cx = (from.cx + to.cx) / 2;
             }
             else {
-                var slopeBisector = (fy - ty) / (fx - tx);
+                var slopeBisector = (from.cy - to.cy) / (from.cx - to.cx);
                 var slopePerpToBisector = -1 / slopeBisector;
+                var midx = (from.cx + to.cx) / 2;
+                var midy = (from.cy + to.cy) / 2;
                 var bPerp = midy - slopePerpToBisector * midx;
-                perpBisectθ = Math.atan(slopePerpToBisector);
                 cx = (bFrom - bPerp) / (slopePerpToBisector - slopePerpToTakeoff);
             }
-            var pbrayX = 25 * cos(perpBisectθ);
-            var pbrayY = 25 * sin(perpBisectθ);
-            var pbrayPath = 'M' + midx + ',' + midy + 'L' + (midx + pbrayX) + ',' + (midy + pbrayY);
             var cy = slopePerpToTakeoff * cx + bFrom;
-            var cr = sqrt(square(fx - cx) + square(fy - cy));
+            var cr = sqrt(square(from.cx - cx) + square(from.cy - cy));
             return { r: cr, x: cx, y: cy };
         };
         DConnector.prototype.intersectEntStraight = function (ent, θ) {
@@ -14029,16 +14014,16 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
             var fromθ = atan2(from.cy - circ.y, from.cx - circ.x);
             var toθ = atan2(to.cy - circ.y, to.cx - circ.x);
             var spanθ = toθ - fromθ;
-            var inv = spanθ > 0 || spanθ <= -180;
+            var inv = spanθ > 0 || spanθ <= degToRad(-180);
             var start = this.intersectEntArc(from, circ, inv);
             var end = this.intersectEntArc(to, circ, !inv);
-            console.log(from.ident);
-            console.log('  inv: ' + inv + ' (' + spanθ + ')');
+            console.log(from.ident + ' (takeoff: ' + this.e.angle + ')');
+            console.log('  inv: ' + inv + ' (' + radToDeg(spanθ) +
+                ' = ' + radToDeg(toθ) + ' - ' + radToDeg(fromθ) + ')');
             var startR = sqrt(square(start.x - from.cx) + square(start.y - from.cy));
             var expectedStartX = from.cx + startR * cos(takeoffθ);
             var expectedStartY = from.cy + startR * sin(takeoffθ);
             var sweep = !isEqual(expectedStartX, start.x, 1) && !isEqual(expectedStartY, start.y);
-            sweep = !sweep;
             console.log('  sweep: ' + sweep);
             if (sweep) {
                 inv = !inv;

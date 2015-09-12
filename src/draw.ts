@@ -875,20 +875,15 @@ class DConnector implements Ent {
 
 	// TODO: handle old-style connectors w/ x and y but no angle.
 	private arcCircle(): Circle {
-		if (!this.e.hasOwnProperty('angle'))
+		if (!this.e.hasOwnProperty('angle')) {
+			console.log('FIXME: support non-spec x,y connectors');
 			return null;
+		}
 
-		let fromEnt = this.drawing.namedEnts[this.e.from];
-		if (!fromEnt)
+		const from = this.drawing.namedEnts[this.e.from];
+		const to = this.drawing.namedEnts[this.e.to];
+		if (!from || !to)
 			return;
-		const fx = fromEnt.cx;
-		const fy = fromEnt.cy;
-
-		let toEnt = this.drawing.namedEnts[this.e.to];
-		if (!toEnt)
-			return;
-		let tx = toEnt.cx;
-		let ty = toEnt.cy;
 
 		// Find cx, cy from 'takeoff angle', and center of
 		// 'from', and center of 'to'.  This means we have 2
@@ -907,37 +902,24 @@ class DConnector implements Ent {
 			slopePerpToTakeoff = 0;
 
 		const takeoffPerpθ = Math.atan(slopePerpToTakeoff);
-		const psX = 30*cos(takeoffPerpθ);
-		const psY = 30*sin(takeoffPerpθ);
-		const peX = 30*cos(takeoffPerpθ - PI);
-		const peY = 30*sin(takeoffPerpθ - PI);
-
-		// the line that represents the tangent to the circle.
-		const prayPath = 'M' + (fx + psX) + ',' + (fy + psY) + 'L' + (fx + peX) + ',' + (fy + peY);
 
 		// y = slope*x + b
 		// fy = slope*fx + b
 		// fy - slope*fx = b
 		// b = fy - slope*fx
-		const bFrom = fy - slopePerpToTakeoff*fx;
+		const bFrom = from.cy - slopePerpToTakeoff*from.cx;
 
-		// find midpoint between the 2 points
-		const midx = (fx + tx) / 2;
-		const midy = (fy + ty) / 2;
-		const midPath = 'M' + fx + ',' + fy + 'L' + tx + ',' + ty;
-
-		let cx: number, perpBisectθ: number;
-		if (fy === ty) {
-			cx = midx;
-			perpBisectθ = PI/2;
+		let cx: number;
+		if (from.cy === to.cy) {
+			cx = (from.cx + to.cx)/2;
 		} else {
 			// find the slope of the line between the 2 points
-			const slopeBisector = (fy - ty)/(fx - tx);
+			const slopeBisector = (from.cy - to.cy)/(from.cx - to.cx);
 			const slopePerpToBisector = -1/slopeBisector;
+			const midx = (from.cx + to.cx) / 2;
+			const midy = (from.cy + to.cy) / 2;
 			// b = fy - slope*fx
 			const bPerp = midy - slopePerpToBisector*midx;
-
-			perpBisectθ = Math.atan(slopePerpToBisector);
 
 			// y = perpSlopeTakeoff*x + bFrom
 			// y = perpSlopeBisector*x + bPerp
@@ -947,12 +929,9 @@ class DConnector implements Ent {
 			// (bFrom - bPerp)/(perpSlopeBisector- perpSlopeTakeoff) = x
 			cx = (bFrom - bPerp)/(slopePerpToBisector- slopePerpToTakeoff);
 		}
-		const pbrayX = 25*cos(perpBisectθ);
-		const pbrayY = 25*sin(perpBisectθ);
-		const pbrayPath = 'M' + midx + ',' + midy + 'L' + (midx + pbrayX) + ',' + (midy + pbrayY);
 
 		const cy = slopePerpToTakeoff*cx + bFrom;
-		const cr: number = sqrt(square(fx - cx) + square(fy - cy));
+		const cr = sqrt(square(from.cx - cx) + square(from.cy - cy));
 
 		return {r: cr, x: cx, y: cy};
 	}
@@ -1044,13 +1023,15 @@ class DConnector implements Ent {
 
 		// if the sweep flag is set, we need to negate the
 		// inverse flag
-		let inv: boolean = spanθ > 0 || spanθ <= -180;
+		let inv: boolean = spanθ > 0 || spanθ <= degToRad(-180);
 
 		let start = this.intersectEntArc(from, circ, inv);
 		let end = this.intersectEntArc(to, circ, !inv);
 
-		console.log(from.ident);
-		console.log('  inv: ' + inv + ' (' + spanθ + ')');
+		console.log(from.ident + ' (takeoff: ' + this.e.angle + ')');
+		console.log(
+			'  inv: ' + inv + ' (' + radToDeg(spanθ) +
+			' = ' + radToDeg(toθ) + ' - ' + radToDeg(fromθ) + ')');
 
 		const startR = sqrt(square(start.x - from.cx) + square(start.y - from.cy));
 		// this isn't precise - the arc moves out from the
@@ -1062,7 +1043,6 @@ class DConnector implements Ent {
 
 		// FIXME: this could be more exact?
 		let sweep: boolean = !isEqual(expectedStartX, start.x, 1) && !isEqual(expectedStartY, start.y);
-		sweep = !sweep;
 		console.log('  sweep: ' + sweep);
 		if (sweep) {
 			inv = !inv;
