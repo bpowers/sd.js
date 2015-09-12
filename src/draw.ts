@@ -875,15 +875,17 @@ class DConnector implements Ent {
 
 	// TODO: handle old-style connectors w/ x and y but no angle.
 	private arcCircle(): Circle {
-		if (!this.e.hasOwnProperty('angle')) {
-			console.log('FIXME: support non-spec x,y connectors');
-			return null;
-		}
-
 		const from = this.drawing.namedEnts[this.e.from];
 		const to = this.drawing.namedEnts[this.e.to];
 		if (!from || !to)
 			return;
+
+		if (!this.e.hasOwnProperty('angle')) {
+			return circleFromPoints(
+				{x: from.cx, y: from.cy},
+				{x: to.cx, y: to.cy},
+				{x: this.e.x, y: this.e.y});
+		}
 
 		// Find cx, cy from 'takeoff angle', and center of
 		// 'from', and center of 'to'.  This means we have 2

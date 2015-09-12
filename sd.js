@@ -13926,14 +13926,13 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
         DConnector.prototype.drawLabel = function () { };
         DConnector.prototype.visualize = function () { };
         DConnector.prototype.arcCircle = function () {
-            if (!this.e.hasOwnProperty('angle')) {
-                console.log('FIXME: support non-spec x,y connectors');
-                return null;
-            }
             var from = this.drawing.namedEnts[this.e.from];
             var to = this.drawing.namedEnts[this.e.to];
             if (!from || !to)
                 return;
+            if (!this.e.hasOwnProperty('angle')) {
+                return circleFromPoints({ x: from.cx, y: from.cy }, { x: to.cx, y: to.cy }, { x: this.e.x, y: this.e.y });
+            }
             var slopeTakeoff = tan(this.takeoffθ());
             var slopePerpToTakeoff = -1 / slopeTakeoff;
             if (isZero(slopePerpToTakeoff))

@@ -135,10 +135,9 @@ CommonJS modules in the `lib/` directory.
 TODO
 ----
 
-- fix sweep/inverse flags in connectors
+- refactor/add-in support for old-style connectors w/o `angle` attrib
 - intersection of arc w/ rectangle for takeoff from stock
 - intersection of arc w/ rounded-rect for takeoff from module
-- refactor/add-in support for old-style connectors w/o `angle` attrib
 - add-back isee compat support
 - logging framework
 
