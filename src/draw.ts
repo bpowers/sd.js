@@ -319,6 +319,16 @@ function radToDeg(r: number): number {
 	return r*180/PI;
 }
 
+// operates on angles in radian form.  adds 180 degrees, if we're now
+// outside of our domain, clamp back into it.
+function oppositeθ(θ: number): number {
+	'use strict';
+	θ += PI;
+	if (θ > PI)
+		θ -= 2*PI;
+	return θ;
+}
+
 function last<T>(arr: Array<T>): T {
 	'use strict';
 	return arr[arr.length-1];
@@ -851,7 +861,22 @@ class DConnector implements Ent {
 	}
 
 	draw(): void {
-		let paper = this.drawing.paper;
+		if (this.isStraight()) {
+			this.drawStraight();
+		} else {
+			// TODO: check for polyline
+			this.drawArc();
+		}
+	}
+
+	drawLabel(): void {}
+
+	visualize(): void {}
+
+	// TODO: handle old-style connectors w/ x and y but no angle.
+	private arcCircle(): Circle {
+		if (!this.e.hasOwnProperty('angle'))
+			return null;
 
 		let fromEnt = this.drawing.namedEnts[this.e.from];
 		if (!fromEnt)
@@ -873,8 +898,7 @@ class DConnector implements Ent {
 		//     eqn of a circle: (x - cx)^2 + (y - cy)^2 = r^2
 		//     line:            y = mx + b || 0 = mx - y + b
 
-		const takeoffθ = this.takeoffθ();
-		const slopeTakeoff = tan(takeoffθ);
+		const slopeTakeoff = tan(this.takeoffθ());
 		// we need the slope of the line _perpendicular_ to
 		// the tangent in order to find out the x,y center of
 		// our circle
@@ -927,7 +951,77 @@ class DConnector implements Ent {
 		const pbrayY = 25*sin(perpBisectθ);
 		const pbrayPath = 'M' + midx + ',' + midy + 'L' + (midx + pbrayX) + ',' + (midy + pbrayY);
 
-		let cy = slopePerpToTakeoff*cx + bFrom;
+		const cy = slopePerpToTakeoff*cx + bFrom;
+		const cr: number = sqrt(square(fx - cx) + square(fy - cy));
+
+		return {r: cr, x: cx, y: cy};
+	}
+
+	private intersectEntStraight(ent: Ent, θ: number): Point {
+		let r: number = AUX_RADIUS;
+		// FIXME: actually calculate intersections
+		if (ent instanceof DModule)
+			r = 25;
+		else if (ent instanceof DStock)
+			r = 20;
+
+		// FIXME: can we do this without an inverse flag?
+		return {
+			x: ent.cx + r*cos(θ),
+			y: ent.cy + r*sin(θ),
+		};
+	}
+
+	private drawStraight(): void {
+		let paper = this.drawing.paper;
+
+		const from = this.drawing.namedEnts[this.e.from];
+		const to = this.drawing.namedEnts[this.e.to];
+		if (!from || !to)
+			return;
+
+		const θ = atan2(to.cy - from.cy, to.cx - from.cx);
+
+		const start = this.intersectEntStraight(from, θ);
+		const end = this.intersectEntStraight(to, oppositeθ(θ));
+
+		const arrowheadAngle = radToDeg(θ);
+		const path = 'M' + start.x + ',' + start.y + 'L' + end.x + ',' + end.y;
+
+		this.set = this.drawing.group(
+			paper.path(path).attr({
+				'stroke-width': STROKE/2,
+				'stroke': this.color,
+				'fill': 'none',
+			}),
+			paper.circle(start.x, start.y, 2).attr({'stroke-width': 0, fill: '#c83639'}),
+			arrowhead(paper, end.x, end.y, ARROWHEAD_RADIUS).attr({
+				'transform': 'rotate(' + arrowheadAngle + ',' + end.x + ',' + end.y + ')',
+				'stroke': this.color,
+				'stroke-width': 1,
+				'fill': this.color,
+				'stroke-linejoin': 'round',
+			})
+		);
+	}
+
+	private drawArc(): void {
+		let paper = this.drawing.paper;
+
+		let fromEnt = this.drawing.namedEnts[this.e.from];
+		if (!fromEnt)
+			return;
+		const fx = fromEnt.cx;
+		const fy = fromEnt.cy;
+
+		let toEnt = this.drawing.namedEnts[this.e.to];
+		if (!toEnt)
+			return;
+		let tx = toEnt.cx;
+		let ty = toEnt.cy;
+
+		const takeoffθ = this.takeoffθ();
+		const circ = this.arcCircle();
 
 		let toR: number = AUX_RADIUS;
 		if (toEnt instanceof DModule)
@@ -944,9 +1038,6 @@ class DConnector implements Ent {
 		let takeoffX: number;
 		let takeoffY: number;
 
-		const cr: number = sqrt(square(fx - cx) + square(fy - cy));
-		let circ = {r: cr, x: cx, y: cy};
-		let spath = '';
 		let inv = false;
 		let sweep = false;
 
@@ -954,106 +1045,74 @@ class DConnector implements Ent {
 		if (midθ < 0)
 			midθ += 2*PI;
 
+		// find midpoint between the 2 points
+		const midx = (fx + tx) / 2;
+		const midy = (fy + ty) / 2;
+		const midPath = 'M' + fx + ',' + fy + 'L' + tx + ',' + ty;
+
 		const straightLine = abs(midθ - takeoffθ) < degToRad(STRAIGHT_LINE_MAX);
 		//console.log(fromEnt.ident + ' straight?: ' + straightLine + ' :: ' + radToDeg(abs(midθ - takeoffθ)));
 
 		let endθ: number;
-		// FIXME: instead of checking for circ, we should
-		// check if the takeoff angle is +- $FUDGE of the
-		// bisector's angle.
-		if (!straightLine) {
-			let dx = fx - circ.x;
-			let dy = fy - circ.y;
-			let startθ = atan2(dy, dx)*180/PI;
-			dx = tx - circ.x;
-			dy = ty - circ.y;
-			endθ = atan2(dy, dx)*180/PI;
-			startθ = atan2(fy - circ.y, fx - circ.x)*180/PI;
 
-			let spanθ = endθ - startθ;
-			inv = spanθ > 0 || spanθ <= -180;
-			console.log(fromEnt.ident);
-			console.log('  inv: ' + inv);
+		let dx = fx - circ.x;
+		let dy = fy - circ.y;
+		let startθ = atan2(dy, dx)*180/PI;
+		dx = tx - circ.x;
+		dy = ty - circ.y;
+		endθ = atan2(dy, dx)*180/PI;
+		startθ = atan2(fy - circ.y, fx - circ.x)*180/PI;
 
-			let internalFromθ = tan(fromR/circ.r)*180/PI;
-			let internalToθ = tan(toR/circ.r)*180/PI;
+		let spanθ = endθ - startθ;
+		inv = spanθ > 0 || spanθ <= -180;
+		console.log(fromEnt.ident);
+		console.log('  inv: ' + inv);
 
+		let internalFromθ = tan(fromR/circ.r)*180/PI;
+		let internalToθ = tan(toR/circ.r)*180/PI;
+
+		tx = circ.x + circ.r*cos((endθ + (inv ? -1 : 1)*internalToθ)/180*PI);
+		ty = circ.y + circ.r*sin((endθ + (inv ? -1 : 1)*internalToθ)/180*PI);
+
+		takeoffX = circ.x + circ.r*cos((startθ + (inv ? 1 : -1)*internalFromθ)/180*PI);
+		takeoffY = circ.y + circ.r*sin((startθ + (inv ? 1 : -1)*internalFromθ)/180*PI);
+
+		// this isn't precise - the arc moves out from
+		// the center of the AUX on an angle, while
+		// this calculates where the tangent line
+		// intersects with the edge of the AUX.
+		const origTakeoffX = fx + fromR*cos(takeoffθ);
+		const origTakeoffY = fy + fromR*sin(takeoffθ);
+
+		// FIXME: this could be more exact?
+		sweep = !isZero(takeoffX - origTakeoffX, 1) && !isZero(takeoffY - origTakeoffY, 1);
+		console.log('  sweep: ' + sweep);
+		if (sweep) {
+			inv = !inv;
 			tx = circ.x + circ.r*cos((endθ + (inv ? -1 : 1)*internalToθ)/180*PI);
 			ty = circ.y + circ.r*sin((endθ + (inv ? -1 : 1)*internalToθ)/180*PI);
 
 			takeoffX = circ.x + circ.r*cos((startθ + (inv ? 1 : -1)*internalFromθ)/180*PI);
 			takeoffY = circ.y + circ.r*sin((startθ + (inv ? 1 : -1)*internalFromθ)/180*PI);
-
-			// this isn't precise - the arc moves out from
-			// the center of the AUX on an angle, while
-			// this calculates where the tangent line
-			// intersects with the edge of the AUX.
-			const origTakeoffX = fx + fromR*cos(takeoffθ);
-			const origTakeoffY = fy + fromR*sin(takeoffθ);
-
-			// FIXME: this could be more exact?
-			sweep = !isZero(takeoffX - origTakeoffX, 1) && !isZero(takeoffY - origTakeoffY, 1);
-			console.log('  sweep: ' + sweep);
-			if (sweep) {
-				inv = !inv;
-				tx = circ.x + circ.r*cos((endθ + (inv ? -1 : 1)*internalToθ)/180*PI);
-				ty = circ.y + circ.r*sin((endθ + (inv ? -1 : 1)*internalToθ)/180*PI);
-
-				takeoffX = circ.x + circ.r*cos((startθ + (inv ? 1 : -1)*internalFromθ)/180*PI);
-				takeoffY = circ.y + circ.r*sin((startθ + (inv ? 1 : -1)*internalFromθ)/180*PI);
-			}
-
-			spath += 'M' + takeoffX + ',' + takeoffY;
-			spath += 'A' + circ.r + ',' + circ.r + ' 0 ' + (+sweep) + ',' + (+inv) + ' ' + tx + ',' + ty;
-		} else {
-			let slopeStraight = atan2(ty - fy, tx - fx);
-			endθ = slopeStraight * 180/PI;
-			tx -= toR*cos(slopeStraight);
-			ty -= toR*sin(slopeStraight);
-			takeoffX = fx + fromR*cos(slopeStraight);
-			takeoffY = fy + fromR*sin(slopeStraight);
-			spath += 'M' + takeoffX + ',' + takeoffY;
-			spath += 'L' + tx + ',' + ty;
 		}
+
+		const spath = 'M' + takeoffX + ',' + takeoffY + 'A' + circ.r + ',' + circ.r + ' 0 ' + (+sweep) + ',' + (+inv) + ' ' + tx + ',' + ty;
 
 		let θ = 0;
-		if (!straightLine) {
-			// from center of to aux
-			// let slope1 = (i.y - ty)/(i.x - tx);
-			// inverse from center of circ
-			const slope2 = atan2(ty - circ.y, tx - circ.x);
-			θ = slope2*180/PI - 90; // (slope1+slope2)/2;
-			if (inv)
-				θ += 180;
-		} else {
-			θ = endθ;
-		}
+		// from center of to aux
+		// let slope1 = (i.y - ty)/(i.x - tx);
+		// inverse from center of circ
+		const slope2 = atan2(ty - circ.y, tx - circ.x);
+		θ = slope2*180/PI - 90; // (slope1+slope2)/2;
+		if (inv)
+			θ += 180;
 
 		if (!straightLine)
 		this.set = this.drawing.group(
 			paper.path(midPath).attr({'stroke-width': .5, stroke: '#CDDC39', fill: 'none'}),
 			paper.circle(midx, midy, 2).attr({'stroke-width': 0, fill: '#CDDC39'}),
-			paper.circle(cx, cy, cr).attr({'stroke-width': .5, stroke: '#2299dd', fill: 'none'}),
-			paper.circle(cx, cy, 2).attr({'stroke-width': 0, fill: '#2299dd'}),
-			paper.path(spath).attr({
-				'stroke-width': STROKE/2,
-				'stroke': this.color,
-				'fill': 'none',
-			}),
-			paper.circle(takeoffX, takeoffY, 2).attr({'stroke-width': 0, fill: '#c83639'}),
-			arrowhead(paper, tx, ty, ARROWHEAD_RADIUS).attr({
-				'transform': 'rotate(' + (θ) + ',' + tx + ',' + ty + ')',
-				'stroke': this.color,
-				'stroke-width': 1,
-				'fill': this.color,
-				'stroke-linejoin': 'round',
-			}),
-			//paper.path(rayPath).attr({'stroke-width': .5, stroke: '#009688', 'fill': 'none'}),
-			paper.path(prayPath).attr({'stroke-width': .5, stroke: '#8BC34A', 'fill': 'none'}),
-			paper.path(pbrayPath).attr({'stroke-width': .5, stroke: '#FF9800', 'fill': 'none'})
-		);
-		else
-		this.set = this.drawing.group(
+			paper.circle(circ.x, circ.y, circ.r).attr({'stroke-width': .5, stroke: '#2299dd', fill: 'none'}),
+			paper.circle(circ.x, circ.y, 2).attr({'stroke-width': 0, fill: '#2299dd'}),
 			paper.path(spath).attr({
 				'stroke-width': STROKE/2,
 				'stroke': this.color,
@@ -1067,12 +1126,12 @@ class DConnector implements Ent {
 				'fill': this.color,
 				'stroke-linejoin': 'round',
 			})
+			//paper.path(rayPath).attr({'stroke-width': .5, stroke: '#009688', 'fill': 'none'}),
+			//paper.path(prayPath).attr({'stroke-width': .5, stroke: '#8BC34A', 'fill': 'none'}),
+			//paper.path(pbrayPath).attr({'stroke-width': .5, stroke: '#FF9800', 'fill': 'none'})
 		);
+
 	}
-
-	drawLabel(): void {}
-
-	visualize(): void {}
 }
 
 const DTypes: {[n: string]: EntStatic} = {
