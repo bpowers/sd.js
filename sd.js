@@ -13878,6 +13878,8 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
             var fromEnt = this.drawing.namedEnts[xmile_1.canonicalize(this.e.from)];
             if (!fromEnt)
                 return;
+            if (fromEnt.ident === 'susceptible')
+                console.log('ping');
             var fx = fromEnt.cx;
             var fy = fromEnt.cy;
             var toEnt = this.drawing.namedEnts[xmile_1.canonicalize(this.e.to)];
@@ -13916,7 +13918,16 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
             var pbrayY = 25 * sin(perpBisectθ);
             var pbrayPath = 'M' + midx + ',' + midy + 'L' + (midx + pbrayX) + ',' + (midy + pbrayY);
             var cy = slopePerpToTakeoff * cx + bFrom;
-            var r = toEnt instanceof DModule ? 25 : AUX_RADIUS;
+            var toR = AUX_RADIUS;
+            if (toEnt instanceof DModule)
+                toR = 25;
+            else if (toEnt instanceof DStock)
+                toR = 20;
+            var fromR = AUX_RADIUS;
+            if (fromEnt instanceof DModule)
+                fromR = 25;
+            else if (fromEnt instanceof DStock)
+                fromR = 20;
             var takeoffX;
             var takeoffY;
             var cr = sqrt(square(fx - cx) + square(fy - cy));
@@ -13927,9 +13938,7 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
             var midθ = atan2(ty - fy, tx - fx);
             if (midθ < 0)
                 midθ += 2 * PI;
-            console.log(fromEnt.ident + ': ' + (midθ * 180 / PI));
             var straightLine = abs(midθ - takeoffθ) < degToRad(STRAIGHT_LINE_MAX);
-            console.log(fromEnt.ident + ' straight?: ' + straightLine + ' :: ' + radToDeg(abs(midθ - takeoffθ)));
             var endθ;
             if (!straightLine) {
                 var dx = fx - circ.x;
@@ -13941,34 +13950,35 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
                 startθ = atan2(fy - circ.y, fx - circ.x) * 180 / PI;
                 var spanθ = endθ - startθ;
                 inv = spanθ > 0 || spanθ <= -180;
-                console.log('inv: ' + inv);
-                var internalθ = tan(r / circ.r) * 180 / PI;
-                tx = circ.x + circ.r * cos((endθ + (inv ? -1 : 1) * internalθ) / 180 * PI);
-                ty = circ.y + circ.r * sin((endθ + (inv ? -1 : 1) * internalθ) / 180 * PI);
-                takeoffX = circ.x + circ.r * cos((startθ + (inv ? 1 : -1) * internalθ) / 180 * PI);
-                takeoffY = circ.y + circ.r * sin((startθ + (inv ? 1 : -1) * internalθ) / 180 * PI);
-                var origTakeoffX = fx + AUX_RADIUS * cos(takeoffθ);
-                var origTakeoffY = fy + AUX_RADIUS * sin(takeoffθ);
+                console.log(fromEnt.ident);
+                console.log('  inv: ' + inv);
+                var internalFromθ = tan(fromR / circ.r) * 180 / PI;
+                var internalToθ = tan(toR / circ.r) * 180 / PI;
+                tx = circ.x + circ.r * cos((endθ + (inv ? -1 : 1) * internalToθ) / 180 * PI);
+                ty = circ.y + circ.r * sin((endθ + (inv ? -1 : 1) * internalToθ) / 180 * PI);
+                takeoffX = circ.x + circ.r * cos((startθ + (inv ? 1 : -1) * internalFromθ) / 180 * PI);
+                takeoffY = circ.y + circ.r * sin((startθ + (inv ? 1 : -1) * internalFromθ) / 180 * PI);
+                var origTakeoffX = fx + fromR * cos(takeoffθ);
+                var origTakeoffY = fy + fromR * sin(takeoffθ);
                 sweep = !isZero(takeoffX - origTakeoffX, 1) && !isZero(takeoffY - origTakeoffY, 1);
-                console.log('sweep: ' + sweep);
+                console.log('  sweep: ' + sweep);
                 if (sweep) {
                     inv = !inv;
-                    tx = circ.x + circ.r * cos((endθ + (inv ? -1 : 1) * internalθ) / 180 * PI);
-                    ty = circ.y + circ.r * sin((endθ + (inv ? -1 : 1) * internalθ) / 180 * PI);
-                    takeoffX = circ.x + circ.r * cos((startθ + (inv ? 1 : -1) * internalθ) / 180 * PI);
-                    takeoffY = circ.y + circ.r * sin((startθ + (inv ? 1 : -1) * internalθ) / 180 * PI);
+                    tx = circ.x + circ.r * cos((endθ + (inv ? -1 : 1) * internalToθ) / 180 * PI);
+                    ty = circ.y + circ.r * sin((endθ + (inv ? -1 : 1) * internalToθ) / 180 * PI);
+                    takeoffX = circ.x + circ.r * cos((startθ + (inv ? 1 : -1) * internalFromθ) / 180 * PI);
+                    takeoffY = circ.y + circ.r * sin((startθ + (inv ? 1 : -1) * internalFromθ) / 180 * PI);
                 }
                 spath += 'M' + takeoffX + ',' + takeoffY;
                 spath += 'A' + circ.r + ',' + circ.r + ' 0 ' + (+sweep) + ',' + (+inv) + ' ' + tx + ',' + ty;
             }
             else {
-                var dx = tx - fx;
-                var dy = ty - fy;
-                endθ = atan2(dy, dx) * 180 / PI;
-                tx -= r * cos(atan2(dy, dx));
-                ty -= r * sin(atan2(dy, dx));
-                takeoffX = fx + r * cos(atan2(dy, dx));
-                takeoffY = fy + r * sin(atan2(dy, dx));
+                var slopeStraight = atan2(ty - fy, tx - fx);
+                endθ = slopeStraight * 180 / PI;
+                tx -= toR * cos(slopeStraight);
+                ty -= toR * sin(slopeStraight);
+                takeoffX = fx + fromR * cos(slopeStraight);
+                takeoffY = fy + fromR * sin(slopeStraight);
                 spath += 'M' + takeoffX + ',' + takeoffY;
                 spath += 'L' + tx + ',' + ty;
             }
@@ -13982,17 +13992,30 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
             else {
                 θ = endθ;
             }
-            this.set = this.drawing.group(paper.path(spath).attr({
-                'stroke-width': STROKE / 2,
-                'stroke': this.color,
-                'fill': 'none',
-            }), paper.circle(takeoffX, takeoffY, 2).attr({ 'stroke-width': 0, fill: '#c83639' }), arrowhead(paper, tx, ty, ARROWHEAD_RADIUS).attr({
-                'transform': 'rotate(' + (θ) + ',' + tx + ',' + ty + ')',
-                'stroke': this.color,
-                'stroke-width': 1,
-                'fill': this.color,
-                'stroke-linejoin': 'round',
-            }));
+            if (!straightLine)
+                this.set = this.drawing.group(paper.path(midPath).attr({ 'stroke-width': .5, stroke: '#CDDC39', fill: 'none' }), paper.circle(midx, midy, 2).attr({ 'stroke-width': 0, fill: '#CDDC39' }), paper.circle(cx, cy, cr).attr({ 'stroke-width': .5, stroke: '#2299dd', fill: 'none' }), paper.circle(cx, cy, 2).attr({ 'stroke-width': 0, fill: '#2299dd' }), paper.path(spath).attr({
+                    'stroke-width': STROKE / 2,
+                    'stroke': this.color,
+                    'fill': 'none',
+                }), paper.circle(takeoffX, takeoffY, 2).attr({ 'stroke-width': 0, fill: '#c83639' }), arrowhead(paper, tx, ty, ARROWHEAD_RADIUS).attr({
+                    'transform': 'rotate(' + (θ) + ',' + tx + ',' + ty + ')',
+                    'stroke': this.color,
+                    'stroke-width': 1,
+                    'fill': this.color,
+                    'stroke-linejoin': 'round',
+                }), paper.path(prayPath).attr({ 'stroke-width': .5, stroke: '#8BC34A', 'fill': 'none' }), paper.path(pbrayPath).attr({ 'stroke-width': .5, stroke: '#FF9800', 'fill': 'none' }));
+            else
+                this.set = this.drawing.group(paper.path(spath).attr({
+                    'stroke-width': STROKE / 2,
+                    'stroke': this.color,
+                    'fill': 'none',
+                }), paper.circle(takeoffX, takeoffY, 2).attr({ 'stroke-width': 0, fill: '#c83639' }), arrowhead(paper, tx, ty, ARROWHEAD_RADIUS).attr({
+                    'transform': 'rotate(' + (θ) + ',' + tx + ',' + ty + ')',
+                    'stroke': this.color,
+                    'stroke-width': 1,
+                    'fill': this.color,
+                    'stroke-linejoin': 'round',
+                }));
         };
         DConnector.prototype.drawLabel = function () { };
         DConnector.prototype.visualize = function () { };
