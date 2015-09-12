@@ -1,6 +1,7 @@
 /// <reference path="../typings/tsd.d.ts" />
 import * as type from './type';
 import * as xmile from './xmile';
+export declare function xmileToCanvasAngle(inDeg: number): number;
 export interface EntStatic {
     new (drawing: Drawing, element: xmile.ViewElement): Ent;
 }

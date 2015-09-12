@@ -15,7 +15,6 @@ import * as runtime from './runtime';
 import * as xmile from './xmile';
 
 import {dName, isNaN} from "./util";
-import {canonicalize} from './xmile';
 
 const PI = Math.PI;
 const sin = Math.sin;
@@ -91,6 +90,11 @@ function addCSSClass(o: any, newClass: string): void {
 function isZero(n: number, tolerance = 0.0000001): boolean {
 	'use strict';
 	return Math.abs(n) < tolerance;
+}
+
+function isEqual(a: number, b: number, tolerance = 0.0000001): boolean {
+	'use strict';
+	return isZero(a - b, tolerance);
 }
 
 // FIXME: this is sort of gross, but works.  The main use is to check
@@ -295,10 +299,14 @@ function label(
 
 // converts an angle associated with a connector (in degrees) into an
 // angle in the coordinate system of SVG canvases where the origin is
-// in the upper-left of the screen and Y grows down.
-function xmileToCanvasAngle(a: number): number {
+// in the upper-left of the screen and Y grows down, and the domain is
+// -180 to 180.
+export function xmileToCanvasAngle(inDeg: number): number {
 	'use strict';
-	return (360 - a) % 360;
+	let outDeg = (360 - inDeg) % 360;
+	if (outDeg > 180)
+		outDeg -= 360;
+	return outDeg;
 }
 
 function degToRad(d: number): number {
@@ -807,16 +815,51 @@ class DConnector implements Ent {
 
 	init(): void {}
 
+	takeoffθ(): number {
+		let from = this.drawing.namedEnts[this.e.from];
+		if (!from) {
+			console.log('connector with unknown origin: ' + this.e.from);
+			return NaN;
+		}
+
+		if (this.e.hasOwnProperty('angle')) {
+			// convert from counter-clockwise (XMILE) to
+			// clockwise (display, where Y grows down
+			// instead of up)
+			return degToRad(xmileToCanvasAngle(this.e.angle));
+		} else if (this.e.hasOwnProperty('x') && this.e.hasOwnProperty('y')) {
+			// compatability w/ iThink/STELLA v10 XMILE
+			return atan2(this.e.y-from.cy, this.e.x-from.cx);
+		}
+		console.log('connector from "' + this.e.from + '" doesn\'t have x, y, or angle');
+		return NaN;
+	}
+
+	isStraight(): boolean {
+		const from = this.drawing.namedEnts[this.e.from];
+		if (!from)
+			return false;
+
+		const to = this.drawing.namedEnts[this.e.to];
+		if (!to)
+			return false;
+
+		const takeoffθ = this.takeoffθ();
+		const midθ = atan2(to.cy-from.cy, to.cx-from.cx);
+
+		return Math.abs(midθ - takeoffθ) < degToRad(STRAIGHT_LINE_MAX);
+	}
+
 	draw(): void {
 		let paper = this.drawing.paper;
 
-		let fromEnt = this.drawing.namedEnts[canonicalize(this.e.from)];
+		let fromEnt = this.drawing.namedEnts[this.e.from];
 		if (!fromEnt)
 			return;
 		const fx = fromEnt.cx;
 		const fy = fromEnt.cy;
 
-		let toEnt = this.drawing.namedEnts[canonicalize(this.e.to)];
+		let toEnt = this.drawing.namedEnts[this.e.to];
 		if (!toEnt)
 			return;
 		let tx = toEnt.cx;
@@ -830,7 +873,7 @@ class DConnector implements Ent {
 		//     eqn of a circle: (x - cx)^2 + (y - cy)^2 = r^2
 		//     line:            y = mx + b || 0 = mx - y + b
 
-		const takeoffθ = degToRad(xmileToCanvasAngle(this.e.angle));
+		const takeoffθ = this.takeoffθ();
 		const slopeTakeoff = tan(takeoffθ);
 		// we need the slope of the line _perpendicular_ to
 		// the tangent in order to find out the x,y center of

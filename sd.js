@@ -13297,7 +13297,7 @@ return Snap;
 // license that can be found in the LICENSE file.
 /// <reference path="../typings/tsd.d.ts" />
 
-define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower_components/hammerjs/hammer", "../bower_components/Snap.svg/dist/snap.svg"], function (require, exports, runtime, util_1, xmile_1) {
+define('draw',["require", "exports", './runtime', "./util", "../bower_components/hammerjs/hammer", "../bower_components/Snap.svg/dist/snap.svg"], function (require, exports, runtime, util_1) {
     var PI = Math.PI;
     var sin = Math.sin;
     var cos = Math.cos;
@@ -13363,6 +13363,11 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
         'use strict';
         if (tolerance === void 0) { tolerance = 0.0000001; }
         return Math.abs(n) < tolerance;
+    }
+    function isEqual(a, b, tolerance) {
+        'use strict';
+        if (tolerance === void 0) { tolerance = 0.0000001; }
+        return isZero(a - b, tolerance);
     }
     function isInf(n) {
         'use strict';
@@ -13529,10 +13534,14 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
         }
         return lbl;
     }
-    function xmileToCanvasAngle(a) {
+    function xmileToCanvasAngle(inDeg) {
         'use strict';
-        return (360 - a) % 360;
+        var outDeg = (360 - inDeg) % 360;
+        if (outDeg > 180)
+            outDeg -= 360;
+        return outDeg;
     }
+    exports.xmileToCanvasAngle = xmileToCanvasAngle;
     function degToRad(d) {
         'use strict';
         return d / 180 * PI;
@@ -13873,21 +13882,45 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
             this.color = this.drawing.colorOverride ? COLOR_CONN : element.color || COLOR_CONN;
         }
         DConnector.prototype.init = function () { };
+        DConnector.prototype.takeoffθ = function () {
+            var from = this.drawing.namedEnts[this.e.from];
+            if (!from) {
+                console.log('connector with unknown origin: ' + this.e.from);
+                return NaN;
+            }
+            if (this.e.hasOwnProperty('angle')) {
+                return degToRad(xmileToCanvasAngle(this.e.angle));
+            }
+            else if (this.e.hasOwnProperty('x') && this.e.hasOwnProperty('y')) {
+                return atan2(this.e.y - from.cy, this.e.x - from.cx);
+            }
+            console.log('connector from "' + this.e.from + '" doesn\'t have x, y, or angle');
+            return NaN;
+        };
+        DConnector.prototype.isStraight = function () {
+            var from = this.drawing.namedEnts[this.e.from];
+            if (!from)
+                return false;
+            var to = this.drawing.namedEnts[this.e.to];
+            if (!to)
+                return false;
+            var takeoffθ = this.takeoffθ();
+            var midθ = atan2(to.cy - from.cy, to.cx - from.cx);
+            return Math.abs(midθ - takeoffθ) < degToRad(STRAIGHT_LINE_MAX);
+        };
         DConnector.prototype.draw = function () {
             var paper = this.drawing.paper;
-            var fromEnt = this.drawing.namedEnts[xmile_1.canonicalize(this.e.from)];
+            var fromEnt = this.drawing.namedEnts[this.e.from];
             if (!fromEnt)
                 return;
-            if (fromEnt.ident === 'susceptible')
-                console.log('ping');
             var fx = fromEnt.cx;
             var fy = fromEnt.cy;
-            var toEnt = this.drawing.namedEnts[xmile_1.canonicalize(this.e.to)];
+            var toEnt = this.drawing.namedEnts[this.e.to];
             if (!toEnt)
                 return;
             var tx = toEnt.cx;
             var ty = toEnt.cy;
-            var takeoffθ = degToRad(xmileToCanvasAngle(this.e.angle));
+            var takeoffθ = this.takeoffθ();
             var slopeTakeoff = tan(takeoffθ);
             var slopePerpToTakeoff = -1 / slopeTakeoff;
             if (isZero(slopePerpToTakeoff))
