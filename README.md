@@ -135,6 +135,7 @@ CommonJS modules in the `lib/` directory.
 TODO
 ----
 
+- implement Smooth1/3 and friends
 - ability to save XMILE docs
 - ignore dt 'reciprocal' on v10 and < v1.1b2 STELLA models
 - add-back (basic) isee compat support
