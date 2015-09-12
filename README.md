@@ -135,10 +135,11 @@ CommonJS modules in the `lib/` directory.
 TODO
 ----
 
-- refactor/add-in support for old-style connectors w/o `angle` attrib
+- ability to save XMILE docs
+- ignore dt 'reciprocal' on v10 and < v1.1b2 STELLA models
+- add-back (basic) isee compat support
 - intersection of arc w/ rectangle for takeoff from stock
 - intersection of arc w/ rounded-rect for takeoff from module
-- add-back isee compat support
 - logging framework
 
 Vensim TODO
