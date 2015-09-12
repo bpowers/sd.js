@@ -13345,6 +13345,7 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
     };
     var MIN_SCALE = .2;
     var Z_MAX = 6;
+    var STRAIGHT_LINE_MAX = 12;
     var IS_CHROME = typeof navigator !== 'undefined' &&
         navigator.userAgent.match(/Chrome/) &&
         !navigator.userAgent.match(/Edge/);
@@ -13622,7 +13623,7 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
             var mEnt = this.drawing.model.vars[this.ident];
             for (var i = 0; i < mEnt.inflows.length; i++) {
                 var n = mEnt.inflows[i];
-                var dEnt = this.drawing.named_ents[n];
+                var dEnt = this.drawing.namedEnts[n];
                 if (!dEnt) {
                     console.log('failed connecting ' + this.ident + ' .to ' + n);
                     continue;
@@ -13631,12 +13632,12 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
             }
             for (var i = 0; i < mEnt.outflows.length; i++) {
                 var n = mEnt.outflows[i];
-                var dEnt = this.drawing.named_ents[n];
+                var dEnt = this.drawing.namedEnts[n];
                 if (!dEnt) {
                     console.log('failed connecting ' + this.ident + ' .from ' + n);
                     continue;
                 }
-                this.drawing.named_ents[n].from = this.ident;
+                this.drawing.namedEnts[n].from = this.ident;
             }
         };
         DStock.prototype.draw = function () {
@@ -13874,12 +13875,12 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
         DConnector.prototype.init = function () { };
         DConnector.prototype.draw = function () {
             var paper = this.drawing.paper;
-            var fromEnt = this.drawing.named_ents[xmile_1.canonicalize(this.e.from)];
+            var fromEnt = this.drawing.namedEnts[xmile_1.canonicalize(this.e.from)];
             if (!fromEnt)
                 return;
             var fx = fromEnt.cx;
             var fy = fromEnt.cy;
-            var toEnt = this.drawing.named_ents[xmile_1.canonicalize(this.e.to)];
+            var toEnt = this.drawing.namedEnts[xmile_1.canonicalize(this.e.to)];
             if (!toEnt)
                 return;
             var tx = toEnt.cx;
@@ -13927,8 +13928,8 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
             if (midθ < 0)
                 midθ += 2 * PI;
             console.log(fromEnt.ident + ': ' + (midθ * 180 / PI));
-            var straightLine = abs(midθ - takeoffθ) < degToRad(5);
-            console.log(fromEnt.ident + ' straight?: ' + straightLine);
+            var straightLine = abs(midθ - takeoffθ) < degToRad(STRAIGHT_LINE_MAX);
+            console.log(fromEnt.ident + ' straight?: ' + straightLine + ' :: ' + radToDeg(abs(midθ - takeoffθ)));
             var endθ;
             if (!straightLine) {
                 var dx = fx - circ.x;
@@ -14043,11 +14044,11 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
                 style['-o-transform'] = tz;
                 style.transform = tz;
             }
-            this.d_ents = [];
-            this.z_ents = new Array(Z_MAX);
+            this.dEnts = [];
+            this.zEnts = new Array(Z_MAX);
             for (var i = 0; i < Z_MAX; i++)
-                this.z_ents[i] = [];
-            this.named_ents = {};
+                this.zEnts[i] = [];
+            this.namedEnts = {};
             for (var i = 0; i < view.elements.length; i++) {
                 var e = view.elements[i];
                 if (!DTypes.hasOwnProperty(e.type)) {
@@ -14055,20 +14056,20 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
                     continue;
                 }
                 var de = new DTypes[e.type](this, e);
-                this.d_ents.push(de);
-                this.z_ents[Z_ORDER[e.type]].push(de);
+                this.dEnts.push(de);
+                this.zEnts[Z_ORDER[e.type]].push(de);
                 if (de.ident)
-                    this.named_ents[de.ident] = de;
+                    this.namedEnts[de.ident] = de;
             }
-            for (var i = 0; i < this.d_ents.length; i++)
-                this.d_ents[i].init();
+            for (var i = 0; i < this.dEnts.length; i++)
+                this.dEnts[i].init();
             for (var i = 0; i < Z_MAX; i++) {
-                for (var j = 0; j < this.z_ents[i].length; j++)
-                    this.z_ents[i][j].draw();
+                for (var j = 0; j < this.zEnts[i].length; j++)
+                    this.zEnts[i][j].draw();
             }
             for (var i = 0; i < Z_MAX; i++) {
-                for (var j = 0; j < this.z_ents[i].length; j++)
-                    this.z_ents[i][j].drawLabel();
+                for (var j = 0; j < this.zEnts[i].length; j++)
+                    this.zEnts[i][j].drawLabel();
             }
             this._t = {
                 scale: 1,
@@ -14126,12 +14127,12 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
             if (data.project) {
                 var sim = data;
                 var d = this;
-                sim.series.apply(sim, Object.keys(this.named_ents)).then(function (result) {
+                sim.series.apply(sim, Object.keys(this.namedEnts)).then(function (result) {
                     for (var n in result) {
                         if (!result.hasOwnProperty(n))
                             continue;
                         data = result[n];
-                        var dEnt = d.named_ents[n];
+                        var dEnt = d.namedEnts[n];
                         if (!dEnt) {
                             console.log('sim data for non-drawn ' + n);
                             continue;
@@ -14146,7 +14147,7 @@ define('draw',["require", "exports", './runtime', "./util", './xmile', "../bower
                     if (!result.hasOwnProperty(n))
                         continue;
                     data = result[n];
-                    var dEnt = this.named_ents[n];
+                    var dEnt = this.namedEnts[n];
                     if (!dEnt) {
                         console.log('sim data for non-drawn ' + n);
                         continue;

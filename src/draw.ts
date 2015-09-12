@@ -67,6 +67,8 @@ const Z_ORDER: {[n: string]: number} = {
 };
 const MIN_SCALE = .2;
 const Z_MAX = 6;
+// designed, empirically, to match what Stella v10 considers 'straight'
+const STRAIGHT_LINE_MAX = 12; // degrees
 // FIXME: The new IE packaged with Windows 10 helpfully identifies
 // itself as 'Chrome', but doesn't implement the same SVG extensions
 // (getBBox on a tspan).  Instead of this hack, should do feature
@@ -439,7 +441,7 @@ class DStock implements Ent {
 
 		for (let i = 0; i < mEnt.inflows.length; i++) {
 			let n = mEnt.inflows[i];
-			let dEnt = this.drawing.named_ents[n];
+			let dEnt = this.drawing.namedEnts[n];
 			if (!dEnt) {
 				console.log('failed connecting ' + this.ident + ' .to ' + n);
 				continue;
@@ -448,12 +450,12 @@ class DStock implements Ent {
 		}
 		for (let i = 0; i < mEnt.outflows.length; i++) {
 			let n = mEnt.outflows[i];
-			let dEnt = this.drawing.named_ents[n];
+			let dEnt = this.drawing.namedEnts[n];
 			if (!dEnt) {
 				console.log('failed connecting ' + this.ident + ' .from ' + n);
 				continue;
 			}
-			this.drawing.named_ents[n].from = this.ident;
+			this.drawing.namedEnts[n].from = this.ident;
 		}
 	}
 
@@ -808,13 +810,13 @@ class DConnector implements Ent {
 	draw(): void {
 		let paper = this.drawing.paper;
 
-		let fromEnt = this.drawing.named_ents[canonicalize(this.e.from)];
+		let fromEnt = this.drawing.namedEnts[canonicalize(this.e.from)];
 		if (!fromEnt)
 			return;
 		const fx = fromEnt.cx;
 		const fy = fromEnt.cy;
 
-		let toEnt = this.drawing.named_ents[canonicalize(this.e.to)];
+		let toEnt = this.drawing.namedEnts[canonicalize(this.e.to)];
 		if (!toEnt)
 			return;
 		let tx = toEnt.cx;
@@ -900,8 +902,8 @@ class DConnector implements Ent {
 			midθ += 2*PI;
 		console.log(fromEnt.ident + ': ' + (midθ*180/PI));
 
-		const straightLine = abs(midθ - takeoffθ) < degToRad(5);
-		console.log(fromEnt.ident + ' straight?: ' + straightLine);
+		const straightLine = abs(midθ - takeoffθ) < degToRad(STRAIGHT_LINE_MAX);
+		console.log(fromEnt.ident + ' straight?: ' + straightLine + ' :: ' + radToDeg(abs(midθ - takeoffθ)));
 
 		let endθ: number;
 		// FIXME: instead of checking for circ, we should
@@ -1031,9 +1033,9 @@ export class Drawing {
 	paper: Snap.Paper;
 	_g: Snap.Element;
 	_t: Transform;
-	d_ents: Ent[];
-	named_ents: {[n: string]: Ent};
-	z_ents: Ent[][];
+	dEnts: Ent[];
+	namedEnts: {[n: string]: Ent};
+	zEnts: Ent[][];
 
 	constructor(
 		model: type.Model,
@@ -1084,11 +1086,11 @@ export class Drawing {
 			style.transform = tz;
 		}
 
-		this.d_ents = [];
-		this.z_ents = new Array(Z_MAX);
+		this.dEnts = [];
+		this.zEnts = new Array(Z_MAX);
 		for (let i = 0; i < Z_MAX; i++)
-			this.z_ents[i] = [];
-		this.named_ents = {};
+			this.zEnts[i] = [];
+		this.namedEnts = {};
 
 		// create a drawing entity for each known tag in the display
 		for (let i = 0; i < view.elements.length; i++) {
@@ -1098,25 +1100,25 @@ export class Drawing {
 				continue;
 			}
 			let de = new DTypes[e.type](this, e);
-			this.d_ents.push(de);
-			this.z_ents[Z_ORDER[e.type]].push(de);
+			this.dEnts.push(de);
+			this.zEnts[Z_ORDER[e.type]].push(de);
 			if (de.ident)
-				this.named_ents[de.ident] = de;
+				this.namedEnts[de.ident] = de;
 		}
 
 		// all draw ents need to be constructed and read in before we
 		// can initialize them
-		for (let i = 0; i < this.d_ents.length; i++)
-			this.d_ents[i].init();
+		for (let i = 0; i < this.dEnts.length; i++)
+			this.dEnts[i].init();
 
 		// TODO(bp) sort by draw order
 		for (let i = 0; i < Z_MAX; i++) {
-			for (let j = 0; j < this.z_ents[i].length; j++)
-				this.z_ents[i][j].draw();
+			for (let j = 0; j < this.zEnts[i].length; j++)
+				this.zEnts[i][j].draw();
 		}
 		for (let i = 0; i < Z_MAX; i++) {
-			for (let j = 0; j < this.z_ents[i].length; j++)
-				this.z_ents[i][j].drawLabel();
+			for (let j = 0; j < this.zEnts[i].length; j++)
+				this.zEnts[i][j].drawLabel();
 		}
 
 		// pieces to construct a transformation matrix from
@@ -1222,12 +1224,12 @@ export class Drawing {
 		if (data.project) {
 			let sim = data;
 			let d = this;
-			sim.series.apply(sim, Object.keys(this.named_ents)).then(function(result: any): void {
+			sim.series.apply(sim, Object.keys(this.namedEnts)).then(function(result: any): void {
 				for (let n in result) {
 					if (!result.hasOwnProperty(n))
 						continue;
 					data = result[n];
-					let dEnt = d.named_ents[n];
+					let dEnt = d.namedEnts[n];
 					if (!dEnt) {
 						console.log('sim data for non-drawn ' + n);
 						continue;
@@ -1241,7 +1243,7 @@ export class Drawing {
 				if (!result.hasOwnProperty(n))
 					continue;
 				data = result[n];
-				let dEnt = this.named_ents[n];
+				let dEnt = this.namedEnts[n];
 				if (!dEnt) {
 					console.log('sim data for non-drawn ' + n);
 					continue;

@@ -33,11 +33,11 @@ export declare class Drawing {
     paper: Snap.Paper;
     _g: Snap.Element;
     _t: Transform;
-    d_ents: Ent[];
-    named_ents: {
+    dEnts: Ent[];
+    namedEnts: {
         [n: string]: Ent;
     };
-    z_ents: Ent[][];
+    zEnts: Ent[][];
     constructor(model: type.Model, view: xmile.View, svgElement: string | HTMLElement, overrideColors: boolean, enableMousewheel: boolean, stocksXYCenter: boolean);
     applyDScaleAt(dscale: number, e: any): void;
     transform(scale?: number, x?: number, y?: number): void;
