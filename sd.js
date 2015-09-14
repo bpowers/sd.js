@@ -13328,7 +13328,7 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
     var MODULE_R = 5;
     var TEXT_ATTR = {
         'font-size': '10px',
-        'font-family': 'Roboto',
+        'font-family': 'Roboto, "Open Sans", sans-serif',
         'font-weight': '300',
         'text-anchor': 'middle',
         'white-space': 'nowrap',

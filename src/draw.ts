@@ -49,7 +49,7 @@ const INVERSE_FUZZ = 6;
 const MODULE_R = 5;
 const TEXT_ATTR: {[attr: string]: string|number|boolean|any} = {
 	'font-size': '10px',
-	'font-family': 'Roboto',
+	'font-family': 'Roboto, "Open Sans", sans-serif',
 	'font-weight': '300',
 	'text-anchor': 'middle',
 	'white-space': 'nowrap',
