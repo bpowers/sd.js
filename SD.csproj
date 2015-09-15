@@ -25,12 +25,36 @@
     <Content Include="app.css" />
     <Content Include="gulpfile.js" />
     <Content Include="index.html" />
+    <Content Include="runtime\draw.css" />
     <Content Include="sd.js" />
     <Content Include="sd.min.js" />
+    <Content Include="src\build\end.frag.js" />
+    <Content Include="src\build\start.frag.js" />
     <Content Include="web.config" />
   </ItemGroup>
   <ItemGroup>
     <TypeScriptCompile Include="app.ts" />
+    <TypeScriptCompile Include="runtime\epilogue.ts" />
+    <TypeScriptCompile Include="runtime\generated.d.ts" />
+    <TypeScriptCompile Include="runtime\runtime.ts" />
+    <TypeScriptCompile Include="src\ast.ts" />
+    <TypeScriptCompile Include="src\common.ts" />
+    <TypeScriptCompile Include="src\compat.ts" />
+    <TypeScriptCompile Include="src\draw.ts" />
+    <TypeScriptCompile Include="src\lex.ts" />
+    <TypeScriptCompile Include="src\model.ts" />
+    <TypeScriptCompile Include="src\parse.ts" />
+    <TypeScriptCompile Include="src\project.ts" />
+    <TypeScriptCompile Include="src\runtime.ts" />
+    <TypeScriptCompile Include="src\sd.ts" />
+    <TypeScriptCompile Include="src\sim.ts" />
+    <TypeScriptCompile Include="src\type.ts" />
+    <TypeScriptCompile Include="src\util.ts" />
+    <TypeScriptCompile Include="src\vars.ts" />
+    <TypeScriptCompile Include="src\xmile.ts" />
+    <TypeScriptCompile Include="test\draw.ts" />
+    <TypeScriptCompile Include="test\lex.ts" />
+    <TypeScriptCompile Include="test\parse.ts" />
   </ItemGroup>
   <ItemGroup>
     <Content Include=".tslint.json" />
@@ -44,6 +68,9 @@
     <None Include="web.Release.config">
       <DependentUpon>web.config</DependentUpon>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="test\test-models\" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">12.0</VisualStudioVersion>
