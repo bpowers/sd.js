@@ -30,7 +30,7 @@
     "chai": "^3.2.0",
     "gulp": "^3.9.0",
     "gulp-load-plugins": "^0.10.0",
-    "gulp-requirejs": "bpowers/gulp-requirejs",
+    "gulp-requirejs": "bpowers/gulp-requirejs#v0.1.5",
     "gulp-typescript": "^2.8.3",
     "gulp-util": "^3.0.6",
     "merge2": "^0.3.6",
