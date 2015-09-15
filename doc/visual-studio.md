@@ -41,5 +41,5 @@ Solutions tab towards the bottom right.
 Now, from the task runner explorer, choose the 'test' task from under
 the Gruntfile.  This should show some output ending with '67 passing'.
 
-After editing code, re-run unit tests (and create new tests for new
-functionality.
+After editing code, re-run unit tests to ensure regressions don't
+sneak in and create new tests for new functionality.
