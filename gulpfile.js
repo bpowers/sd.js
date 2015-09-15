@@ -4,7 +4,7 @@ var gulp = require('gulp');
 var merge = require('merge2');
 var ts = require('gulp-typescript');
 var runSequence = require('run-sequence');
-var rjs = require('gulp-requirejs');
+var rjs = require('gulp-requirejs-bp');
 var mocha = require('gulp-mocha');
 
 var buildRuntime = require('./gulp-plugins/build-runtime');
