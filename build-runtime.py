@@ -20,15 +20,11 @@ WRAPPER = '''// Copyright 2015 Bobby Powers. All rights reserved.
 
 /* tslint:disable: max-line-length */
 
-// unquoted source in '%s'
 export const preamble = %s;
 
-// unquoted source in '%s'
 export const epilogue = %s;
 
-// unquoted source in '%s'
-export const drawCSS = %s;
-'''
+export const drawCSS = %s;'''
 
 def slurp(file_name):
     with open(file_name, 'r') as f:
@@ -38,9 +34,9 @@ def main():
     preamble = slurp(PREAMBLE)
     epilogue = slurp(EPILOGUE)
     draw_css = DRAW_WRAP % (slurp(DRAW_CSS),)
-    print WRAPPER % (PREAMBLE, json.dumps(preamble),
-                     EPILOGUE, json.dumps(epilogue),
-                     DRAW_CSS, json.dumps(draw_css))
+    print WRAPPER % (json.dumps(preamble),
+                     json.dumps(epilogue),
+                     json.dumps(draw_css))
 
 if __name__ == '__main__':
     exit(main())
