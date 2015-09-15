@@ -28,7 +28,7 @@ gulp.task('runtime', function() {
 	.pipe(gulp.dest('src'));
 });
 
-gulp.task('lib', function() {
+gulp.task('lib', ['runtime'], function() {
     var tsLib = gulp.src('src/*.ts')
 	.pipe(ts(libProject));
 

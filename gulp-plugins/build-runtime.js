@@ -69,8 +69,6 @@ function buildRuntime(fileName) {
         }
 
         files[file.relative] = file.contents;
-	console.log('recording ' + file.relative);
-
         cb();
     }
 
@@ -80,20 +78,20 @@ function buildRuntime(fileName) {
             return;
         }
 
-	for (var i = 0; i < requiredInputs.length; i++) {
-	    if (!(requiredInputs[i] in files))
-		new PluginError(PLUGIN_NAME,  'Missing required input ' + requiredInputs[i]);
-	}
+        for (var i = 0; i < requiredInputs.length; i++) {
+            if (!(requiredInputs[i] in files))
+                new PluginError(PLUGIN_NAME,  'Missing required input ' + requiredInputs[i]);
+        }
 
-	var drawCSS = util.format(DRAW_WRAP, files['draw.css'].toString('utf8').trim());
+        var drawCSS = util.format(DRAW_WRAP, files['draw.css'].toString('utf8').trim());
 
-	var out = new File({path: fileName});
+        var out = new File({path: fileName});
 
-	var contents = util.format(
-	    WRAPPER,
-	    JSON.stringify(files['runtime.js'].toString('utf8').trim()),
-	    JSON.stringify(files['epilogue.js'].toString('utf8').trim()),
-	    JSON.stringify(drawCSS));
+        var contents = util.format(
+            WRAPPER,
+            JSON.stringify(files['runtime.js'].toString('utf8').trim()),
+            JSON.stringify(files['epilogue.js'].toString('utf8').trim()),
+            JSON.stringify(drawCSS));
 
         out.contents = new Buffer(contents);
 
