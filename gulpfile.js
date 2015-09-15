@@ -5,6 +5,7 @@ var merge = require('merge2');
 var ts = require('gulp-typescript');
 var runSequence = require('run-sequence');
 var rjs = require('gulp-requirejs');
+var mocha = require('gulp-mocha');
 
 var buildRuntime = require('./gulp-plugins/build-runtime');
 
@@ -19,6 +20,7 @@ var buildProject = ts.createProject('tsconfig.json', {
     sortOutput: true,
     module: 'amd',
 });
+var testProject = ts.createProject('tsconfig.json', { sortOutput: true });
 
 gulp.task('runtime', function() {
     var tsRT = gulp.src('runtime/*.ts')
@@ -74,6 +76,13 @@ gulp.task('sd.min.js', ['build'], function() {
     }).pipe(gulp.dest('.'));
 });
 
+gulp.task('test', ['common-lib'], function() {
+    return gulp.src('test/*.ts')
+        .pipe(ts(libProject)).js
+	.pipe(gulp.dest('test'))
+	.pipe(mocha());
+});
+
 gulp.task('default', function(cb) {
-    runSequence(['common-lib', 'sd.js', 'sd.min.js'], cb);
+    runSequence(['common-lib', 'sd.js', 'sd.min.js'], 'test', cb);
 });
