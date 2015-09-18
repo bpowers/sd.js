@@ -442,7 +442,6 @@ define("../bower_components/almond/almond", function(){});
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 define('common',["require", "exports"], function (require, exports) {
-    exports.err;
     var Errors = (function () {
         function Errors() {
         }
@@ -2308,8 +2307,7 @@ define('parse',["require", "exports", './ast', './lex'], function (require, expo
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
-    __.prototype = b.prototype;
-    d.prototype = new __();
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
 define('vars',["require", "exports", './common', './lex', './parse'], function (require, exports, common, lex_1, parse) {
     var JS_OP = {
@@ -17386,6 +17384,7 @@ define('sd',["require", "exports", './common', './project', './project', './mode
         'use strict';
         return common.err;
     }
+    Object.defineProperty(exports, "__esModule", { value: true });
     exports.default = error;
 });
 
