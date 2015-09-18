@@ -35,4 +35,6 @@ export declare class Sim {
     runTo(time: number): any;
     runToEnd(): any;
     setDesiredSeries(names: string[]): any;
+    varNames(): Q.Promise<any>;
+    csv(delim?: string): any;
 }

@@ -359,4 +359,64 @@ export class Sim {
 	setDesiredSeries(names: string[]): any {
 		return this._post('set_desired_series', names);
 	}
+
+	varNames(): Q.Promise<any> {
+		return this._post('var_names');
+	}
+
+	csv(delim: string = ','): any {
+		let deferred = Q.defer();
+
+		let vars: string[];
+
+		this.varNames()
+			.then(getAllSeries.bind(this))
+			.then(returnResults.bind(this));
+
+		function getAllSeries(names: string[]): Q.Promise<any> {
+			// save so that we have a stable/sorted
+			// iteration order
+			vars = names;
+			return this.series.apply(this, names);
+		}
+
+		function returnResults(data: {[name: string]: type.Series}): void {
+			let file = '';
+			let series: {[name: string]: type.Series} = {};
+			let time: type.Series;
+			let header = 'time' + delim;
+
+			// create the CSV header
+			for (let i = 0; i < vars.length; i++) {
+				let v = vars[i];
+				if (v === 'time') {
+					time = data[v];
+					continue;
+				}
+				header += v + delim;
+				series[v] = data[v];
+			}
+
+			file += header.substr(0, header.length-1);
+			file += '\n';
+
+			// now go timestep-by-timestep to generate each line
+			let nSteps = time.values.length;
+			for (let i = 0; i < nSteps; i++) {
+				let msg = '';
+				for (let v in series) {
+					if (!series.hasOwnProperty(v))
+						continue;
+					if (msg === '')
+						msg += series[v].time[i] + delim;
+					msg += series[v].values[i] + delim;
+				}
+				file += msg.substr(0, msg.length-1);
+				file += '\n';
+			}
+			deferred.resolve(file);
+		}
+
+		return deferred.promise;
+	}
 }

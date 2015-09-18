@@ -287,6 +287,9 @@ function initCmds(main: Simulation): any {
 				return [main.value('time'), null];
 			}
 		},
+		'var_names': function(): [any, any] {
+			return [main.varNames(), null];
+		},
 		'set_desired_series': function(names: string[]): [any, any] {
 			desiredSeries = names;
 			return ['ok', null];
