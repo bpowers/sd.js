@@ -902,6 +902,8 @@ class DConnector implements Ent {
 		let slopePerpToTakeoff = -1/slopeTakeoff;
 		if (isZero(slopePerpToTakeoff))
 			slopePerpToTakeoff = 0;
+		else if (isInf(slopePerpToTakeoff))
+			slopePerpToTakeoff = Infinity;
 
 		const takeoffPerpθ = Math.atan(slopePerpToTakeoff);
 
@@ -997,7 +999,7 @@ class DConnector implements Ent {
 				'stroke': this.color,
 				'fill': 'none',
 			}),
-			paper.circle(start.x, start.y, 2).attr({'stroke-width': 0, fill: '#c83639'}),
+			//paper.circle(start.x, start.y, 2).attr({'stroke-width': 0, fill: '#c83639'}),
 			arrowhead(paper, end.x, end.y, ARROWHEAD_RADIUS).attr({
 				'transform': 'rotate(' + arrowheadAngle + ',' + end.x + ',' + end.y + ')',
 				'stroke': this.color,
@@ -1022,6 +1024,8 @@ class DConnector implements Ent {
 		let fromθ = atan2(from.cy - circ.y, from.cx - circ.x);
 		let toθ = atan2(to.cy - circ.y, to.cx - circ.x);
 		let spanθ = toθ - fromθ;
+		if (spanθ > degToRad(180))
+			spanθ -= degToRad(360);
 
 		// if the sweep flag is set, we need to negate the
 		// inverse flag
@@ -1076,7 +1080,7 @@ class DConnector implements Ent {
 				'stroke': this.color,
 				'fill': 'none',
 			}),
-			paper.circle(start.x, start.y, 2).attr({'stroke-width': 0, fill: '#c83639'}),
+			//paper.circle(start.x, start.y, 2).attr({'stroke-width': 0, fill: '#c83639'}),
 			arrowhead(paper, end.x, end.y, ARROWHEAD_RADIUS).attr({
 				'transform': 'rotate(' + arrowheadAngle + ',' + end.x + ',' + end.y + ')',
 				'stroke': this.color,

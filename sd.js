@@ -13935,6 +13935,8 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
             var slopePerpToTakeoff = -1 / slopeTakeoff;
             if (isZero(slopePerpToTakeoff))
                 slopePerpToTakeoff = 0;
+            else if (isInf(slopePerpToTakeoff))
+                slopePerpToTakeoff = Infinity;
             var takeoffPerpθ = Math.atan(slopePerpToTakeoff);
             var bFrom = from.cy - slopePerpToTakeoff * from.cx;
             var cx;
@@ -13992,7 +13994,7 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
                 'stroke-width': STROKE / 2,
                 'stroke': this.color,
                 'fill': 'none',
-            }), paper.circle(start.x, start.y, 2).attr({ 'stroke-width': 0, fill: '#c83639' }), arrowhead(paper, end.x, end.y, ARROWHEAD_RADIUS).attr({
+            }), arrowhead(paper, end.x, end.y, ARROWHEAD_RADIUS).attr({
                 'transform': 'rotate(' + arrowheadAngle + ',' + end.x + ',' + end.y + ')',
                 'stroke': this.color,
                 'stroke-width': 1,
@@ -14011,6 +14013,8 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
             var fromθ = atan2(from.cy - circ.y, from.cx - circ.x);
             var toθ = atan2(to.cy - circ.y, to.cx - circ.x);
             var spanθ = toθ - fromθ;
+            if (spanθ > degToRad(180))
+                spanθ -= degToRad(360);
             var inv = spanθ > 0 || spanθ <= degToRad(-180);
             var start = this.intersectEntArc(from, circ, inv);
             var end = this.intersectEntArc(to, circ, !inv);
@@ -14034,7 +14038,7 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
                 'stroke-width': STROKE / 2,
                 'stroke': this.color,
                 'fill': 'none',
-            }), paper.circle(start.x, start.y, 2).attr({ 'stroke-width': 0, fill: '#c83639' }), arrowhead(paper, end.x, end.y, ARROWHEAD_RADIUS).attr({
+            }), arrowhead(paper, end.x, end.y, ARROWHEAD_RADIUS).attr({
                 'transform': 'rotate(' + arrowheadAngle + ',' + end.x + ',' + end.y + ')',
                 'stroke': this.color,
                 'stroke-width': 1,
