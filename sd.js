@@ -438,9 +438,6 @@ var requirejs, require, define;
 
 define("../bower_components/almond/almond", function(){});
 
-// Copyright 2015 Bobby Powers. All rights reserved.
-// Use of this source code is governed by the MIT
-// license that can be found in the LICENSE file.
 define('common',["require", "exports"], function (require, exports) {
     var Errors = (function () {
         function Errors() {
@@ -465,11 +462,8 @@ define('common',["require", "exports"], function (require, exports) {
     };
 });
 
-// Copyright 2015 Bobby Powers. All rights reserved.
-// Use of this source code is governed by the MIT
-// license that can be found in the LICENSE file.
-
 define('xmile',["require", "exports"], function (require, exports) {
+    'use strict';
     function camelCase(s) {
         'use strict';
         var i = 0;
@@ -1529,11 +1523,8 @@ define('xmile',["require", "exports"], function (require, exports) {
     exports.canonicalize = canonicalize;
 });
 
-// Copyright 2015 Bobby Powers. All rights reserved.
-// Use of this source code is governed by the MIT
-// license that can be found in the LICENSE file.
-
 define('util',["require", "exports"], function (require, exports) {
+    'use strict';
     function titleCase(str) {
         'use strict';
         return str.replace(/(?:^|\s)\w/g, function (match) {
@@ -1707,8 +1698,8 @@ define('util',["require", "exports"], function (require, exports) {
     exports.isNaN = isNaN;
 });
 
-
 define('lex',["require", "exports", './common', './util'], function (require, exports, common_1, util_1) {
+    'use strict';
     var OP = {
         'not': '!',
         'and': '&',
@@ -1934,11 +1925,8 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
     exports.identifierSet = identifierSet;
 });
 
-// Copyright 2015 Bobby Powers. All rights reserved.
-// Use of this source code is governed by the MIT
-// license that can be found in the LICENSE file.
-
 define('ast',["require", "exports", './xmile'], function (require, exports, xmile_1) {
+    'use strict';
     var Ident = (function () {
         function Ident(pos, name) {
             this.ident = xmile_1.canonicalize(name);
@@ -2095,11 +2083,8 @@ define('ast',["require", "exports", './xmile'], function (require, exports, xmil
     exports.IfExpr = IfExpr;
 });
 
-// Copyright 2015 Bobby Powers. All rights reserved.
-// Use of this source code is governed by the MIT
-// license that can be found in the LICENSE file.
-
 define('parse',["require", "exports", './ast', './lex'], function (require, exports, ast_1, lex_1) {
+    'use strict';
     var RESERVED = [
         "if",
         "then",
@@ -2300,16 +2285,13 @@ define('parse',["require", "exports", './ast', './lex'], function (require, expo
     })();
 });
 
-// Copyright 2015 Bobby Powers. All rights reserved.
-// Use of this source code is governed by the MIT
-// license that can be found in the LICENSE file.
-
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
 define('vars',["require", "exports", './common', './lex', './parse'], function (require, exports, common, lex_1, parse) {
+    'use strict';
     var JS_OP = {
         '&': '&&',
         '|': '||',
@@ -2645,25 +2627,22 @@ define('vars',["require", "exports", './common', './lex', './parse'], function (
     exports.Reference = Reference;
 });
 
-// Copyright 2015 Bobby Powers. All rights reserved.
-// Use of this source code is governed by the MIT
-// license that can be found in the LICENSE file.
-
 define('runtime',["require", "exports"], function (require, exports) {
+    'use strict';
     exports.preamble = "'use strict';\nfunction i32(n) {\n    'use strict';\n    return n | 0;\n}\nvar Simulation = (function () {\n    function Simulation() {\n    }\n    Simulation.prototype.lookupOffset = function (id) {\n        if (id === 'time')\n            return 0;\n        if (id[0] === '.')\n            id = id.substr(1);\n        if (id in this.offsets)\n            return this._shift + this.offsets[id];\n        var parts = id.split('.');\n        if (parts.length === 1 && id === \"\" && this.name in this.offsets)\n            return this._shift + this.offsets[this.name];\n        var nextSim = this.modules[parts[0]];\n        if (!nextSim)\n            return -1;\n        return nextSim.lookupOffset(parts.slice(1).join('.'));\n    };\n    Simulation.prototype.root = function () {\n        if (!this.parent)\n            return this;\n        return this.parent.root();\n    };\n    Simulation.prototype.resolveAllSymbolicRefs = function () {\n        for (var n in this.symRefs) {\n            if (!this.symRefs.hasOwnProperty(n))\n                continue;\n            var ctx = void 0;\n            if (this.symRefs[n][0] === '.') {\n                ctx = this.root();\n            }\n            else {\n                ctx = this.parent;\n            }\n            this.ref[n] = ctx.lookupOffset(this.symRefs[n]);\n        }\n        for (var n in this.modules) {\n            if (!this.modules.hasOwnProperty(n))\n                continue;\n            this.modules[n].resolveAllSymbolicRefs();\n        }\n    };\n    Simulation.prototype.varNames = function () {\n        var result = Object.keys(this.offsets).slice();\n        for (var v in this.modules) {\n            if (!this.modules.hasOwnProperty(v))\n                continue;\n            var ids = [];\n            var modVarNames = this.modules[v].varNames();\n            for (var n in modVarNames) {\n                if (modVarNames.hasOwnProperty(n))\n                    ids.push(v + '.' + modVarNames[n]);\n            }\n            result = result.concat(ids);\n        }\n        if (this.name === 'main')\n            result.push('time');\n        return result;\n    };\n    Simulation.prototype.getNVars = function () {\n        var nVars = Object.keys(this.offsets).length;\n        for (var n in this.modules) {\n            if (this.modules.hasOwnProperty(n))\n                nVars += this.modules[n].getNVars();\n        }\n        if (this.name === 'main')\n            nVars++;\n        return nVars;\n    };\n    Simulation.prototype.reset = function () {\n        var spec = this.simSpec;\n        var nSaveSteps = i32((spec.stop - spec.start) / spec.saveStep + 1);\n        this.stepNum = 0;\n        this.slab = new Float64Array(this.nVars * (nSaveSteps + 1));\n        var curr = this.curr();\n        curr[0] = spec.start;\n        this.saveEvery = Math.max(1, i32(spec.saveStep / spec.dt + 0.5));\n        this.calcInitial(this.simSpec.dt, curr);\n    };\n    Simulation.prototype.runTo = function (endTime) {\n        var dt = this.simSpec.dt;\n        var curr = this.curr();\n        var next = this.slab.subarray((this.stepNum + 1) * this.nVars, (this.stepNum + 2) * this.nVars);\n        while (curr[0] <= endTime) {\n            this.calcFlows(dt, curr);\n            this.calcStocks(dt, curr, next);\n            next[0] = curr[0] + dt;\n            if (this.stepNum++ % this.saveEvery !== 0) {\n                curr.set(next);\n            }\n            else {\n                curr = next;\n                next = this.slab.subarray((i32(this.stepNum / this.saveEvery) + 1) * this.nVars, (i32(this.stepNum / this.saveEvery) + 2) * this.nVars);\n            }\n        }\n    };\n    Simulation.prototype.runToEnd = function () {\n        return this.runTo(this.simSpec.stop + 0.5 * this.simSpec.dt);\n    };\n    Simulation.prototype.curr = function () {\n        return this.slab.subarray((this.stepNum) * this.nVars, (this.stepNum + 1) * this.nVars);\n    };\n    Simulation.prototype.setValue = function (name, value) {\n        var off = this.lookupOffset(name);\n        if (off === -1)\n            return;\n        this.curr()[off] = value;\n    };\n    Simulation.prototype.value = function (name) {\n        var off = this.lookupOffset(name);\n        if (off === -1)\n            return;\n        var saveNum = i32(this.stepNum / this.saveEvery);\n        var slabOff = this.nVars * saveNum;\n        return this.slab.subarray(slabOff, slabOff + this.nVars)[off];\n    };\n    Simulation.prototype.series = function (name) {\n        var saveNum = i32(this.stepNum / this.saveEvery);\n        var time = new Float64Array(saveNum);\n        var values = new Float64Array(saveNum);\n        var off = this.lookupOffset(name);\n        if (off === -1)\n            return;\n        for (var i = 0; i < time.length; i++) {\n            var curr = this.slab.subarray(i * this.nVars, (i + 1) * this.nVars);\n            time[i] = curr[0];\n            values[i] = curr[off];\n        }\n        return {\n            'name': name,\n            'time': time,\n            'values': values,\n        };\n    };\n    return Simulation;\n})();\nvar cmds;\nfunction handleMessage(e) {\n    'use strict';\n    var id = e.data[0];\n    var cmd = e.data[1];\n    var args = e.data.slice(2);\n    var result;\n    if (cmds.hasOwnProperty(cmd)) {\n        result = cmds[cmd].apply(null, args);\n    }\n    else {\n        result = [null, 'unknown command \"' + cmd + '\"'];\n    }\n    if (!Array.isArray(result))\n        result = [null, 'no result for [' + e.data.join(', ') + ']'];\n    var msg = [id, result];\n    this.postMessage(msg);\n}\nvar desiredSeries = null;\nfunction initCmds(main) {\n    'use strict';\n    return {\n        'reset': function () {\n            main.reset();\n            return ['ok', null];\n        },\n        'set_val': function (name, val) {\n            main.setValue(name, val);\n            return ['ok', null];\n        },\n        'get_val': function () {\n            var args = [];\n            for (var _i = 0; _i < arguments.length; _i++) {\n                args[_i - 0] = arguments[_i];\n            }\n            var result = {};\n            for (var i = 0; i < args.length; i++)\n                result[args[i]] = main.value(args[i]);\n            return [result, null];\n        },\n        'get_series': function () {\n            var args = [];\n            for (var _i = 0; _i < arguments.length; _i++) {\n                args[_i - 0] = arguments[_i];\n            }\n            var result = {};\n            for (var i = 0; i < args.length; i++)\n                result[args[i]] = main.series(args[i]);\n            return [result, null];\n        },\n        'run_to': function (time) {\n            main.runTo(time);\n            return [main.value('time'), null];\n        },\n        'run_to_end': function () {\n            var result = {};\n            main.runToEnd();\n            if (desiredSeries) {\n                for (var i = 0; i < desiredSeries.length; i++)\n                    result[desiredSeries[i]] = main.series(desiredSeries[i]);\n                return [result, null];\n            }\n            else {\n                return [main.value('time'), null];\n            }\n        },\n        'var_names': function () {\n            return [main.varNames(), null];\n        },\n        'set_desired_series': function (names) {\n            desiredSeries = names;\n            return ['ok', null];\n        },\n    };\n}\nfunction lookup(table, index) {\n    'use strict';\n    var size = table.x.length;\n    if (size === 0)\n        return NaN;\n    var x = table.x;\n    var y = table.y;\n    if (index <= x[0]) {\n        return y[0];\n    }\n    else if (index >= x[size - 1]) {\n        return y[size - 1];\n    }\n    var low = 0;\n    var high = size;\n    var mid;\n    while (low < high) {\n        mid = Math.floor(low + (high - low) / 2);\n        if (x[mid] < index) {\n            low = mid + 1;\n        }\n        else {\n            high = mid;\n        }\n    }\n    var i = low;\n    if (x[i] === index) {\n        return y[i];\n    }\n    else {\n        var slope = (y[i] - y[i - 1]) / (x[i] - x[i - 1]);\n        return (index - x[i - 1]) * slope + y[i - 1];\n    }\n}\nfunction max(a, b) {\n    'use strict';\n    a = +a;\n    b = +b;\n    return a > b ? a : b;\n}\nfunction min(a, b) {\n    'use strict';\n    a = +a;\n    b = +b;\n    return a < b ? a : b;\n}\nfunction pulse(dt, time, volume, firstPulse, interval) {\n    'use strict';\n    if (time < firstPulse)\n        return 0;\n    var nextPulse = firstPulse;\n    while (time >= nextPulse) {\n        if (time < nextPulse + dt) {\n            return volume / dt;\n        }\n        else if (interval <= 0.0) {\n            break;\n        }\n        else {\n            nextPulse += interval;\n        }\n    }\n    return 0;\n}";
-    exports.epilogue = "/// <reference path=\"./generated.d.ts\" />\nvar pr;\nif (typeof console === 'undefined') {\n    pr = print;\n}\nelse {\n    pr = console.log;\n}\nmain.runToEnd();\nvar series = {};\nvar header = 'time\\t';\nvar vars = main.varNames();\nfor (var i = 0; i < vars.length; i++) {\n    var v = vars[i];\n    if (v === 'time')\n        continue;\n    header += v + '\\t';\n    series[v] = main.series(v);\n}\npr(header.substr(0, header.length - 1));\nvar nSteps = main.series('time').time.length;\nfor (var i = 0; i < nSteps; i++) {\n    var msg = '';\n    for (var v in series) {\n        if (!series.hasOwnProperty(v))\n            continue;\n        if (msg === '')\n            msg += series[v].time[i] + '\\t';\n        msg += series[v].values[i] + '\\t';\n    }\n    pr(msg.substr(0, msg.length - 1));\n}";
+    exports.epilogue = "var pr;\nif (typeof console === 'undefined') {\n    pr = print;\n}\nelse {\n    pr = console.log;\n}\nmain.runToEnd();\nvar series = {};\nvar header = 'time\\t';\nvar vars = main.varNames();\nfor (var i = 0; i < vars.length; i++) {\n    var v = vars[i];\n    if (v === 'time')\n        continue;\n    header += v + '\\t';\n    series[v] = main.series(v);\n}\npr(header.substr(0, header.length - 1));\nvar nSteps = main.series('time').time.length;\nfor (var i = 0; i < nSteps; i++) {\n    var msg = '';\n    for (var v in series) {\n        if (!series.hasOwnProperty(v))\n            continue;\n        if (msg === '')\n            msg += series[v].time[i] + '\\t';\n        msg += series[v].values[i] + '\\t';\n    }\n    pr(msg.substr(0, msg.length - 1));\n}";
     exports.drawCSS = "<defs><style>\n/* <![CDATA[ */\n.spark-axis {\n    stroke-width: 0.125;\n    stroke-linecap: round;\n    stroke: #999;\n    fill: none;\n}\n\n.spark-line {\n    stroke-width: 0.5;\n    stroke-linecap: round;\n    stroke: #2299dd;\n    fill: none;\n}\n\ntext {\n    font-size: 12px;\n    font-family: \"Roboto\", \"Open Sans\", Arial, sans-serif;\n    font-weight: 300;\n    text-anchor: middle;\n    white-space: nowrap;\n    vertical-align: middle;\n}\n\n.left-aligned {\n    text-anchor: start;\n}\n\n.right-aligned {\n    text-anchor: end;\n}\n/* ]]> */\n</style></defs>\n";
 });
 
-/*! Hammer.JS - v2.0.4 - 2014-09-28
+/*! Hammer.JS - v2.0.6 - 2015-12-23
  * http://hammerjs.github.io/
  *
- * Copyright (c) 2014 Jorik Tangelder;
- * Licensed under the MIT license */
+ * Copyright (c) 2015 Jorik Tangelder;
+ * Licensed under the  license */
 (function(window, document, exportName, undefined) {
   'use strict';
 
-var VENDOR_PREFIXES = ['', 'webkit', 'moz', 'MS', 'ms', 'o'];
+var VENDOR_PREFIXES = ['', 'webkit', 'Moz', 'MS', 'ms', 'o'];
 var TEST_ELEMENT = document.createElement('div');
 
 var TYPE_FUNCTION = 'function';
@@ -2729,14 +2708,68 @@ function each(obj, iterator, context) {
 }
 
 /**
+ * wrap a method with a deprecation warning and stack trace
+ * @param {Function} method
+ * @param {String} name
+ * @param {String} message
+ * @returns {Function} A new function wrapping the supplied method.
+ */
+function deprecate(method, name, message) {
+    var deprecationMessage = 'DEPRECATED METHOD: ' + name + '\n' + message + ' AT \n';
+    return function() {
+        var e = new Error('get-stack-trace');
+        var stack = e && e.stack ? e.stack.replace(/^[^\(]+?[\n$]/gm, '')
+            .replace(/^\s+at\s+/gm, '')
+            .replace(/^Object.<anonymous>\s*\(/gm, '{anonymous}()@') : 'Unknown Stack Trace';
+
+        var log = window.console && (window.console.warn || window.console.log);
+        if (log) {
+            log.call(window.console, deprecationMessage, stack);
+        }
+        return method.apply(this, arguments);
+    };
+}
+
+/**
+ * extend object.
+ * means that properties in dest will be overwritten by the ones in src.
+ * @param {Object} target
+ * @param {...Object} objects_to_assign
+ * @returns {Object} target
+ */
+var assign;
+if (typeof Object.assign !== 'function') {
+    assign = function assign(target) {
+        if (target === undefined || target === null) {
+            throw new TypeError('Cannot convert undefined or null to object');
+        }
+
+        var output = Object(target);
+        for (var index = 1; index < arguments.length; index++) {
+            var source = arguments[index];
+            if (source !== undefined && source !== null) {
+                for (var nextKey in source) {
+                    if (source.hasOwnProperty(nextKey)) {
+                        output[nextKey] = source[nextKey];
+                    }
+                }
+            }
+        }
+        return output;
+    };
+} else {
+    assign = Object.assign;
+}
+
+/**
  * extend object.
  * means that properties in dest will be overwritten by the ones in src.
  * @param {Object} dest
  * @param {Object} src
- * @param {Boolean} [merge]
+ * @param {Boolean=false} [merge]
  * @returns {Object} dest
  */
-function extend(dest, src, merge) {
+var extend = deprecate(function extend(dest, src, merge) {
     var keys = Object.keys(src);
     var i = 0;
     while (i < keys.length) {
@@ -2746,7 +2779,7 @@ function extend(dest, src, merge) {
         i++;
     }
     return dest;
-}
+}, 'extend', 'Use `assign`.');
 
 /**
  * merge the values from src in the dest.
@@ -2755,9 +2788,9 @@ function extend(dest, src, merge) {
  * @param {Object} src
  * @returns {Object} dest
  */
-function merge(dest, src) {
+var merge = deprecate(function merge(dest, src) {
     return extend(dest, src, true);
-}
+}, 'merge', 'Use `assign`.');
 
 /**
  * simple class inheritance
@@ -2774,7 +2807,7 @@ function inherit(child, base, properties) {
     childP._super = baseP;
 
     if (properties) {
-        extend(childP, properties);
+        assign(childP, properties);
     }
 }
 
@@ -2977,8 +3010,8 @@ function uniqueId() {
  * @returns {DocumentView|Window}
  */
 function getWindowForElement(element) {
-    var doc = element.ownerDocument;
-    return (doc.defaultView || doc.parentWindow);
+    var doc = element.ownerDocument || element;
+    return (doc.defaultView || doc.parentWindow || window);
 }
 
 var MOBILE_REGEX = /mobile|tablet|ip(ad|hone|od)|android/i;
@@ -3157,8 +3190,16 @@ function computeInputData(manager, input) {
     computeDeltaXY(session, input);
     input.offsetDirection = getDirection(input.deltaX, input.deltaY);
 
+    var overallVelocity = getVelocity(input.deltaTime, input.deltaX, input.deltaY);
+    input.overallVelocityX = overallVelocity.x;
+    input.overallVelocityY = overallVelocity.y;
+    input.overallVelocity = (abs(overallVelocity.x) > abs(overallVelocity.y)) ? overallVelocity.x : overallVelocity.y;
+
     input.scale = firstMultiple ? getScale(firstMultiple.pointers, pointers) : 1;
     input.rotation = firstMultiple ? getRotation(firstMultiple.pointers, pointers) : 0;
+
+    input.maxPointers = !session.prevInput ? input.pointers.length : ((input.pointers.length >
+        session.prevInput.maxPointers) ? input.pointers.length : session.prevInput.maxPointers);
 
     computeIntervalInputData(session, input);
 
@@ -3203,8 +3244,8 @@ function computeIntervalInputData(session, input) {
         velocity, velocityX, velocityY, direction;
 
     if (input.eventType != INPUT_CANCEL && (deltaTime > COMPUTE_INTERVAL || last.velocity === undefined)) {
-        var deltaX = last.deltaX - input.deltaX;
-        var deltaY = last.deltaY - input.deltaY;
+        var deltaX = input.deltaX - last.deltaX;
+        var deltaY = input.deltaY - last.deltaY;
 
         var v = getVelocity(deltaTime, deltaX, deltaY);
         velocityX = v.x;
@@ -3309,9 +3350,9 @@ function getDirection(x, y) {
     }
 
     if (abs(x) >= abs(y)) {
-        return x > 0 ? DIRECTION_LEFT : DIRECTION_RIGHT;
+        return x < 0 ? DIRECTION_LEFT : DIRECTION_RIGHT;
     }
-    return y > 0 ? DIRECTION_UP : DIRECTION_DOWN;
+    return y < 0 ? DIRECTION_UP : DIRECTION_DOWN;
 }
 
 /**
@@ -3354,7 +3395,7 @@ function getAngle(p1, p2, props) {
  * @return {Number} rotation
  */
 function getRotation(start, end) {
-    return getAngle(end[1], end[0], PROPS_CLIENT_XY) - getAngle(start[1], start[0], PROPS_CLIENT_XY);
+    return getAngle(end[1], end[0], PROPS_CLIENT_XY) + getAngle(start[1], start[0], PROPS_CLIENT_XY);
 }
 
 /**
@@ -3447,7 +3488,7 @@ var POINTER_ELEMENT_EVENTS = 'pointerdown';
 var POINTER_WINDOW_EVENTS = 'pointermove pointerup pointercancel';
 
 // IE10 has prefixed support, and case-sensitive
-if (window.MSPointerEvent) {
+if (window.MSPointerEvent && !window.PointerEvent) {
     POINTER_ELEMENT_EVENTS = 'MSPointerDown';
     POINTER_WINDOW_EVENTS = 'MSPointerMove MSPointerUp MSPointerCancel';
 }
@@ -3771,7 +3812,7 @@ TouchAction.prototype = {
             value = this.compute();
         }
 
-        if (NATIVE_TOUCH_ACTION) {
+        if (NATIVE_TOUCH_ACTION && this.manager.element.style) {
             this.manager.element.style[PREFIXED_TOUCH_ACTION] = value;
         }
         this.actions = value.toLowerCase().trim();
@@ -3822,6 +3863,23 @@ TouchAction.prototype = {
         var hasPanY = inStr(actions, TOUCH_ACTION_PAN_Y);
         var hasPanX = inStr(actions, TOUCH_ACTION_PAN_X);
 
+        if (hasNone) {
+            //do not prevent defaults if this is a tap gesture
+
+            var isTapPointer = input.pointers.length === 1;
+            var isTapMovement = input.distance < 2;
+            var isTapTouchTime = input.deltaTime < 250;
+
+            if (isTapPointer && isTapMovement && isTapTouchTime) {
+                return;
+            }
+        }
+
+        if (hasPanX && hasPanY) {
+            // `pan-x pan-y` means browser handles all scrolling/panning, do not prevent
+            return;
+        }
+
         if (hasNone ||
             (hasPanY && direction & DIRECTION_HORIZONTAL) ||
             (hasPanX && direction & DIRECTION_VERTICAL)) {
@@ -3853,9 +3911,12 @@ function cleanTouchActions(actions) {
     var hasPanX = inStr(actions, TOUCH_ACTION_PAN_X);
     var hasPanY = inStr(actions, TOUCH_ACTION_PAN_Y);
 
-    // pan-x and pan-y can be combined
+    // if both pan-x and pan-y are set (different recognizers
+    // for different directions, e.g. horizontal pan but vertical swipe?)
+    // we need none (as otherwise with pan-x pan-y combined none of these
+    // recognizers will work, since the browser would handle all panning
     if (hasPanX && hasPanY) {
-        return TOUCH_ACTION_PAN_X + ' ' + TOUCH_ACTION_PAN_Y;
+        return TOUCH_ACTION_NONE;
     }
 
     // pan-x OR pan-y
@@ -3913,10 +3974,11 @@ var STATE_FAILED = 32;
  * @param {Object} options
  */
 function Recognizer(options) {
+    this.options = assign({}, this.defaults, options || {});
+
     this.id = uniqueId();
 
     this.manager = null;
-    this.options = merge(options || {}, this.defaults);
 
     // default is enable true
     this.options.enable = ifUndefined(this.options.enable, true);
@@ -3940,7 +4002,7 @@ Recognizer.prototype = {
      * @return {Recognizer}
      */
     set: function(options) {
-        extend(this.options, options);
+        assign(this.options, options);
 
         // also update the touchAction, in case something changed about the directions/enabled state
         this.manager && this.manager.touchAction.update();
@@ -4044,20 +4106,24 @@ Recognizer.prototype = {
         var self = this;
         var state = this.state;
 
-        function emit(withState) {
-            self.manager.emit(self.options.event + (withState ? stateStr(state) : ''), input);
+        function emit(event) {
+            self.manager.emit(event, input);
         }
 
         // 'panstart' and 'panmove'
         if (state < STATE_ENDED) {
-            emit(true);
+            emit(self.options.event + stateStr(state));
         }
 
-        emit(); // simple 'eventName' events
+        emit(self.options.event); // simple 'eventName' events
+
+        if (input.additionalEvent) { // additional event(panleft, panright, pinchin, pinchout...)
+            emit(input.additionalEvent);
+        }
 
         // panend and pancancel
         if (state >= STATE_ENDED) {
-            emit(true);
+            emit(self.options.event + stateStr(state));
         }
     },
 
@@ -4097,7 +4163,7 @@ Recognizer.prototype = {
     recognize: function(inputData) {
         // make a new copy of the inputData
         // so we can change the inputData without messing up the other recognizers
-        var inputDataClone = extend({}, inputData);
+        var inputDataClone = assign({}, inputData);
 
         // is is enabled and allow recognizing?
         if (!boolOrFn(this.options.enable, [this, inputDataClone])) {
@@ -4322,14 +4388,15 @@ inherit(PanRecognizer, AttrRecognizer, {
     },
 
     emit: function(input) {
+
         this.pX = input.deltaX;
         this.pY = input.deltaY;
 
         var direction = directionStr(input.direction);
-        if (direction) {
-            this.manager.emit(this.options.event + direction, input);
-        }
 
+        if (direction) {
+            input.additionalEvent = this.options.event + direction;
+        }
         this._super.emit.call(this, input);
     }
 });
@@ -4365,11 +4432,11 @@ inherit(PinchRecognizer, AttrRecognizer, {
     },
 
     emit: function(input) {
-        this._super.emit.call(this, input);
         if (input.scale !== 1) {
             var inOut = input.scale < 1 ? 'in' : 'out';
-            this.manager.emit(this.options.event + inOut, input);
+            input.additionalEvent = this.options.event + inOut;
         }
+        this._super.emit.call(this, input);
     }
 });
 
@@ -4394,8 +4461,8 @@ inherit(PressRecognizer, Recognizer, {
     defaults: {
         event: 'press',
         pointers: 1,
-        time: 500, // minimal time of the pointer to be pressed
-        threshold: 5 // a minimal movement is ok, but keep it low
+        time: 251, // minimal time of the pointer to be pressed
+        threshold: 9 // a minimal movement is ok, but keep it low
     },
 
     getTouchAction: function() {
@@ -4493,7 +4560,7 @@ inherit(SwipeRecognizer, AttrRecognizer, {
     defaults: {
         event: 'swipe',
         threshold: 10,
-        velocity: 0.65,
+        velocity: 0.3,
         direction: DIRECTION_HORIZONTAL | DIRECTION_VERTICAL,
         pointers: 1
     },
@@ -4507,21 +4574,22 @@ inherit(SwipeRecognizer, AttrRecognizer, {
         var velocity;
 
         if (direction & (DIRECTION_HORIZONTAL | DIRECTION_VERTICAL)) {
-            velocity = input.velocity;
+            velocity = input.overallVelocity;
         } else if (direction & DIRECTION_HORIZONTAL) {
-            velocity = input.velocityX;
+            velocity = input.overallVelocityX;
         } else if (direction & DIRECTION_VERTICAL) {
-            velocity = input.velocityY;
+            velocity = input.overallVelocityY;
         }
 
         return this._super.attrTest.call(this, input) &&
-            direction & input.direction &&
+            direction & input.offsetDirection &&
             input.distance > this.options.threshold &&
+            input.maxPointers == this.options.pointers &&
             abs(velocity) > this.options.velocity && input.eventType & INPUT_END;
     },
 
     emit: function(input) {
-        var direction = directionStr(input.direction);
+        var direction = directionStr(input.offsetDirection);
         if (direction) {
             this.manager.emit(this.options.event + direction, input);
         }
@@ -4564,7 +4632,7 @@ inherit(TapRecognizer, Recognizer, {
         taps: 1,
         interval: 300, // max time between the multi-tap taps
         time: 250, // max time of the pointer to be down (like finger on the screen)
-        threshold: 2, // a minimal movement is ok, but keep it low
+        threshold: 9, // a minimal movement is ok, but keep it low
         posThreshold: 10 // a multi-tap can be a bit off the initial position
     },
 
@@ -4638,7 +4706,7 @@ inherit(TapRecognizer, Recognizer, {
     },
 
     emit: function() {
-        if (this.state == STATE_RECOGNIZED ) {
+        if (this.state == STATE_RECOGNIZED) {
             this._input.tapCount = this.count;
             this.manager.emit(this.options.event, this._input);
         }
@@ -4646,7 +4714,7 @@ inherit(TapRecognizer, Recognizer, {
 });
 
 /**
- * Simple way to create an manager with a default set of recognizers.
+ * Simple way to create a manager with a default set of recognizers.
  * @param {HTMLElement} element
  * @param {Object} [options]
  * @constructor
@@ -4660,7 +4728,7 @@ function Hammer(element, options) {
 /**
  * @const {string}
  */
-Hammer.VERSION = '2.0.4';
+Hammer.VERSION = '2.0.6';
 
 /**
  * default settings
@@ -4712,12 +4780,12 @@ Hammer.defaults = {
      */
     preset: [
         // RecognizerClass, options, [recognizeWith, ...], [requireFailure, ...]
-        [RotateRecognizer, { enable: false }],
-        [PinchRecognizer, { enable: false }, ['rotate']],
-        [SwipeRecognizer,{ direction: DIRECTION_HORIZONTAL }],
-        [PanRecognizer, { direction: DIRECTION_HORIZONTAL }, ['swipe']],
+        [RotateRecognizer, {enable: false}],
+        [PinchRecognizer, {enable: false}, ['rotate']],
+        [SwipeRecognizer, {direction: DIRECTION_HORIZONTAL}],
+        [PanRecognizer, {direction: DIRECTION_HORIZONTAL}, ['swipe']],
         [TapRecognizer],
-        [TapRecognizer, { event: 'doubletap', taps: 2 }, ['tap']],
+        [TapRecognizer, {event: 'doubletap', taps: 2}, ['tap']],
         [PressRecognizer]
     ],
 
@@ -4784,9 +4852,8 @@ var FORCED_STOP = 2;
  * @constructor
  */
 function Manager(element, options) {
-    options = options || {};
+    this.options = assign({}, Hammer.defaults, options || {});
 
-    this.options = merge(options, Hammer.defaults);
     this.options.inputTarget = this.options.inputTarget || element;
 
     this.handlers = {};
@@ -4799,7 +4866,7 @@ function Manager(element, options) {
 
     toggleCssProps(this, true);
 
-    each(options.recognizers, function(item) {
+    each(this.options.recognizers, function(item) {
         var recognizer = this.add(new (item[0])(item[1]));
         item[2] && recognizer.recognizeWith(item[2]);
         item[3] && recognizer.requireFailure(item[3]);
@@ -4813,7 +4880,7 @@ Manager.prototype = {
      * @returns {Manager}
      */
     set: function(options) {
-        extend(this.options, options);
+        assign(this.options, options);
 
         // Options that need a little more setup
         if (options.touchAction) {
@@ -4947,11 +5014,19 @@ Manager.prototype = {
             return this;
         }
 
-        var recognizers = this.recognizers;
         recognizer = this.get(recognizer);
-        recognizers.splice(inArray(recognizers, recognizer), 1);
 
-        this.touchAction.update();
+        // let's make sure this recognizer exists
+        if (recognizer) {
+            var recognizers = this.recognizers;
+            var index = inArray(recognizers, recognizer);
+
+            if (index !== -1) {
+                recognizers.splice(index, 1);
+                this.touchAction.update();
+            }
+        }
+
         return this;
     },
 
@@ -4982,7 +5057,7 @@ Manager.prototype = {
             if (!handler) {
                 delete handlers[event];
             } else {
-                handlers[event].splice(inArray(handlers[event], handler), 1);
+                handlers[event] && handlers[event].splice(inArray(handlers[event], handler), 1);
             }
         });
         return this;
@@ -5038,6 +5113,9 @@ Manager.prototype = {
  */
 function toggleCssProps(manager, add) {
     var element = manager.element;
+    if (!element.style) {
+        return;
+    }
     each(manager.options.cssProps, function(value, name) {
         element.style[prefixed(element.style, name)] = add ? value : '';
     });
@@ -5055,7 +5133,7 @@ function triggerDomEvent(event, data) {
     data.target.dispatchEvent(gestureEvent);
 }
 
-extend(Hammer, {
+assign(Hammer, {
     INPUT_START: INPUT_START,
     INPUT_MOVE: INPUT_MOVE,
     INPUT_END: INPUT_END,
@@ -5102,12 +5180,18 @@ extend(Hammer, {
     each: each,
     merge: merge,
     extend: extend,
+    assign: assign,
     inherit: inherit,
     bindFn: bindFn,
     prefixed: prefixed
 });
 
-if (typeof define == TYPE_FUNCTION && define.amd) {
+// this prevents errors when Hammer is loaded in the presence of an AMD
+//  style loader but by script tag, not by the loader.
+var freeGlobal = (typeof window !== 'undefined' ? window : (typeof self !== 'undefined' ? self : {})); // jshint ignore:line
+freeGlobal.Hammer = Hammer;
+
+if (typeof define === 'function' && define.amd) {
     define('../bower_components/hammerjs/hammer',[],function() {
         return Hammer;
     });
@@ -13290,12 +13374,8 @@ Snap.plugin(function (Snap, Element, Paper, glob, Fragment) {
 return Snap;
 }));
 
-// Copyright 2015 Bobby Powers. All rights reserved.
-// Use of this source code is governed by the MIT
-// license that can be found in the LICENSE file.
-/// <reference path="../typings/tsd.d.ts" />
-
 define('draw',["require", "exports", './runtime', "./util", "../bower_components/hammerjs/hammer", "../bower_components/Snap.svg/dist/snap.svg"], function (require, exports, runtime, util_1) {
+    'use strict';
     var PI = Math.PI;
     var sin = Math.sin;
     var cos = Math.cos;
@@ -13632,8 +13712,6 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
             this.labelSide = findSide(element, 'top');
         }
         DStock.prototype.init = function () {
-            // we are a stock, and need to inform all the flows into and
-            // out of us that they, in fact, flow in and out of us.
             var mEnt = this.drawing.model.vars[this.ident];
             for (var i = 0; i < mEnt.inflows.length; i++) {
                 var n = mEnt.inflows[i];
@@ -16285,7 +16363,7 @@ return Q;
     define('mustache',['exports'], factory); // AMD
   } else {
     global.Mustache = {};
-    factory(Mustache); // script, wsh, asp
+    factory(global.Mustache); // script, wsh, asp
   }
 }(this, function mustacheFactory (mustache) {
 
@@ -16336,11 +16414,13 @@ return Q;
     '>': '&gt;',
     '"': '&quot;',
     "'": '&#39;',
-    '/': '&#x2F;'
+    '/': '&#x2F;',
+    '`': '&#x60;',
+    '=': '&#x3D;'
   };
 
   function escapeHtml (string) {
-    return String(string).replace(/[&<>"'\/]/g, function fromEntityMap (s) {
+    return String(string).replace(/[&<>"'`=\/]/g, function fromEntityMap (s) {
       return entityMap[s];
     });
   }
@@ -16540,19 +16620,19 @@ return Q;
       token = tokens[i];
 
       switch (token[0]) {
-      case '#':
-      case '^':
-        collector.push(token);
-        sections.push(token);
-        collector = token[4] = [];
-        break;
-      case '/':
-        section = sections.pop();
-        section[5] = token[2];
-        collector = sections.length > 0 ? sections[sections.length - 1][4] : nestedTokens;
-        break;
-      default:
-        collector.push(token);
+        case '#':
+        case '^':
+          collector.push(token);
+          sections.push(token);
+          collector = token[4] = [];
+          break;
+        case '/':
+          section = sections.pop();
+          section[5] = token[2];
+          collector = sections.length > 0 ? sections[sections.length - 1][4] : nestedTokens;
+          break;
+        default:
+          collector.push(token);
       }
     }
 
@@ -16602,16 +16682,16 @@ return Q;
     var index = this.tail.search(re), match;
 
     switch (index) {
-    case -1:
-      match = this.tail;
-      this.tail = '';
-      break;
-    case 0:
-      match = '';
-      break;
-    default:
-      match = this.tail.substring(0, index);
-      this.tail = this.tail.substring(index);
+      case -1:
+        match = this.tail;
+        this.tail = '';
+        break;
+      case 0:
+        match = '';
+        break;
+      default:
+        match = this.tail.substring(0, index);
+        this.tail = this.tail.substring(index);
     }
 
     this.pos += match.length;
@@ -16838,7 +16918,7 @@ return Q;
   };
 
   mustache.name = 'mustache.js';
-  mustache.version = '2.1.3';
+  mustache.version = '2.2.1';
   mustache.tags = [ '{{', '}}' ];
 
   // All high-level mustache.* functions use this writer.
@@ -16899,12 +16979,8 @@ return Q;
 
 }));
 
-// Copyright 2015 Bobby Powers. All rights reserved.
-// Use of this source code is governed by the MIT
-// license that can be found in the LICENSE file.
-/// <reference path="../typings/tsd.d.ts" />
-
 define('sim',["require", "exports", './util', './vars', './runtime', 'q', 'mustache'], function (require, exports, util, vars, runtime, Q, Mustache) {
+    'use strict';
     var DEBUG = true;
     var SP = DEBUG ? '\t' : '';
     var NLSP = DEBUG ? '\n\t' : '';
@@ -17206,11 +17282,8 @@ define('sim',["require", "exports", './util', './vars', './runtime', 'q', 'musta
     exports.Sim = Sim;
 });
 
-// Copyright 2015 Bobby Powers. All rights reserved.
-// Use of this source code is governed by the MIT
-// license that can be found in the LICENSE file.
-
 define('model',["require", "exports", './util', './vars', './draw', './sim', './xmile'], function (require, exports, util, vars, draw, sim, xmile) {
+    'use strict';
     var VAR_TYPES = util.set('module', 'stock', 'aux', 'flow');
     var Model = (function () {
         function Model(project, ident, xModel) {
@@ -17319,11 +17392,8 @@ define('model',["require", "exports", './util', './vars', './draw', './sim', './
     exports.Model = Model;
 });
 
-// Copyright 2015 Bobby Powers. All rights reserved.
-// Use of this source code is governed by the MIT
-// license that can be found in the LICENSE file.
-
 define('project',["require", "exports", './common', './xmile', './model', './vars'], function (require, exports, common, xmile, model_1, vars_1) {
+    'use strict';
     function getXmileElement(xmileDoc) {
         'use strict';
         var i;
@@ -17394,11 +17464,8 @@ define('project',["require", "exports", './common', './xmile', './model', './var
     exports.Project = Project;
 });
 
-// Copyright 2015 Bobby Powers. All rights reserved.
-// Use of this source code is governed by the MIT
-// license that can be found in the LICENSE file.
-
 define('sd',["require", "exports", './common', './project', './project', './model'], function (require, exports, common, project_1, project_2, model_1) {
+    'use strict';
     exports.Project = project_2.Project;
     exports.Model = model_1.Model;
     exports.Errors = common.Errors;

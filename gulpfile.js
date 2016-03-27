@@ -3,9 +3,12 @@
 var gulp = require('gulp');
 var merge = require('merge2');
 var ts = require('gulp-typescript');
+var lint = require('gulp-tslint');
 var runSequence = require('run-sequence');
 var rjs = require('gulp-requirejs-bp');
 var mocha = require('gulp-mocha');
+var browserSync = require('browser-sync');
+var reload = browserSync.reload;
 
 var buildRuntime = require('./gulp-plugins/build-runtime');
 
@@ -85,4 +88,22 @@ gulp.task('test', ['common-lib'], function() {
 
 gulp.task('default', function(cb) {
     runSequence(['common-lib', 'sd.js', 'sd.min.js'], 'test', cb);
+});
+
+gulp.task('serve', ['sd.js'], function () {
+    browserSync({
+        port: 5000,
+        notify: false,
+        logPrefix: 'browsix',
+        snippetOptions: {
+            rule: {
+                match: '<span id="browser-sync-binding"></span>',
+                fn: function (snippet) { return snippet; },
+            },
+        },
+        server: { baseDir: ['.'] },
+    });
+
+    gulp.watch(['index.html'], reload);
+    gulp.watch(['src/*.ts', '!src/runtime.ts'], ['sd.js', reload]);
 });
