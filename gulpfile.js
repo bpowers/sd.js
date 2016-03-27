@@ -25,7 +25,13 @@ var buildProject = ts.createProject('tsconfig.json', {
 });
 var testProject = ts.createProject('tsconfig.json', { sortOutput: true });
 
-gulp.task('runtime', function() {
+gulp.task('lint-runtime', function() {
+	return gulp.src('runtime/*.ts')
+		.pipe(lint())
+		.pipe(lint.report('verbose'));
+});
+
+gulp.task('runtime', ['lint-runtime'], function() {
     var tsRT = gulp.src('runtime/*.ts')
         .pipe(ts(rtProject))
         .js
@@ -36,7 +42,13 @@ gulp.task('runtime', function() {
         .pipe(gulp.dest('src'));
 });
 
-gulp.task('common-lib', ['runtime'], function() {
+gulp.task('lint-lib', function() {
+	return gulp.src('src/*.ts')
+		.pipe(lint())
+		.pipe(lint.report('verbose'));
+});
+
+gulp.task('common-lib', ['runtime', 'lint-lib'], function() {
     var tsLib = gulp.src('src/*.ts')
         .pipe(ts(libProject));
 
