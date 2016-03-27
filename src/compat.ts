@@ -8,7 +8,7 @@ import * as util from './util';
 
 const VENDOR = 'SDLabs';
 const PRODUCT = 'sd.js';
-const VERSION = '0.1';
+const VERSION = '0.2.5';
 
 const VAR_TYPES = util.set('module', 'stock', 'aux', 'flow');
 
