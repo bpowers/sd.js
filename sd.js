@@ -17470,7 +17470,6 @@ define('sd',["require", "exports", './common', './project', './project', './mode
     exports.Model = model_1.Model;
     exports.Errors = common.Errors;
     function newModel(xmlDoc) {
-        'use strict';
         var p = new project_1.Project(xmlDoc);
         if (p.valid)
             return p.model();
@@ -17478,7 +17477,6 @@ define('sd',["require", "exports", './common', './project', './project', './mode
     }
     exports.newModel = newModel;
     function load(url, cb, errCb) {
-        'use strict';
         var req = new XMLHttpRequest();
         req.onreadystatechange = function () {
             if (req.readyState !== 4)
@@ -17499,11 +17497,9 @@ define('sd',["require", "exports", './common', './project', './project', './mode
     }
     exports.load = load;
     function error() {
-        'use strict';
         return common.err;
     }
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.default = error;
+    exports.error = error;
 });
 
 
