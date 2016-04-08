@@ -71,14 +71,14 @@ $(ALMOND): bower_components
 # AMD-based browser/requirejs target
 build: $(LIB_SRCS) $(CONFIG) bower_components
 	@echo "  TS    $@"
-	$(TSLINT) -c .tslint.json $(LIB_SRCS)
+	$(TSLINT) -c tslint.json $(LIB_SRCS)
 	$(TSC) $(TSFLAGS) -m amd --outDir build $(LIB_SRCS)
 	cp -a $(MUSTACHEJS) $(QJS) $@
 	touch $@
 
 build-rt: $(RT_SRCS) $(CONFIG)
 	@echo "  TS    $@"
-	$(TSLINT) -c .tslint.json $(RT_SRCS)
+	$(TSLINT) -c tslint.json $(RT_SRCS)
 	$(TSC) $(TSFLAGS) -m commonjs --outDir build-rt $(RT_SRCS)
 	touch $@
 
@@ -109,7 +109,7 @@ $(RTEST_CMD): $(RTEST_DIR) .gitmodules
 
 $(TEST): lib node_modules $(TEST_SRCS)
 	@echo "  TS    test"
-	$(TSLINT) -c .tslint.json $(TEST_SRCS)
+	$(TSLINT) -c tslint.json $(TEST_SRCS)
 	$(TSC) $(TSFLAGS) -d -m commonjs --outDir test $(TEST_SRCS)
 	touch $@
 
