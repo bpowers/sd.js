@@ -24,7 +24,6 @@ export const Errors = common.Errors;
  * @return A valid Model object on success, or null on error.
  */
 export function newModel(xmlDoc: any): Model {
-	'use strict';
 	let p = new Project(xmlDoc);
 	if (p.valid)
 		return p.model();
@@ -32,7 +31,6 @@ export function newModel(xmlDoc: any): Model {
 }
 
 export function load(url: string, cb: (m: Model)=>void, errCb: (r: XMLHttpRequest)=>void): void {
-	'use strict';
 	let req = new XMLHttpRequest();
 	req.onreadystatechange = function(): void {
 		if (req.readyState !== 4)
@@ -61,7 +59,6 @@ export function load(url: string, cb: (m: Model)=>void, errCb: (r: XMLHttpReques
  *
  * @return A string error message, or null if one isn't available.
  */
-export default function error(): string {
-	'use strict';
+export function error(): string {
 	return common.err;
 }
