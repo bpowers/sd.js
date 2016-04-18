@@ -699,8 +699,8 @@ export class Format implements XNode {
 
 // TODO: split into multiple subclasses?
 export class Variable implements XNode {
-	type:            string = '';
-	name:            string = '';
+	type:            string;
+	name:            string;
 	eqn:             string = '';
 	gf:              GF;
 	// mathml        Node;
@@ -708,7 +708,7 @@ export class Variable implements XNode {
 	dimensions:      Dimension[];    // REQUIRED for arrayed vars
 	elements:        ArrayElement[]; // non-A2A
 	// modules
-	connections:     Connection[] = [];
+	connections:     Connection[];
 	resource:        string;         // path or URL to model XMILE file
 	// access:       string;         // TODO: not sure if should implement
 	// autoExport:   boolean;        // TODO: not sure if should implement
@@ -720,8 +720,8 @@ export class Variable implements XNode {
 	format:          Format;
 	// stocks
 	nonNegative:     boolean;
-	inflows:         string[] = [];
-	outflows:        string[] = [];
+	inflows:         string[];
+	outflows:        string[];
 	// flows
 	// multiplier:   string; // expression used on downstream side of stock to convert units
 	// queues
@@ -760,9 +760,13 @@ export class Variable implements XNode {
 				v.eqn = content(child);
 				break;
 			case 'inflow':
+				if (!v.inflows)
+					v.inflows = [];
 				v.inflows.push(canonicalize(content(child)));
 				break;
 			case 'outflow':
+				if (!v.outflows)
+					v.outflows = [];
 				v.outflows.push(canonicalize(content(child)));
 				break;
 			case 'gf':
@@ -775,6 +779,8 @@ export class Variable implements XNode {
 				[conn, err] = Connection.Build(child);
 				if (err)
 					return [null, new Error(v.name + ' conn: ' + err.error)];
+				if (!v.connections)
+					v.connections = [];
 				v.connections.push(conn);
 				break;
 			}

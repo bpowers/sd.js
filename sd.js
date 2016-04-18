@@ -1073,12 +1073,7 @@ define('xmile',["require", "exports"], function (require, exports) {
     exports.Format = Format;
     var Variable = (function () {
         function Variable() {
-            this.type = '';
-            this.name = '';
             this.eqn = '';
-            this.connections = [];
-            this.inflows = [];
-            this.outflows = [];
         }
         Variable.Build = function (el) {
             var v = new Variable();
@@ -1104,9 +1099,13 @@ define('xmile',["require", "exports"], function (require, exports) {
                         v.eqn = content(child);
                         break;
                     case 'inflow':
+                        if (!v.inflows)
+                            v.inflows = [];
                         v.inflows.push(canonicalize(content(child)));
                         break;
                     case 'outflow':
+                        if (!v.outflows)
+                            v.outflows = [];
                         v.outflows.push(canonicalize(content(child)));
                         break;
                     case 'gf':
@@ -1119,6 +1118,8 @@ define('xmile',["require", "exports"], function (require, exports) {
                         _b = Connection.Build(child), conn = _b[0], err = _b[1];
                         if (err)
                             return [null, new Error(v.name + ' conn: ' + err.error)];
+                        if (!v.connections)
+                            v.connections = [];
                         v.connections.push(conn);
                         break;
                 }
@@ -2412,7 +2413,7 @@ define('vars',["require", "exports", './common', './lex', './parse'], function (
             this.model = model;
             this.xmile = v;
             this.ident = v.ident;
-            this.eqn = v.eqn;
+            this.eqn = v.eqn || '';
             var errs;
             _a = parse.eqn(this.eqn), this.ast = _a[0], errs = _a[1];
             if (errs) {
@@ -2474,9 +2475,9 @@ define('vars',["require", "exports", './common', './lex', './parse'], function (
         __extends(Stock, _super);
         function Stock(model, v) {
             _super.call(this, model, v);
-            this.initial = v.eqn;
-            this.inflows = v.inflows;
-            this.outflows = v.outflows;
+            this.initial = v.eqn || '';
+            this.inflows = v.inflows || [];
+            this.outflows = v.outflows || [];
         }
         Stock.prototype.initialEquation = function () {
             return this.initial;
@@ -2540,7 +2541,7 @@ define('vars',["require", "exports", './common', './lex', './parse'], function (
             this.modelName = this.ident;
             this.refs = {};
             this._deps = {};
-            for (var i = 0; i < v.connections.length; i++) {
+            for (var i = 0; v.connections && i < v.connections.length; i++) {
                 var ref = new Reference(v.connections[i]);
                 this.refs[ref.ident] = ref;
                 this._deps[ref.ptr] = true;

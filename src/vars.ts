@@ -173,7 +173,7 @@ export class Variable implements type.Variable {
 		this.xmile = v;
 
 		this.ident = v.ident;
-		this.eqn = v.eqn;
+		this.eqn = v.eqn || '';
 
 		let errs: string[];
 		[this.ast, errs] = parse.eqn(this.eqn);
@@ -245,9 +245,9 @@ export class Stock extends Variable {
 	constructor(model: type.Model, v: xmile.Variable) {
 		super(model, v);
 
-		this.initial = v.eqn;
-		this.inflows = v.inflows;
-		this.outflows = v.outflows;
+		this.initial = v.eqn || '';
+		this.inflows = v.inflows || [];
+		this.outflows = v.outflows || [];
 	}
 
 	// FIXME: returns a string of this variables initial equation. suitable for
@@ -325,7 +325,7 @@ export class Module extends Variable implements type.Module {
 		this.modelName = this.ident;
 		this.refs = {};
 		this._deps = {};
-		for (let i = 0; i < v.connections.length; i++) {
+		for (let i = 0; v.connections && i < v.connections.length; i++) {
 			let ref = new Reference(v.connections[i]);
 			this.refs[ref.ident] = ref;
 			this._deps[ref.ptr] = true;
