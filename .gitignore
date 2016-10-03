@@ -13,3 +13,4 @@ v8.log
 /test/*.d.ts
 /test/*.map
 /test/.stamp
+/.vscode
