@@ -6,13 +6,11 @@
     }
 }(typeof window !== "undefined" ? window : this, function () {
 /**
- * @license almond 0.3.1 Copyright (c) 2011-2014, The Dojo Foundation All Rights Reserved.
- * Available via the MIT or new BSD license.
- * see: http://github.com/jrburke/almond for details
+ * @license almond 0.3.3 Copyright jQuery Foundation and other contributors.
+ * Released under MIT license, http://github.com/requirejs/almond/LICENSE
  */
 //Going sloppy to avoid 'use strict' string cost, but strict practices should
 //be followed.
-/*jslint sloppy: true */
 /*global setTimeout: false */
 
 var requirejs, require, define;
@@ -40,60 +38,58 @@ var requirejs, require, define;
      */
     function normalize(name, baseName) {
         var nameParts, nameSegment, mapValue, foundMap, lastIndex,
-            foundI, foundStarMap, starI, i, j, part,
+            foundI, foundStarMap, starI, i, j, part, normalizedBaseParts,
             baseParts = baseName && baseName.split("/"),
             map = config.map,
             starMap = (map && map['*']) || {};
 
         //Adjust any relative paths.
-        if (name && name.charAt(0) === ".") {
-            //If have a base name, try to normalize against it,
-            //otherwise, assume it is a top-level require that will
-            //be relative to baseUrl in the end.
-            if (baseName) {
-                name = name.split('/');
-                lastIndex = name.length - 1;
+        if (name) {
+            name = name.split('/');
+            lastIndex = name.length - 1;
 
-                // Node .js allowance:
-                if (config.nodeIdCompat && jsSuffixRegExp.test(name[lastIndex])) {
-                    name[lastIndex] = name[lastIndex].replace(jsSuffixRegExp, '');
-                }
+            // If wanting node ID compatibility, strip .js from end
+            // of IDs. Have to do this here, and not in nameToUrl
+            // because node allows either .js or non .js to map
+            // to same file.
+            if (config.nodeIdCompat && jsSuffixRegExp.test(name[lastIndex])) {
+                name[lastIndex] = name[lastIndex].replace(jsSuffixRegExp, '');
+            }
 
-                //Lop off the last part of baseParts, so that . matches the
-                //"directory" and not name of the baseName's module. For instance,
-                //baseName of "one/two/three", maps to "one/two/three.js", but we
-                //want the directory, "one/two" for this normalization.
-                name = baseParts.slice(0, baseParts.length - 1).concat(name);
+            // Starts with a '.' so need the baseName
+            if (name[0].charAt(0) === '.' && baseParts) {
+                //Convert baseName to array, and lop off the last part,
+                //so that . matches that 'directory' and not name of the baseName's
+                //module. For instance, baseName of 'one/two/three', maps to
+                //'one/two/three.js', but we want the directory, 'one/two' for
+                //this normalization.
+                normalizedBaseParts = baseParts.slice(0, baseParts.length - 1);
+                name = normalizedBaseParts.concat(name);
+            }
 
-                //start trimDots
-                for (i = 0; i < name.length; i += 1) {
-                    part = name[i];
-                    if (part === ".") {
-                        name.splice(i, 1);
-                        i -= 1;
-                    } else if (part === "..") {
-                        if (i === 1 && (name[2] === '..' || name[0] === '..')) {
-                            //End of the line. Keep at least one non-dot
-                            //path segment at the front so it can be mapped
-                            //correctly to disk. Otherwise, there is likely
-                            //no path mapping for a path starting with '..'.
-                            //This can still fail, but catches the most reasonable
-                            //uses of ..
-                            break;
-                        } else if (i > 0) {
-                            name.splice(i - 1, 2);
-                            i -= 2;
-                        }
+            //start trimDots
+            for (i = 0; i < name.length; i++) {
+                part = name[i];
+                if (part === '.') {
+                    name.splice(i, 1);
+                    i -= 1;
+                } else if (part === '..') {
+                    // If at the start, or previous value is still ..,
+                    // keep them so that when converted to a path it may
+                    // still work when converted to a path, even though
+                    // as an ID it is less than ideal. In larger point
+                    // releases, may be better to just kick out an error.
+                    if (i === 0 || (i === 1 && name[2] === '..') || name[i - 1] === '..') {
+                        continue;
+                    } else if (i > 0) {
+                        name.splice(i - 1, 2);
+                        i -= 2;
                     }
                 }
-                //end trimDots
-
-                name = name.join("/");
-            } else if (name.indexOf('./') === 0) {
-                // No baseName, so this is ID is resolved relative
-                // to baseUrl, pull off the leading dot.
-                name = name.substring(2);
             }
+            //end trimDots
+
+            name = name.join('/');
         }
 
         //Apply map config if available.
@@ -206,32 +202,39 @@ var requirejs, require, define;
         return [prefix, name];
     }
 
+    //Creates a parts array for a relName where first part is plugin ID,
+    //second part is resource ID. Assumes relName has already been normalized.
+    function makeRelParts(relName) {
+        return relName ? splitPrefix(relName) : [];
+    }
+
     /**
      * Makes a name map, normalizing the name, and using a plugin
      * for normalization if necessary. Grabs a ref to plugin
      * too, as an optimization.
      */
-    makeMap = function (name, relName) {
+    makeMap = function (name, relParts) {
         var plugin,
             parts = splitPrefix(name),
-            prefix = parts[0];
+            prefix = parts[0],
+            relResourceName = relParts[1];
 
         name = parts[1];
 
         if (prefix) {
-            prefix = normalize(prefix, relName);
+            prefix = normalize(prefix, relResourceName);
             plugin = callDep(prefix);
         }
 
         //Normalize according
         if (prefix) {
             if (plugin && plugin.normalize) {
-                name = plugin.normalize(name, makeNormalize(relName));
+                name = plugin.normalize(name, makeNormalize(relResourceName));
             } else {
-                name = normalize(name, relName);
+                name = normalize(name, relResourceName);
             }
         } else {
-            name = normalize(name, relName);
+            name = normalize(name, relResourceName);
             parts = splitPrefix(name);
             prefix = parts[0];
             name = parts[1];
@@ -278,13 +281,14 @@ var requirejs, require, define;
     };
 
     main = function (name, deps, callback, relName) {
-        var cjsModule, depName, ret, map, i,
+        var cjsModule, depName, ret, map, i, relParts,
             args = [],
             callbackType = typeof callback,
             usingExports;
 
         //Use name if no relName
         relName = relName || name;
+        relParts = makeRelParts(relName);
 
         //Call the callback to define the module, if necessary.
         if (callbackType === 'undefined' || callbackType === 'function') {
@@ -293,7 +297,7 @@ var requirejs, require, define;
             //Default to [require, exports, module] if no deps
             deps = !deps.length && callback.length ? ['require', 'exports', 'module'] : deps;
             for (i = 0; i < deps.length; i += 1) {
-                map = makeMap(deps[i], relName);
+                map = makeMap(deps[i], relParts);
                 depName = map.f;
 
                 //Fast path CommonJS standard dependencies.
@@ -349,7 +353,7 @@ var requirejs, require, define;
             //deps arg is the module name, and second arg (if passed)
             //is just the relName.
             //Normalize module name, if it contains . or ..
-            return callDep(makeMap(deps, callback).f);
+            return callDep(makeMap(deps, makeRelParts(callback)).f);
         } else if (!deps.splice) {
             //deps is a config object, not an array.
             config = deps;
@@ -439,13 +443,14 @@ var requirejs, require, define;
 define("../bower_components/almond/almond", function(){});
 
 define('common',["require", "exports"], function (require, exports) {
+    "use strict";
     var Errors = (function () {
         function Errors() {
         }
         Errors.ERR_VERSION = 'bad xml or unknown smile version';
         Errors.ERR_BAD_TIME = 'bad time (control) data';
         return Errors;
-    })();
+    }());
     exports.Errors = Errors;
     ;
     exports.builtins = {
@@ -493,7 +498,7 @@ define('xmile',["require", "exports"], function (require, exports) {
             this.error = error;
         }
         return Error;
-    })();
+    }());
     exports.Error = Error;
     function attr(node, name) {
         'use strict';
@@ -586,7 +591,7 @@ define('xmile',["require", "exports"], function (require, exports) {
             return true;
         };
         return Point;
-    })();
+    }());
     exports.Point = Point;
     var Size = (function () {
         function Size(el) {
@@ -595,7 +600,7 @@ define('xmile',["require", "exports"], function (require, exports) {
             return true;
         };
         return Size;
-    })();
+    }());
     exports.Size = Size;
     var Rect = (function () {
         function Rect(el) {
@@ -604,7 +609,7 @@ define('xmile',["require", "exports"], function (require, exports) {
             return true;
         };
         return Rect;
-    })();
+    }());
     exports.Rect = Rect;
     var File = (function () {
         function File() {
@@ -658,7 +663,7 @@ define('xmile',["require", "exports"], function (require, exports) {
             return true;
         };
         return File;
-    })();
+    }());
     exports.File = File;
     var SimSpec = (function () {
         function SimSpec() {
@@ -720,7 +725,7 @@ define('xmile',["require", "exports"], function (require, exports) {
             return true;
         };
         return SimSpec;
-    })();
+    }());
     exports.SimSpec = SimSpec;
     var Unit = (function () {
         function Unit(el) {
@@ -729,7 +734,7 @@ define('xmile',["require", "exports"], function (require, exports) {
             return true;
         };
         return Unit;
-    })();
+    }());
     exports.Unit = Unit;
     var Product = (function () {
         function Product() {
@@ -757,7 +762,7 @@ define('xmile',["require", "exports"], function (require, exports) {
             return true;
         };
         return Product;
-    })();
+    }());
     exports.Product = Product;
     var Header = (function () {
         function Header() {
@@ -822,7 +827,7 @@ define('xmile',["require", "exports"], function (require, exports) {
             return true;
         };
         return Header;
-    })();
+    }());
     exports.Header = Header;
     var Dimension = (function () {
         function Dimension() {
@@ -837,7 +842,7 @@ define('xmile',["require", "exports"], function (require, exports) {
             return true;
         };
         return Dimension;
-    })();
+    }());
     exports.Dimension = Dimension;
     var Options = (function () {
         function Options() {
@@ -921,7 +926,7 @@ define('xmile',["require", "exports"], function (require, exports) {
             return true;
         };
         return Options;
-    })();
+    }());
     exports.Options = Options;
     var Behavior = (function () {
         function Behavior() {
@@ -937,7 +942,7 @@ define('xmile',["require", "exports"], function (require, exports) {
             return true;
         };
         return Behavior;
-    })();
+    }());
     exports.Behavior = Behavior;
     var Style = (function () {
         function Style(el) {
@@ -946,7 +951,7 @@ define('xmile',["require", "exports"], function (require, exports) {
             return true;
         };
         return Style;
-    })();
+    }());
     exports.Style = Style;
     var Data = (function () {
         function Data(el) {
@@ -955,7 +960,7 @@ define('xmile',["require", "exports"], function (require, exports) {
             return true;
         };
         return Data;
-    })();
+    }());
     exports.Data = Data;
     var Model = (function () {
         function Model() {
@@ -1022,7 +1027,7 @@ define('xmile',["require", "exports"], function (require, exports) {
             return true;
         };
         return Model;
-    })();
+    }());
     exports.Model = Model;
     var ArrayElement = (function () {
         function ArrayElement() {
@@ -1037,7 +1042,7 @@ define('xmile',["require", "exports"], function (require, exports) {
             return true;
         };
         return ArrayElement;
-    })();
+    }());
     exports.ArrayElement = ArrayElement;
     var Range = (function () {
         function Range() {
@@ -1051,7 +1056,7 @@ define('xmile',["require", "exports"], function (require, exports) {
             return true;
         };
         return Range;
-    })();
+    }());
     exports.Range = Range;
     var Format = (function () {
         function Format() {
@@ -1069,7 +1074,7 @@ define('xmile',["require", "exports"], function (require, exports) {
             return true;
         };
         return Format;
-    })();
+    }());
     exports.Format = Format;
     var Variable = (function () {
         function Variable() {
@@ -1138,7 +1143,7 @@ define('xmile',["require", "exports"], function (require, exports) {
             return true;
         };
         return Variable;
-    })();
+    }());
     exports.Variable = Variable;
     var Shape = (function () {
         function Shape() {
@@ -1179,7 +1184,7 @@ define('xmile',["require", "exports"], function (require, exports) {
         };
         Shape.Types = ['rectangle', 'circle', 'name_only'];
         return Shape;
-    })();
+    }());
     exports.Shape = Shape;
     var ViewElement = (function () {
         function ViewElement() {
@@ -1283,7 +1288,7 @@ define('xmile',["require", "exports"], function (require, exports) {
             return true;
         };
         return ViewElement;
-    })();
+    }());
     exports.ViewElement = ViewElement;
     var View = (function () {
         function View() {
@@ -1387,7 +1392,7 @@ define('xmile',["require", "exports"], function (require, exports) {
             return true;
         };
         return View;
-    })();
+    }());
     exports.View = View;
     var GF = (function () {
         function GF() {
@@ -1441,7 +1446,7 @@ define('xmile',["require", "exports"], function (require, exports) {
         };
         GF.Types = ['continuous', 'extrapolate', 'discrete'];
         return GF;
-    })();
+    }());
     exports.GF = GF;
     var Scale = (function () {
         function Scale() {
@@ -1474,7 +1479,7 @@ define('xmile',["require", "exports"], function (require, exports) {
             return true;
         };
         return Scale;
-    })();
+    }());
     exports.Scale = Scale;
     var Connection = (function () {
         function Connection() {
@@ -1502,7 +1507,7 @@ define('xmile',["require", "exports"], function (require, exports) {
             return true;
         };
         return Connection;
-    })();
+    }());
     exports.Connection = Connection;
     function canonicalize(id) {
         'use strict';
@@ -1733,7 +1738,7 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
             return new SourceLoc(this.line, this.pos + n);
         };
         return SourceLoc;
-    })();
+    }());
     exports.SourceLoc = SourceLoc;
     var Token = (function () {
         function Token(tok, type, startLoc, endLoc) {
@@ -1752,7 +1757,7 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
             configurable: true
         });
         return Token;
-    })();
+    }());
     exports.Token = Token;
     var Lexer = (function () {
         function Lexer(text) {
@@ -1908,7 +1913,7 @@ define('lex',["require", "exports", './common', './util'], function (require, ex
             return new Token(numStr, 3, startPos, new SourceLoc(startPos.line, startPos.pos + len));
         };
         return Lexer;
-    })();
+    }());
     exports.Lexer = Lexer;
     function identifierSet(str) {
         'use strict';
@@ -1943,7 +1948,7 @@ define('ast',["require", "exports", './xmile'], function (require, exports, xmil
             return v.ident(this);
         };
         return Ident;
-    })();
+    }());
     exports.Ident = Ident;
     var Constant = (function () {
         function Constant(pos, value) {
@@ -1965,7 +1970,7 @@ define('ast',["require", "exports", './xmile'], function (require, exports, xmil
             return v.constant(this);
         };
         return Constant;
-    })();
+    }());
     exports.Constant = Constant;
     var ParenExpr = (function () {
         function ParenExpr(lPos, x, rPos) {
@@ -1987,7 +1992,7 @@ define('ast',["require", "exports", './xmile'], function (require, exports, xmil
             return v.paren(this);
         };
         return ParenExpr;
-    })();
+    }());
     exports.ParenExpr = ParenExpr;
     var CallExpr = (function () {
         function CallExpr(fun, lParenPos, args, rParenPos) {
@@ -2010,7 +2015,7 @@ define('ast',["require", "exports", './xmile'], function (require, exports, xmil
             return v.call(this);
         };
         return CallExpr;
-    })();
+    }());
     exports.CallExpr = CallExpr;
     var UnaryExpr = (function () {
         function UnaryExpr(opPos, op, x) {
@@ -2032,7 +2037,7 @@ define('ast',["require", "exports", './xmile'], function (require, exports, xmil
             return v.unary(this);
         };
         return UnaryExpr;
-    })();
+    }());
     exports.UnaryExpr = UnaryExpr;
     var BinaryExpr = (function () {
         function BinaryExpr(l, opPos, op, r) {
@@ -2055,7 +2060,7 @@ define('ast',["require", "exports", './xmile'], function (require, exports, xmil
             return v.binary(this);
         };
         return BinaryExpr;
-    })();
+    }());
     exports.BinaryExpr = BinaryExpr;
     var IfExpr = (function () {
         function IfExpr(ifPos, cond, thenPos, t, elsePos, f) {
@@ -2080,7 +2085,7 @@ define('ast',["require", "exports", './xmile'], function (require, exports, xmil
             return v.if(this);
         };
         return IfExpr;
-    })();
+    }());
     exports.IfExpr = IfExpr;
 });
 
@@ -2167,7 +2172,7 @@ define('parse',["require", "exports", './ast', './lex'], function (require, expo
                     this.errs.push('expected an expression after an opening paren');
                     return null;
                 }
-                var closing;
+                var closing = void 0;
                 if (!(closing = this.consumeTok(')'))) {
                     this.errs.push('expected ")", not end-of-equation');
                     return null;
@@ -2192,7 +2197,7 @@ define('parse',["require", "exports", './ast', './lex'], function (require, expo
                     this.errs.push('expected an expr to follow "IF"');
                     return null;
                 }
-                var thenLoc;
+                var thenLoc = void 0;
                 if (!(thenLoc = this.consumeReserved('then'))) {
                     this.errs.push('expected "THEN"');
                     return null;
@@ -2202,7 +2207,7 @@ define('parse',["require", "exports", './ast', './lex'], function (require, expo
                     this.errs.push('expected an expr to follow "THEN"');
                     return null;
                 }
-                var elseLoc;
+                var elseLoc = void 0;
                 if (!(elseLoc = this.consumeReserved('else'))) {
                     this.errs.push('expected "ELSE"');
                     return null;
@@ -2215,7 +2220,7 @@ define('parse',["require", "exports", './ast', './lex'], function (require, expo
                 return new ast_1.IfExpr(ifLoc, cond, thenLoc, t, elseLoc, f);
             }
             if ((lhs = this.ident())) {
-                var lParenLoc;
+                var lParenLoc = void 0;
                 if ((lParenLoc = this.consumeTok('(')))
                     return this.call(lhs, lParenLoc);
                 else
@@ -2283,7 +2288,7 @@ define('parse',["require", "exports", './ast', './lex'], function (require, expo
             return new ast_1.CallExpr(fn, lParenLoc, args, rParenLoc);
         };
         return Parser;
-    })();
+    }());
 });
 
 var __extends = (this && this.__extends) || function (d, b) {
@@ -2404,7 +2409,7 @@ define('vars',["require", "exports", './common', './lex', './parse'], function (
             this.code += "']]";
         };
         return CodegenVisitor;
-    })();
+    }());
     exports.CodegenVisitor = CodegenVisitor;
     var Variable = (function () {
         function Variable(model, v) {
@@ -2469,7 +2474,7 @@ define('vars',["require", "exports", './common', './lex', './parse'], function (
             return isFinite(this.eqn);
         };
         return Variable;
-    })();
+    }());
     exports.Variable = Variable;
     var Stock = (function (_super) {
         __extends(Stock, _super);
@@ -2495,7 +2500,7 @@ define('vars',["require", "exports", './common', './lex', './parse'], function (
             return eqn;
         };
         return Stock;
-    })(Variable);
+    }(Variable));
     exports.Stock = Stock;
     var Table = (function (_super) {
         __extends(Table, _super);
@@ -2528,7 +2533,7 @@ define('vars',["require", "exports", './common', './lex', './parse'], function (
             return "lookup(this.tables['" + this.ident + "'], " + index + ")";
         };
         return Table;
-    })(Variable);
+    }(Variable));
     exports.Table = Table;
     var Module = (function (_super) {
         __extends(Module, _super);
@@ -2602,7 +2607,7 @@ define('vars',["require", "exports", './common', './lex', './parse'], function (
             return all;
         };
         return Module;
-    })(Variable);
+    }(Variable));
     exports.Module = Module;
     var Reference = (function (_super) {
         __extends(Reference, _super);
@@ -2624,22 +2629,22 @@ define('vars',["require", "exports", './common', './lex', './parse'], function (
             return false;
         };
         return Reference;
-    })(Variable);
+    }(Variable));
     exports.Reference = Reference;
 });
 
 define('runtime',["require", "exports"], function (require, exports) {
     'use strict';
-    exports.preamble = "'use strict';\nfunction i32(n) {\n    'use strict';\n    return n | 0;\n}\nvar Simulation = (function () {\n    function Simulation() {\n    }\n    Simulation.prototype.lookupOffset = function (id) {\n        if (id === 'time')\n            return 0;\n        if (id[0] === '.')\n            id = id.substr(1);\n        if (id in this.offsets)\n            return this._shift + this.offsets[id];\n        var parts = id.split('.');\n        if (parts.length === 1 && id === \"\" && this.name in this.offsets)\n            return this._shift + this.offsets[this.name];\n        var nextSim = this.modules[parts[0]];\n        if (!nextSim)\n            return -1;\n        return nextSim.lookupOffset(parts.slice(1).join('.'));\n    };\n    Simulation.prototype.root = function () {\n        if (!this.parent)\n            return this;\n        return this.parent.root();\n    };\n    Simulation.prototype.resolveAllSymbolicRefs = function () {\n        for (var n in this.symRefs) {\n            if (!this.symRefs.hasOwnProperty(n))\n                continue;\n            var ctx = void 0;\n            if (this.symRefs[n][0] === '.') {\n                ctx = this.root();\n            }\n            else {\n                ctx = this.parent;\n            }\n            this.ref[n] = ctx.lookupOffset(this.symRefs[n]);\n        }\n        for (var n in this.modules) {\n            if (!this.modules.hasOwnProperty(n))\n                continue;\n            this.modules[n].resolveAllSymbolicRefs();\n        }\n    };\n    Simulation.prototype.varNames = function () {\n        var result = Object.keys(this.offsets).slice();\n        for (var v in this.modules) {\n            if (!this.modules.hasOwnProperty(v))\n                continue;\n            var ids = [];\n            var modVarNames = this.modules[v].varNames();\n            for (var n in modVarNames) {\n                if (modVarNames.hasOwnProperty(n))\n                    ids.push(v + '.' + modVarNames[n]);\n            }\n            result = result.concat(ids);\n        }\n        if (this.name === 'main')\n            result.push('time');\n        return result;\n    };\n    Simulation.prototype.getNVars = function () {\n        var nVars = Object.keys(this.offsets).length;\n        for (var n in this.modules) {\n            if (this.modules.hasOwnProperty(n))\n                nVars += this.modules[n].getNVars();\n        }\n        if (this.name === 'main')\n            nVars++;\n        return nVars;\n    };\n    Simulation.prototype.reset = function () {\n        var spec = this.simSpec;\n        var nSaveSteps = i32((spec.stop - spec.start) / spec.saveStep + 1);\n        this.stepNum = 0;\n        this.slab = new Float64Array(this.nVars * (nSaveSteps + 1));\n        var curr = this.curr();\n        curr[0] = spec.start;\n        this.saveEvery = Math.max(1, i32(spec.saveStep / spec.dt + 0.5));\n        this.calcInitial(this.simSpec.dt, curr);\n    };\n    Simulation.prototype.runTo = function (endTime) {\n        var dt = this.simSpec.dt;\n        var curr = this.curr();\n        var next = this.slab.subarray((this.stepNum + 1) * this.nVars, (this.stepNum + 2) * this.nVars);\n        while (curr[0] <= endTime) {\n            this.calcFlows(dt, curr);\n            this.calcStocks(dt, curr, next);\n            next[0] = curr[0] + dt;\n            if (this.stepNum++ % this.saveEvery !== 0) {\n                curr.set(next);\n            }\n            else {\n                curr = next;\n                next = this.slab.subarray((i32(this.stepNum / this.saveEvery) + 1) * this.nVars, (i32(this.stepNum / this.saveEvery) + 2) * this.nVars);\n            }\n        }\n    };\n    Simulation.prototype.runToEnd = function () {\n        return this.runTo(this.simSpec.stop + 0.5 * this.simSpec.dt);\n    };\n    Simulation.prototype.curr = function () {\n        return this.slab.subarray((this.stepNum) * this.nVars, (this.stepNum + 1) * this.nVars);\n    };\n    Simulation.prototype.setValue = function (name, value) {\n        var off = this.lookupOffset(name);\n        if (off === -1)\n            return;\n        this.curr()[off] = value;\n    };\n    Simulation.prototype.value = function (name) {\n        var off = this.lookupOffset(name);\n        if (off === -1)\n            return;\n        var saveNum = i32(this.stepNum / this.saveEvery);\n        var slabOff = this.nVars * saveNum;\n        return this.slab.subarray(slabOff, slabOff + this.nVars)[off];\n    };\n    Simulation.prototype.series = function (name) {\n        var saveNum = i32(this.stepNum / this.saveEvery);\n        var time = new Float64Array(saveNum);\n        var values = new Float64Array(saveNum);\n        var off = this.lookupOffset(name);\n        if (off === -1)\n            return;\n        for (var i = 0; i < time.length; i++) {\n            var curr = this.slab.subarray(i * this.nVars, (i + 1) * this.nVars);\n            time[i] = curr[0];\n            values[i] = curr[off];\n        }\n        return {\n            'name': name,\n            'time': time,\n            'values': values,\n        };\n    };\n    return Simulation;\n})();\nvar cmds;\nfunction handleMessage(e) {\n    'use strict';\n    var id = e.data[0];\n    var cmd = e.data[1];\n    var args = e.data.slice(2);\n    var result;\n    if (cmds.hasOwnProperty(cmd)) {\n        result = cmds[cmd].apply(null, args);\n    }\n    else {\n        result = [null, 'unknown command \"' + cmd + '\"'];\n    }\n    if (!Array.isArray(result))\n        result = [null, 'no result for [' + e.data.join(', ') + ']'];\n    var msg = [id, result];\n    this.postMessage(msg);\n}\nvar desiredSeries = null;\nfunction initCmds(main) {\n    'use strict';\n    return {\n        'reset': function () {\n            main.reset();\n            return ['ok', null];\n        },\n        'set_val': function (name, val) {\n            main.setValue(name, val);\n            return ['ok', null];\n        },\n        'get_val': function () {\n            var args = [];\n            for (var _i = 0; _i < arguments.length; _i++) {\n                args[_i - 0] = arguments[_i];\n            }\n            var result = {};\n            for (var i = 0; i < args.length; i++)\n                result[args[i]] = main.value(args[i]);\n            return [result, null];\n        },\n        'get_series': function () {\n            var args = [];\n            for (var _i = 0; _i < arguments.length; _i++) {\n                args[_i - 0] = arguments[_i];\n            }\n            var result = {};\n            for (var i = 0; i < args.length; i++)\n                result[args[i]] = main.series(args[i]);\n            return [result, null];\n        },\n        'run_to': function (time) {\n            main.runTo(time);\n            return [main.value('time'), null];\n        },\n        'run_to_end': function () {\n            var result = {};\n            main.runToEnd();\n            if (desiredSeries) {\n                for (var i = 0; i < desiredSeries.length; i++)\n                    result[desiredSeries[i]] = main.series(desiredSeries[i]);\n                return [result, null];\n            }\n            else {\n                return [main.value('time'), null];\n            }\n        },\n        'var_names': function () {\n            return [main.varNames(), null];\n        },\n        'set_desired_series': function (names) {\n            desiredSeries = names;\n            return ['ok', null];\n        },\n    };\n}\nfunction lookup(table, index) {\n    'use strict';\n    var size = table.x.length;\n    if (size === 0)\n        return NaN;\n    var x = table.x;\n    var y = table.y;\n    if (index <= x[0]) {\n        return y[0];\n    }\n    else if (index >= x[size - 1]) {\n        return y[size - 1];\n    }\n    var low = 0;\n    var high = size;\n    var mid;\n    while (low < high) {\n        mid = Math.floor(low + (high - low) / 2);\n        if (x[mid] < index) {\n            low = mid + 1;\n        }\n        else {\n            high = mid;\n        }\n    }\n    var i = low;\n    if (x[i] === index) {\n        return y[i];\n    }\n    else {\n        var slope = (y[i] - y[i - 1]) / (x[i] - x[i - 1]);\n        return (index - x[i - 1]) * slope + y[i - 1];\n    }\n}\nfunction max(a, b) {\n    'use strict';\n    a = +a;\n    b = +b;\n    return a > b ? a : b;\n}\nfunction min(a, b) {\n    'use strict';\n    a = +a;\n    b = +b;\n    return a < b ? a : b;\n}\nfunction pulse(dt, time, volume, firstPulse, interval) {\n    'use strict';\n    if (time < firstPulse)\n        return 0;\n    var nextPulse = firstPulse;\n    while (time >= nextPulse) {\n        if (time < nextPulse + dt) {\n            return volume / dt;\n        }\n        else if (interval <= 0.0) {\n            break;\n        }\n        else {\n            nextPulse += interval;\n        }\n    }\n    return 0;\n}";
+    exports.preamble = "'use strict';\nfunction i32(n) {\n    'use strict';\n    return n | 0;\n}\nvar Simulation = (function () {\n    function Simulation() {\n    }\n    Simulation.prototype.lookupOffset = function (id) {\n        if (id === 'time')\n            return 0;\n        if (id[0] === '.')\n            id = id.substr(1);\n        if (id in this.offsets)\n            return this._shift + this.offsets[id];\n        var parts = id.split('.');\n        if (parts.length === 1 && id === \"\" && this.name in this.offsets)\n            return this._shift + this.offsets[this.name];\n        var nextSim = this.modules[parts[0]];\n        if (!nextSim)\n            return -1;\n        return nextSim.lookupOffset(parts.slice(1).join('.'));\n    };\n    Simulation.prototype.root = function () {\n        if (!this.parent)\n            return this;\n        return this.parent.root();\n    };\n    Simulation.prototype.resolveAllSymbolicRefs = function () {\n        for (var n in this.symRefs) {\n            if (!this.symRefs.hasOwnProperty(n))\n                continue;\n            var ctx = void 0;\n            if (this.symRefs[n][0] === '.') {\n                ctx = this.root();\n            }\n            else {\n                ctx = this.parent;\n            }\n            this.ref[n] = ctx.lookupOffset(this.symRefs[n]);\n        }\n        for (var n in this.modules) {\n            if (!this.modules.hasOwnProperty(n))\n                continue;\n            this.modules[n].resolveAllSymbolicRefs();\n        }\n    };\n    Simulation.prototype.varNames = function () {\n        var result = Object.keys(this.offsets).slice();\n        for (var v in this.modules) {\n            if (!this.modules.hasOwnProperty(v))\n                continue;\n            var ids = [];\n            var modVarNames = this.modules[v].varNames();\n            for (var n in modVarNames) {\n                if (modVarNames.hasOwnProperty(n))\n                    ids.push(v + '.' + modVarNames[n]);\n            }\n            result = result.concat(ids);\n        }\n        if (this.name === 'main')\n            result.push('time');\n        return result;\n    };\n    Simulation.prototype.getNVars = function () {\n        var nVars = Object.keys(this.offsets).length;\n        for (var n in this.modules) {\n            if (this.modules.hasOwnProperty(n))\n                nVars += this.modules[n].getNVars();\n        }\n        if (this.name === 'main')\n            nVars++;\n        return nVars;\n    };\n    Simulation.prototype.reset = function () {\n        var spec = this.simSpec;\n        var nSaveSteps = i32((spec.stop - spec.start) / spec.saveStep + 1);\n        this.stepNum = 0;\n        this.slab = new Float64Array(this.nVars * (nSaveSteps + 1));\n        var curr = this.curr();\n        curr[0] = spec.start;\n        this.saveEvery = Math.max(1, i32(spec.saveStep / spec.dt + 0.5));\n        this.calcInitial(this.simSpec.dt, curr);\n    };\n    Simulation.prototype.dominance = function (forced, indicators) {\n        var dt = this.simSpec.dt;\n        var curr = this.curr().slice();\n        var next = new Float64Array(curr.length);\n        for (var name_1 in forced) {\n            if (!forced.hasOwnProperty(name_1))\n                continue;\n            var off = this.lookupOffset(name_1);\n            if (off === -1) {\n                console.log(\"WARNING: variable '\" + name_1 + \"' not found.\");\n                return {};\n            }\n            curr[off] = forced[name_1];\n        }\n        this.calcFlows(dt, curr);\n        this.calcStocks(dt, curr, next);\n        next[0] = curr[0] + dt;\n        var result = {};\n        for (var i = 0; i < indicators.length; i++) {\n            var name_2 = indicators[i];\n            var off = this.lookupOffset(name_2);\n            if (off === -1) {\n                console.log(\"WARNING: variable '\" + name_2 + \"' not found.\");\n                continue;\n            }\n            result[name_2] = next[off];\n        }\n        return result;\n    };\n    Simulation.prototype.runTo = function (endTime) {\n        var dt = this.simSpec.dt;\n        var curr = this.curr();\n        var next = this.slab.subarray((this.stepNum + 1) * this.nVars, (this.stepNum + 2) * this.nVars);\n        while (curr[0] <= endTime) {\n            this.calcFlows(dt, curr);\n            this.calcStocks(dt, curr, next);\n            next[0] = curr[0] + dt;\n            if (this.stepNum++ % this.saveEvery !== 0) {\n                curr.set(next);\n            }\n            else {\n                curr = next;\n                next = this.slab.subarray((i32(this.stepNum / this.saveEvery) + 1) * this.nVars, (i32(this.stepNum / this.saveEvery) + 2) * this.nVars);\n            }\n        }\n    };\n    Simulation.prototype.runToEnd = function () {\n        return this.runTo(this.simSpec.stop + 0.5 * this.simSpec.dt);\n    };\n    Simulation.prototype.curr = function () {\n        return this.slab.subarray((this.stepNum) * this.nVars, (this.stepNum + 1) * this.nVars);\n    };\n    Simulation.prototype.setValue = function (name, value) {\n        var off = this.lookupOffset(name);\n        if (off === -1)\n            return;\n        this.curr()[off] = value;\n    };\n    Simulation.prototype.value = function (name) {\n        var off = this.lookupOffset(name);\n        if (off === -1)\n            return;\n        var saveNum = i32(this.stepNum / this.saveEvery);\n        var slabOff = this.nVars * saveNum;\n        return this.slab.subarray(slabOff, slabOff + this.nVars)[off];\n    };\n    Simulation.prototype.series = function (name) {\n        var saveNum = i32(this.stepNum / this.saveEvery);\n        var time = new Float64Array(saveNum);\n        var values = new Float64Array(saveNum);\n        var off = this.lookupOffset(name);\n        if (off === -1)\n            return;\n        for (var i = 0; i < time.length; i++) {\n            var curr = this.slab.subarray(i * this.nVars, (i + 1) * this.nVars);\n            time[i] = curr[0];\n            values[i] = curr[off];\n        }\n        return {\n            'name': name,\n            'time': time,\n            'values': values,\n        };\n    };\n    return Simulation;\n}());\nvar cmds;\nfunction handleMessage(e) {\n    'use strict';\n    var id = e.data[0];\n    var cmd = e.data[1];\n    var args = e.data.slice(2);\n    var result;\n    if (cmds.hasOwnProperty(cmd)) {\n        result = cmds[cmd].apply(null, args);\n    }\n    else {\n        result = [null, 'unknown command \"' + cmd + '\"'];\n    }\n    if (!Array.isArray(result))\n        result = [null, 'no result for [' + e.data.join(', ') + ']'];\n    var msg = [id, result];\n    this.postMessage(msg);\n}\nvar desiredSeries = null;\nfunction initCmds(main) {\n    'use strict';\n    return {\n        'reset': function () {\n            main.reset();\n            return ['ok', null];\n        },\n        'set_val': function (name, val) {\n            main.setValue(name, val);\n            return ['ok', null];\n        },\n        'get_val': function () {\n            var args = [];\n            for (var _i = 0; _i < arguments.length; _i++) {\n                args[_i - 0] = arguments[_i];\n            }\n            var result = {};\n            for (var i = 0; i < args.length; i++)\n                result[args[i]] = main.value(args[i]);\n            return [result, null];\n        },\n        'get_series': function () {\n            var args = [];\n            for (var _i = 0; _i < arguments.length; _i++) {\n                args[_i - 0] = arguments[_i];\n            }\n            var result = {};\n            for (var i = 0; i < args.length; i++)\n                result[args[i]] = main.series(args[i]);\n            return [result, null];\n        },\n        'dominance': function (overrides, indicators) {\n            return [main.dominance(overrides, indicators), null];\n        },\n        'run_to': function (time) {\n            main.runTo(time);\n            return [main.value('time'), null];\n        },\n        'run_to_end': function () {\n            var result = {};\n            main.runToEnd();\n            if (desiredSeries) {\n                for (var i = 0; i < desiredSeries.length; i++)\n                    result[desiredSeries[i]] = main.series(desiredSeries[i]);\n                return [result, null];\n            }\n            else {\n                return [main.value('time'), null];\n            }\n        },\n        'var_names': function () {\n            return [main.varNames(), null];\n        },\n        'set_desired_series': function (names) {\n            desiredSeries = names;\n            return ['ok', null];\n        },\n    };\n}\nfunction lookup(table, index) {\n    'use strict';\n    var size = table.x.length;\n    if (size === 0)\n        return NaN;\n    var x = table.x;\n    var y = table.y;\n    if (index <= x[0]) {\n        return y[0];\n    }\n    else if (index >= x[size - 1]) {\n        return y[size - 1];\n    }\n    var low = 0;\n    var high = size;\n    var mid;\n    while (low < high) {\n        mid = Math.floor(low + (high - low) / 2);\n        if (x[mid] < index) {\n            low = mid + 1;\n        }\n        else {\n            high = mid;\n        }\n    }\n    var i = low;\n    if (x[i] === index) {\n        return y[i];\n    }\n    else {\n        var slope = (y[i] - y[i - 1]) / (x[i] - x[i - 1]);\n        return (index - x[i - 1]) * slope + y[i - 1];\n    }\n}\nfunction max(a, b) {\n    'use strict';\n    a = +a;\n    b = +b;\n    return a > b ? a : b;\n}\nfunction min(a, b) {\n    'use strict';\n    a = +a;\n    b = +b;\n    return a < b ? a : b;\n}\nfunction pulse(dt, time, volume, firstPulse, interval) {\n    'use strict';\n    if (time < firstPulse)\n        return 0;\n    var nextPulse = firstPulse;\n    while (time >= nextPulse) {\n        if (time < nextPulse + dt) {\n            return volume / dt;\n        }\n        else if (interval <= 0.0) {\n            break;\n        }\n        else {\n            nextPulse += interval;\n        }\n    }\n    return 0;\n}";
     exports.epilogue = "var pr;\nif (typeof console === 'undefined') {\n    pr = print;\n}\nelse {\n    pr = console.log;\n}\nmain.runToEnd();\nvar series = {};\nvar header = 'time\\t';\nvar vars = main.varNames();\nfor (var i = 0; i < vars.length; i++) {\n    var v = vars[i];\n    if (v === 'time')\n        continue;\n    header += v + '\\t';\n    series[v] = main.series(v);\n}\npr(header.substr(0, header.length - 1));\nvar nSteps = main.series('time').time.length;\nfor (var i = 0; i < nSteps; i++) {\n    var msg = '';\n    for (var v in series) {\n        if (!series.hasOwnProperty(v))\n            continue;\n        if (msg === '')\n            msg += series[v].time[i] + '\\t';\n        msg += series[v].values[i] + '\\t';\n    }\n    pr(msg.substr(0, msg.length - 1));\n}";
     exports.drawCSS = "<defs><style>\n/* <![CDATA[ */\n.spark-axis {\n    stroke-width: 0.125;\n    stroke-linecap: round;\n    stroke: #999;\n    fill: none;\n}\n\n.spark-line {\n    stroke-width: 0.5;\n    stroke-linecap: round;\n    stroke: #2299dd;\n    fill: none;\n}\n\ntext {\n    font-size: 12px;\n    font-family: \"Roboto\", \"Open Sans\", Arial, sans-serif;\n    font-weight: 300;\n    text-anchor: middle;\n    white-space: nowrap;\n    vertical-align: middle;\n}\n\n.left-aligned {\n    text-anchor: start;\n}\n\n.right-aligned {\n    text-anchor: end;\n}\n/* ]]> */\n</style></defs>\n";
 });
 
-/*! Hammer.JS - v2.0.6 - 2015-12-23
+/*! Hammer.JS - v2.0.7 - 2016-04-22
  * http://hammerjs.github.io/
  *
- * Copyright (c) 2015 Jorik Tangelder;
- * Licensed under the  license */
+ * Copyright (c) 2016 Jorik Tangelder;
+ * Licensed under the MIT license */
 (function(window, document, exportName, undefined) {
   'use strict';
 
@@ -2767,7 +2772,7 @@ if (typeof Object.assign !== 'function') {
  * means that properties in dest will be overwritten by the ones in src.
  * @param {Object} dest
  * @param {Object} src
- * @param {Boolean=false} [merge]
+ * @param {Boolean} [merge=false]
  * @returns {Object} dest
  */
 var extend = deprecate(function extend(dest, src, merge) {
@@ -3428,7 +3433,6 @@ function MouseInput() {
     this.evEl = MOUSE_ELEMENT_EVENTS;
     this.evWin = MOUSE_WINDOW_EVENTS;
 
-    this.allow = true; // used by Input.TouchMouse to disable mouse events
     this.pressed = false; // mousedown state
 
     Input.apply(this, arguments);
@@ -3451,8 +3455,8 @@ inherit(MouseInput, Input, {
             eventType = INPUT_END;
         }
 
-        // mouse must be down, and mouse events are allowed (see the TouchMouse input)
-        if (!this.pressed || !this.allow) {
+        // mouse must be down
+        if (!this.pressed) {
             return;
         }
 
@@ -3735,12 +3739,19 @@ function getTouches(ev, type) {
  * @constructor
  * @extends Input
  */
+
+var DEDUP_TIMEOUT = 2500;
+var DEDUP_DISTANCE = 25;
+
 function TouchMouseInput() {
     Input.apply(this, arguments);
 
     var handler = bindFn(this.handler, this);
     this.touch = new TouchInput(this.manager, handler);
     this.mouse = new MouseInput(this.manager, handler);
+
+    this.primaryTouch = null;
+    this.lastTouches = [];
 }
 
 inherit(TouchMouseInput, Input, {
@@ -3754,17 +3765,15 @@ inherit(TouchMouseInput, Input, {
         var isTouch = (inputData.pointerType == INPUT_TYPE_TOUCH),
             isMouse = (inputData.pointerType == INPUT_TYPE_MOUSE);
 
-        // when we're in a touch event, so  block all upcoming mouse events
-        // most mobile browser also emit mouseevents, right after touchstart
-        if (isTouch) {
-            this.mouse.allow = false;
-        } else if (isMouse && !this.mouse.allow) {
+        if (isMouse && inputData.sourceCapabilities && inputData.sourceCapabilities.firesTouchEvents) {
             return;
         }
 
-        // reset the allowMouse when we're done
-        if (inputEvent & (INPUT_END | INPUT_CANCEL)) {
-            this.mouse.allow = true;
+        // when we're in a touch event, record touches to  de-dupe synthetic mouse event
+        if (isTouch) {
+            recordTouches.call(this, inputEvent, inputData);
+        } else if (isMouse && isSyntheticEvent.call(this, inputData)) {
+            return;
         }
 
         this.callback(manager, inputEvent, inputData);
@@ -3779,6 +3788,44 @@ inherit(TouchMouseInput, Input, {
     }
 });
 
+function recordTouches(eventType, eventData) {
+    if (eventType & INPUT_START) {
+        this.primaryTouch = eventData.changedPointers[0].identifier;
+        setLastTouch.call(this, eventData);
+    } else if (eventType & (INPUT_END | INPUT_CANCEL)) {
+        setLastTouch.call(this, eventData);
+    }
+}
+
+function setLastTouch(eventData) {
+    var touch = eventData.changedPointers[0];
+
+    if (touch.identifier === this.primaryTouch) {
+        var lastTouch = {x: touch.clientX, y: touch.clientY};
+        this.lastTouches.push(lastTouch);
+        var lts = this.lastTouches;
+        var removeLastTouch = function() {
+            var i = lts.indexOf(lastTouch);
+            if (i > -1) {
+                lts.splice(i, 1);
+            }
+        };
+        setTimeout(removeLastTouch, DEDUP_TIMEOUT);
+    }
+}
+
+function isSyntheticEvent(eventData) {
+    var x = eventData.srcEvent.clientX, y = eventData.srcEvent.clientY;
+    for (var i = 0; i < this.lastTouches.length; i++) {
+        var t = this.lastTouches[i];
+        var dx = Math.abs(x - t.x), dy = Math.abs(y - t.y);
+        if (dx <= DEDUP_DISTANCE && dy <= DEDUP_DISTANCE) {
+            return true;
+        }
+    }
+    return false;
+}
+
 var PREFIXED_TOUCH_ACTION = prefixed(TEST_ELEMENT.style, 'touchAction');
 var NATIVE_TOUCH_ACTION = PREFIXED_TOUCH_ACTION !== undefined;
 
@@ -3789,6 +3836,7 @@ var TOUCH_ACTION_MANIPULATION = 'manipulation'; // not implemented
 var TOUCH_ACTION_NONE = 'none';
 var TOUCH_ACTION_PAN_X = 'pan-x';
 var TOUCH_ACTION_PAN_Y = 'pan-y';
+var TOUCH_ACTION_MAP = getTouchActionProps();
 
 /**
  * Touch Action
@@ -3813,7 +3861,7 @@ TouchAction.prototype = {
             value = this.compute();
         }
 
-        if (NATIVE_TOUCH_ACTION && this.manager.element.style) {
+        if (NATIVE_TOUCH_ACTION && this.manager.element.style && TOUCH_ACTION_MAP[value]) {
             this.manager.element.style[PREFIXED_TOUCH_ACTION] = value;
         }
         this.actions = value.toLowerCase().trim();
@@ -3845,11 +3893,6 @@ TouchAction.prototype = {
      * @param {Object} input
      */
     preventDefaults: function(input) {
-        // not needed with native support for the touchAction property
-        if (NATIVE_TOUCH_ACTION) {
-            return;
-        }
-
         var srcEvent = input.srcEvent;
         var direction = input.offsetDirection;
 
@@ -3860,9 +3903,9 @@ TouchAction.prototype = {
         }
 
         var actions = this.actions;
-        var hasNone = inStr(actions, TOUCH_ACTION_NONE);
-        var hasPanY = inStr(actions, TOUCH_ACTION_PAN_Y);
-        var hasPanX = inStr(actions, TOUCH_ACTION_PAN_X);
+        var hasNone = inStr(actions, TOUCH_ACTION_NONE) && !TOUCH_ACTION_MAP[TOUCH_ACTION_NONE];
+        var hasPanY = inStr(actions, TOUCH_ACTION_PAN_Y) && !TOUCH_ACTION_MAP[TOUCH_ACTION_PAN_Y];
+        var hasPanX = inStr(actions, TOUCH_ACTION_PAN_X) && !TOUCH_ACTION_MAP[TOUCH_ACTION_PAN_X];
 
         if (hasNone) {
             //do not prevent defaults if this is a tap gesture
@@ -3931,6 +3974,21 @@ function cleanTouchActions(actions) {
     }
 
     return TOUCH_ACTION_AUTO;
+}
+
+function getTouchActionProps() {
+    if (!NATIVE_TOUCH_ACTION) {
+        return false;
+    }
+    var touchMap = {};
+    var cssSupports = window.CSS && window.CSS.supports;
+    ['auto', 'manipulation', 'pan-y', 'pan-x', 'pan-x pan-y', 'none'].forEach(function(val) {
+
+        // If css.supports is not supported but there is native touch-action assume it supports
+        // all values. This is the case for IE 10 and 11.
+        touchMap[val] = cssSupports ? window.CSS.supports('touch-action', val) : true;
+    });
+    return touchMap;
 }
 
 /**
@@ -4729,7 +4787,7 @@ function Hammer(element, options) {
 /**
  * @const {string}
  */
-Hammer.VERSION = '2.0.6';
+Hammer.VERSION = '2.0.7';
 
 /**
  * default settings
@@ -4860,6 +4918,7 @@ function Manager(element, options) {
     this.handlers = {};
     this.session = {};
     this.recognizers = [];
+    this.oldCssProps = {};
 
     this.element = element;
     this.input = createInputInstance(this);
@@ -5038,6 +5097,13 @@ Manager.prototype = {
      * @returns {EventEmitter} this
      */
     on: function(events, handler) {
+        if (events === undefined) {
+            return;
+        }
+        if (handler === undefined) {
+            return;
+        }
+
         var handlers = this.handlers;
         each(splitStr(events), function(event) {
             handlers[event] = handlers[event] || [];
@@ -5053,6 +5119,10 @@ Manager.prototype = {
      * @returns {EventEmitter} this
      */
     off: function(events, handler) {
+        if (events === undefined) {
+            return;
+        }
+
         var handlers = this.handlers;
         each(splitStr(events), function(event) {
             if (!handler) {
@@ -5117,9 +5187,19 @@ function toggleCssProps(manager, add) {
     if (!element.style) {
         return;
     }
+    var prop;
     each(manager.options.cssProps, function(value, name) {
-        element.style[prefixed(element.style, name)] = add ? value : '';
+        prop = prefixed(element.style, name);
+        if (add) {
+            manager.oldCssProps[prop] = element.style[prop];
+            element.style[prop] = value;
+        } else {
+            element.style[prop] = manager.oldCssProps[prop] || '';
+        }
     });
+    if (!add) {
+        manager.oldCssProps = {};
+    }
 }
 
 /**
@@ -13756,7 +13836,7 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
                 this.set.add(this.graph);
         };
         return DStock;
-    })();
+    }());
     var DModule = (function () {
         function DModule(drawing, element) {
             this.drawing = drawing;
@@ -13794,7 +13874,7 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
                 this.set.add(this.graph);
         };
         return DModule;
-    })();
+    }());
     var DAux = (function () {
         function DAux(drawing, element) {
             this.drawing = drawing;
@@ -13838,7 +13918,7 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
                 this.set.add(this.graph);
         };
         return DAux;
-    })();
+    }());
     var DFlow = (function () {
         function DFlow(drawing, element) {
             this.drawing = drawing;
@@ -13875,7 +13955,7 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
                 from_cloud = cloud;
             }
             if (!this.to) {
-                var x, y, prevX, prevY;
+                var x = void 0, y = void 0, prevX = void 0, prevY = void 0;
                 x = pts[pts.length - 1].x;
                 y = pts[pts.length - 1].y;
                 prevX = pts[pts.length - 2].x;
@@ -13958,7 +14038,7 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
                 this.set.add(this.graph);
         };
         return DFlow;
-    })();
+    }());
     var DConnector = (function () {
         function DConnector(drawing, element) {
             this.drawing = drawing;
@@ -14126,7 +14206,7 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
             }));
         };
         return DConnector;
-    })();
+    }());
     var DTypes = {
         'stock': DStock,
         'flow': DFlow,
@@ -14257,13 +14337,13 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
         Drawing.prototype.visualize = function (data) {
             if (data.project) {
                 var sim = data;
-                var d = this;
+                var d_1 = this;
                 sim.series.apply(sim, Object.keys(this.namedEnts)).then(function (result) {
                     for (var n in result) {
                         if (!result.hasOwnProperty(n))
                             continue;
                         data = result[n];
-                        var dEnt = d.namedEnts[n];
+                        var dEnt = d_1.namedEnts[n];
                         if (!dEnt) {
                             console.log('sim data for non-drawn ' + n);
                             continue;
@@ -14297,15 +14377,15 @@ define('draw',["require", "exports", './runtime', "./util", "../bower_components
             return g;
         };
         return Drawing;
-    })();
+    }());
     exports.Drawing = Drawing;
 });
 
 // vim:ts=4:sts=4:sw=4:
 /*!
  *
- * Copyright 2009-2012 Kris Kowal under the terms of the MIT
- * license found at http://github.com/kriskowal/q/raw/master/LICENSE
+ * Copyright 2009-2017 Kris Kowal under the terms of the MIT
+ * license found at https://github.com/kriskowal/q/blob/v1/LICENSE
  *
  * With parts by Tyler Close
  * Copyright 2007-2009 Tyler Close under the terms of the MIT X license found
@@ -14493,7 +14573,7 @@ var nextTick =(function () {
         //   `setTimeout`. In this case `setImmediate` is preferred because
         //    it is faster. Browserify's `process.toString()` yields
         //   "[object Object]", while in a real Node environment
-        //   `process.nextTick()` yields "[object process]".
+        //   `process.toString()` yields "[object process]".
         isNodeJS = true;
 
         requestTick = function () {
@@ -14630,6 +14710,11 @@ var object_create = Object.create || function (prototype) {
     return new Type();
 };
 
+var object_defineProperty = Object.defineProperty || function (obj, prop, descriptor) {
+    obj[prop] = descriptor.value;
+    return obj;
+};
+
 var object_hasOwnProperty = uncurryThis(Object.prototype.hasOwnProperty);
 
 var object_keys = Object.keys || function (object) {
@@ -14680,19 +14765,20 @@ function makeStackTraceLong(error, promise) {
         promise.stack &&
         typeof error === "object" &&
         error !== null &&
-        error.stack &&
-        error.stack.indexOf(STACK_JUMP_SEPARATOR) === -1
+        error.stack
     ) {
         var stacks = [];
         for (var p = promise; !!p; p = p.source) {
-            if (p.stack) {
+            if (p.stack && (!error.__minimumStackCounter__ || error.__minimumStackCounter__ > p.stackCounter)) {
+                object_defineProperty(error, "__minimumStackCounter__", {value: p.stackCounter, configurable: true});
                 stacks.unshift(p.stack);
             }
         }
         stacks.unshift(error.stack);
 
         var concatedStacks = stacks.join("\n" + STACK_JUMP_SEPARATOR + "\n");
-        error.stack = filterStackString(concatedStacks);
+        var stack = filterStackString(concatedStacks);
+        object_defineProperty(error, "stack", {value: stack, configurable: true});
     }
 }
 
@@ -14819,6 +14905,14 @@ Q.nextTick = nextTick;
  */
 Q.longStackSupport = false;
 
+/**
+ * The counter is used to determine the stopping point for building
+ * long stack traces. In makeStackTraceLong we walk backwards through
+ * the linked list of promises, only stacks which were created before
+ * the rejection are concatenated.
+ */
+var longStackCounter = 1;
+
 // enable long stacks if Q_DEBUG is set
 if (typeof process === "object" && process && process.env && process.env.Q_DEBUG) {
     Q.longStackSupport = true;
@@ -14891,6 +14985,7 @@ function defer() {
             // At the same time, cut off the first line; it's always just
             // "[object Promise]\n", as per the `toString`.
             promise.stack = e.stack.substring(e.stack.indexOf("\n") + 1);
+            promise.stackCounter = longStackCounter++;
         }
     }
 
@@ -14900,7 +14995,12 @@ function defer() {
 
     function become(newPromise) {
         resolvedPromise = newPromise;
-        promise.source = newPromise;
+
+        if (Q.longStackSupport && hasStacks) {
+            // Only hold a reference to the new promise if long stacks
+            // are enabled to reduce memory usage
+            promise.source = newPromise;
+        }
 
         array_reduce(messages, function (undefined, message) {
             Q.nextTick(function () {
@@ -15028,7 +15128,7 @@ Promise.prototype.join = function (that) {
             // TODO: "===" should be Object.is or equiv
             return x;
         } else {
-            throw new Error("Can't join: not the same: " + x + " " + y);
+            throw new Error("Q can't join: not the same: " + x + " " + y);
         }
     });
 };
@@ -15925,13 +16025,12 @@ function any(promises) {
         function onFulfilled(result) {
             deferred.resolve(result);
         }
-        function onRejected() {
+        function onRejected(err) {
             pendingCount--;
             if (pendingCount === 0) {
-                deferred.reject(new Error(
-                    "Can't get fulfillment value from any promise, all " +
-                    "promises were rejected."
-                ));
+                err.message = ("Q can't get fulfillment value from any promise, all " +
+                    "promises were rejected. Last error message: " + err.message);
+                deferred.reject(err);
             }
         }
         function onProgress(progress) {
@@ -16055,6 +16154,9 @@ Q["finally"] = function (object, callback) {
 
 Promise.prototype.fin = // XXX legacy
 Promise.prototype["finally"] = function (callback) {
+    if (!callback || typeof callback.apply !== "function") {
+        throw new Error("Q can't apply finally callback");
+    }
     callback = Q(callback);
     return this.then(function (value) {
         return callback.fcall().then(function () {
@@ -16218,6 +16320,9 @@ Promise.prototype.nfcall = function (/*...args*/) {
  */
 Q.nfbind =
 Q.denodeify = function (callback /*...args*/) {
+    if (callback === undefined) {
+        throw new Error("Q can't wrap an undefined function");
+    }
     var baseArgs = array_slice(arguments, 1);
     return function () {
         var nodeArgs = baseArgs.concat(array_slice(arguments));
@@ -16919,7 +17024,7 @@ return Q;
   };
 
   mustache.name = 'mustache.js';
-  mustache.version = '2.2.1';
+  mustache.version = '2.3.0';
   mustache.tags = [ '{{', '}}' ];
 
   // All high-level mustache.* functions use this writer.
@@ -16978,6 +17083,7 @@ return Q;
   mustache.Context = Context;
   mustache.Writer = Writer;
 
+  return mustache;
 }));
 
 define('sim',["require", "exports", './util', './vars', './runtime', 'q', 'mustache'], function (require, exports, util, vars, runtime, Q, Mustache) {
@@ -17002,7 +17108,7 @@ define('sim',["require", "exports", './util', './vars', './runtime', 'q', 'musta
             this.offsets = JSON.stringify(runtimeOffsets, null, SP);
         }
         return TemplateContext;
-    })();
+    }());
     exports.TemplateContext = TemplateContext;
     var Sim = (function () {
         function Sim(root, isStandalone) {
@@ -17136,7 +17242,7 @@ define('sim',["require", "exports", './util', './vars', './runtime', 'q', 'musta
                 cf.push(eqn);
             }
             for (var i = 0; i < run_stocks.length; i++) {
-                var eqn;
+                var eqn = void 0;
                 var v = run_stocks[i];
                 if (v instanceof vars.Module) {
                     cs.push('this.modules["' + v.ident + '"].calcStocks(dt, curr, next);');
@@ -17222,6 +17328,9 @@ define('sim',["require", "exports", './util', './vars', './runtime', 'q', 'musta
             var args = ['get_series'].concat(names);
             return this._post.apply(this, args);
         };
+        Sim.prototype.dominance = function (overrides, indicators) {
+            return this._post('dominance', overrides, indicators);
+        };
         Sim.prototype.runTo = function (time) {
             return this._post('run_to', time);
         };
@@ -17279,7 +17388,7 @@ define('sim',["require", "exports", './util', './vars', './runtime', 'q', 'musta
             return deferred.promise;
         };
         return Sim;
-    })();
+    }());
     exports.Sim = Sim;
 });
 
@@ -17389,7 +17498,7 @@ define('model',["require", "exports", './util', './vars', './draw', './sim', './
             return null;
         };
         return Model;
-    })();
+    }());
     exports.Model = Model;
 });
 
@@ -17461,7 +17570,7 @@ define('project',["require", "exports", './common', './xmile', './model', './var
             return true;
         };
         return Project;
-    })();
+    }());
     exports.Project = Project;
 });
 

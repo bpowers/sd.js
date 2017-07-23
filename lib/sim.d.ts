@@ -32,6 +32,9 @@ export declare class Sim {
     setValue(name: string, val: number): any;
     value(...names: string[]): any;
     series(...names: string[]): any;
+    dominance(overrides: {
+        [n: string]: number;
+    }, indicators: string[]): any;
     runTo(time: number): any;
     runToEnd(): any;
     setDesiredSeries(names: string[]): any;
