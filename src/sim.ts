@@ -348,6 +348,10 @@ export class Sim {
 		return this._post.apply(this, args);
 	}
 
+	dominance(overrides: {[n: string]: number}, indicators: string[]): any {
+		return this._post('dominance', overrides, indicators);
+	}
+
 	runTo(time: number): any {
 		return this._post('run_to', time);
 	}

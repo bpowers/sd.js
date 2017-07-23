@@ -149,6 +149,46 @@ class Simulation {
 		this.calcInitial(this.simSpec.dt, curr);
 	}
 
+	dominance(forced: {[name: string]: number}, indicators: string[]): {[name: string]: number} {
+		const dt = this.simSpec.dt;
+
+		// both slices so that we don't modify existing data
+		let curr = this.curr().slice();
+		let next = new Float64Array(curr.length);
+
+		// override values in the current timestep
+		for (let name in forced) {
+			if (!forced.hasOwnProperty(name))
+				continue;
+
+			let off = this.lookupOffset(name);
+			if (off === -1) {
+				console.log(`WARNING: variable '${name}' not found.`);
+				return {};
+			}
+			curr[off] = forced[name];
+		}
+
+		this.calcFlows(dt, curr);
+		this.calcStocks(dt, curr, next);
+
+		next[0/*TIME*/] = curr[0/*TIME*/] + dt;
+
+		// copy the specified indicators into an object and return it.
+		let result: {[name: string]: number} = {};
+		for (let i = 0; i < indicators.length; i++) {
+			let name = indicators[i];
+			let off = this.lookupOffset(name);
+			if (off === -1) {
+				console.log(`WARNING: variable '${name}' not found.`);
+				continue;
+			}
+			result[name] = next[off];
+		}
+
+		return result;
+	}
+
 	runTo(endTime: number): void {
 		const dt = this.simSpec.dt;
 
@@ -271,6 +311,9 @@ function initCmds(main: Simulation): any {
 			for (let i = 0; i<args.length; i++)
 				result[args[i]] = main.series(args[i]);
 			return [result, null];
+		},
+		'dominance': function(overrides: {[n: string]: number}, indicators: string[]): [any, any] {
+			return [main.dominance(overrides, indicators), null];
 		},
 		'run_to': function(time: number): [any, any] {
 			main.runTo(time);
