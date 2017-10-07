@@ -25,8 +25,7 @@ LIB_MIN    = sd.min.js
 TARGETS    = $(LIB) $(LIB_MIN) lib
 # make sure we recompile when the Makefile (and associated
 # CFLAGS/LDFLAGS change) or any project files are changed.
-CONFIG     = Makefile $(TSC) $(BOWER) $(TSLINT) $(REQUIRE) build.js \
-	$(shell find typings -name '*.d.ts')
+CONFIG     = Makefile $(TSC) $(BOWER) $(TSLINT) $(REQUIRE) build.js
 
 RTEST_DIR  = test/test-models
 RTEST_CMD  = $(RTEST_DIR)/regression-test.py
@@ -123,6 +122,7 @@ rtest: lib $(RTEST_CMD)
 clean:
 	rm -rf build build-rt lib
 	rm -f sd.js sd.min.js
+	rm -f test/*.d.ts test/*.js
 	find . -name '*~' | xargs rm -f
 
 distclean: clean
