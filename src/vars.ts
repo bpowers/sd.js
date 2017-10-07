@@ -187,12 +187,14 @@ export class Variable implements type.Variable {
 		// for a flow or aux, we depend on variables that aren't built
 		// in functions in the equation.
 		this._deps = identifierSet(this.eqn);
-	};
+	}
+
 	// returns a string of this variables initial equation. suitable for
 	// exec()'ing
 	initialEquation(): string {
 		return this.eqn;
-	};
+	}
+
 	code(offsets: type.Offsets): string {
 		if (this.isConst())
 			return "this.initials['" + this.ident + "']";
@@ -407,7 +409,8 @@ export class Reference extends Variable implements type.Reference {
 
 	lessThan(that: Variable): boolean {
 		return this.ptr in that.getDeps();
-	};
+	}
+
 	isConst(): boolean {
 		// FIXME(bp) should actually lookup whether this.ptr is const,
 		// but that requires module instance walking in Model which I
