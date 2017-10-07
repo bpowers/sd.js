@@ -234,19 +234,19 @@ class Simulation {
 	value(name: string): number {
 		const off = this.lookupOffset(name);
 		if (off === -1)
-			return;
+			return NaN;
 		const saveNum = i32(this.stepNum/this.saveEvery);
 		const slabOff = this.nVars*saveNum;
 		return this.slab.subarray(slabOff, slabOff + this.nVars)[off];
 	}
 
-	series(name: string): Series {
+	series(name: string): Series | null {
 		const saveNum = i32(this.stepNum/this.saveEvery);
 		const time = new Float64Array(saveNum);
 		const values = new Float64Array(saveNum);
 		const off = this.lookupOffset(name);
 		if (off === -1)
-			return;
+			return null;
 		for (let i = 0; i < time.length; i++) {
 			let curr = this.slab.subarray(i*this.nVars, (i+1)*this.nVars);
 			time[i] = curr[0];
@@ -281,12 +281,11 @@ function handleMessage(e: any): void {
 
 	// TODO(bp) look into transferrable objects
 	let msg = [id, result];
-	// FIXME: this is a DedicatedWorkerGlobalScope, but TypeScript
-	// is clueless.
-	(<any>this).postMessage(msg);
+
+	(<DedicatedWorkerGlobalScope>self).postMessage(msg);
 }
 
-let desiredSeries: string[] = null;
+let desiredSeries: string[] | null = null;
 
 function initCmds(main: Simulation): any {
 	'use strict';
@@ -308,8 +307,11 @@ function initCmds(main: Simulation): any {
 		},
 		'get_series': function(...args: string[]): [any, any] {
 			let result: {[name: string]: Series} = {};
-			for (let i = 0; i<args.length; i++)
-				result[args[i]] = main.series(args[i]);
+			for (let i = 0; i<args.length; i++) {
+				let series = main.series(args[i]);
+				if (series !== null)
+					result[args[i]] = series;
+			}
 			return [result, null];
 		},
 		'dominance': function(overrides: {[n: string]: number}, indicators: string[]): [any, any] {
@@ -322,9 +324,12 @@ function initCmds(main: Simulation): any {
 		'run_to_end': function(): [any, any] {
 			let result: {[name: string]: Series} = {};
 			main.runToEnd();
-			if (desiredSeries) {
-				for (let i = 0; i < desiredSeries.length; i++)
-					result[desiredSeries[i]] = main.series(desiredSeries[i]);
+			if (desiredSeries !== null) {
+				for (let i = 0; i < desiredSeries.length; i++) {
+					let series = main.series(desiredSeries[i]);
+					if (series !== null)
+						result[desiredSeries[i]] = series;
+				}
 				return [result, null];
 			} else {
 				return [main.value('time'), null];

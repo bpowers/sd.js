@@ -1,6 +1,8 @@
 {
   "files": [
-    "runtime.ts"
+    "runtime/runtime.ts",
+    "runtime/generated.d.ts",
+    "runtime/epilogue.ts"
   ],
 
   "compilerOptions": {
@@ -9,8 +11,11 @@
     "outDir": "build-rt",
 
     "lib": [
+      "webworker",
       "es2016"
     ],
+
+    "types": [],
 
     "noImplicitAny": true,
     "newLine": "LF",

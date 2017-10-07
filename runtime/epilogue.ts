@@ -1,10 +1,12 @@
 /// <reference path="./generated.d.ts" />
 
-/* global main: false, print: true */
+declare var print: (msg: string) => void;
 
 let pr: (...args: string[])=>void;
 
 if (typeof console === 'undefined') {
+
+
 	pr = print;
 } else {
 	pr = console.log;
@@ -19,11 +21,16 @@ for (let i = 0; i < vars.length; i++) {
 	if (v === 'time')
 		continue;
 	header += v + '\t';
-	series[v] = main.series(v);
+	let s = main.series(v);
+	if (s !== null)
+		series[v] = s;
 }
 pr(header.substr(0, header.length-1));
 
-let nSteps = main.series('time').time.length;
+let nSteps = 0;
+let timeSeries = main.series('time');
+if (timeSeries !== null)
+	nSteps = timeSeries.time.length;
 for (let i = 0; i < nSteps; i++) {
 	let msg = '';
 	for (let v in series) {

@@ -54,8 +54,8 @@ $(TSC) $(TSLINT) $(REQUIRE): node_modules
 
 build-rt: $(RT_SRCS) $(CONFIG)
 	@echo "  TS    $@"
-	$(TSLINT) -c tslint.json $(RT_SRCS)
-	$(TSC) -p tsconfig.rt.json $(RT_SRCS)
+	$(TSLINT) -c .tslint.json $(RT_SRCS)
+	$(TSC) -p .tsconfig.rt.json
 	touch $@
 
 $(RUNTIME): build-rt ./build-runtime.py
@@ -67,7 +67,7 @@ $(RUNTIME): build-rt ./build-runtime.py
 # another time for require.js and the browser.
 lib: $(LIB_SRCS) $(CONFIG)
 	@echo "  TS    $@"
-	$(TSC) -p tsconfig.lib.json $(LIB_SRCS)
+	$(TSC) -p .tsconfig.lib.json
 	touch $@
 
 $(LIB): build.js build $(RUNTIME) $(REQUIRE) $(ALMOND)
@@ -86,7 +86,7 @@ $(RTEST_CMD): $(RTEST_DIR) .gitmodules
 $(TEST): lib node_modules $(TEST_SRCS)
 	@echo "  TS    test"
 #	$(TSLINT) -c tslint.json $(TEST_SRCS)
-	$(TSC) $(TSFLAGS) -d -m commonjs --outDir test $(TEST_SRCS)
+	$(TSC) -p .tsconfig.test.json
 	touch $@
 
 test check: $(TEST)
