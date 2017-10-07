@@ -9,6 +9,7 @@ import * as type from './type';
 import * as xmile from './xmile';
 import * as compat from './compat';
 
+import {Error} from './common';
 import {Model} from './model';
 import {Module} from './vars';
 
@@ -42,8 +43,6 @@ export class Project implements type.Project {
 	private models: type.ModelMap;
 
 	constructor(xmileDoc: XMLDocument) {
-		common.err = null;
-
 		this.files = [];
 		this.models = {};
 		this.valid = false;
@@ -57,16 +56,15 @@ export class Project implements type.Project {
 	}
 
 	// isMain should only be true when called from the constructor.
-	addDocument(xmileDoc: XMLDocument, isMain = false): boolean {
+	addDocument(xmileDoc: XMLDocument, isMain = false): Error {
 		if (!xmileDoc || xmileDoc.getElementsByTagName('parsererror').length !== 0) {
-			common.err = common.Errors.ERR_VERSION;
 			this.valid = false;
-			return false;
+			return Error.Version;
 		}
 		let xmileElement = getXmileElement(xmileDoc);
 		if (!xmileElement) {
 			this.valid = false;
-			return false;
+			return new Error('no XMILE root element');
 		}
 
 		// FIXME: compat translation of XML
@@ -78,7 +76,7 @@ export class Project implements type.Project {
 		if (err) {
 			console.log('File.Build: ' + err.error);
 			this.valid = false;
-			return false;
+			return new Error('File.Build: ' + err.error);
 		}
 
 		// FIXME: compat translation of equations
@@ -90,7 +88,7 @@ export class Project implements type.Project {
 			this.simSpec = file.simSpec;
 			if (!file.simSpec) {
 				this.valid = false;
-				return false;
+				return new Error('isMain, but no sim spec');
 			}
 		}
 
@@ -110,6 +108,6 @@ export class Project implements type.Project {
 		modVar.name = 'main';
 		this.main = new Module(this, null, modVar);
 		this.valid = true;
-		return true;
+		return null;
 	}
 }

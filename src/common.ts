@@ -2,13 +2,15 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-// used similarly to libc's errno.  On a major error store a
-// string here (one of the sd.ERR_* ones defined directly below)
-export let err: string;
+export class Error {
+	static Version: Error = new Error('bad xml or unknown smile version');
+	static BadTime: Error = new Error('bad time (control) data');
 
-export class Errors {
-	static ERR_VERSION: string = 'bad xml or unknown smile version';
-	static ERR_BAD_TIME: string = 'bad time (control) data';
+	readonly msg: string;
+
+	constructor(msg: string) {
+		this.msg = msg;
+	}
 }
 
 export interface Properties {

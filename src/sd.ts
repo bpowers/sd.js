@@ -12,7 +12,7 @@ import {Model} from './model';
 export {Project} from './project';
 export {Model} from './model';
 
-export const Errors = common.Errors;
+export const Error = common.Error;
 
 /**
  * Attempts to parse the given xml string describing an xmile
@@ -47,18 +47,4 @@ export function load(url: string, cb: (m: Model)=>void, errCb: (r: XMLHttpReques
 	};
 	req.open('GET', url, true);
 	req.send();
-}
-
-/**
- * If newModel or a major operation (like creating a new sim from
- * a model) fails, call sd.error() to get a string describing the
- * error.  You can compare this to specific errors in sd.errors,
- * or simply pass the error string to the user.  If an error
- * hasn't occured, or if no information is available, error() will
- * return null.
- *
- * @return A string error message, or null if one isn't available.
- */
-export function error(): string {
-	return common.err;
 }

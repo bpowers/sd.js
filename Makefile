@@ -1,7 +1,7 @@
 
 REQUIRE   ?= node_modules/.bin/r.js
 BOWER     ?= node_modules/.bin/bower
-TSLINT    ?= node_modules/.bin/tslint --project tsconfig.json
+TSLINT    ?= node_modules/.bin/tslint
 TSC       ?= node_modules/.bin/tsc
 MOCHA     ?= node_modules/.bin/mocha
 
