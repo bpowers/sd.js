@@ -58,9 +58,9 @@ build-rt: $(RT_SRCS) $(CONFIG)
 	$(TSC) -p .tsconfig.rt.json
 	touch $@
 
-$(RUNTIME): build-rt ./build-runtime.py
+$(RUNTIME): build-rt support/build-runtime.js
 	@echo "  RT    $@"
-	./build-runtime.py >$@
+	./support/build-runtime.js $@
 
 # commonjs-based node target.  JS is an endless sea of sadness - we
 # need to run tsc twice, once for node's commonjs require style, and
