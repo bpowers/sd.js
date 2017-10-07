@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "es2016",
+    "module": "es2015",
+    "outDir": "build-rt",
+
+    "lib": [
+      "es2016"
+    ],
+
+    "noImplicitAny": true,
+    "newLine": "LF",
+
+    "sourceMap": false,
+    "declaration": true,
+    "removeComments": true,
+
+    "strict": true,
+
+    "noUnusedLocals": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+
+    "moduleResolution": "node"
+  }
+}

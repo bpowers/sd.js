@@ -2,12 +2,10 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-/// <reference path="../typings/tsd.d.ts" />
-
-/// <amd-dependency path="../bower_components/hammerjs/hammer" />
-/// <amd-dependency path="../bower_components/Snap.svg/dist/snap.svg" />
-
 'use strict';
+
+import * as Hammer from 'hammerjs';
+import * as Snap from 'snapsvg';
 
 import * as type from './type';
 import * as vars from './vars';

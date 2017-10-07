@@ -2,8 +2,6 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-/// <reference path="../typings/tsd.d.ts" />
-
 'use strict';
 
 import * as util from './util';
@@ -11,7 +9,6 @@ import * as type from './type';
 import * as vars from './vars';
 import * as runtime from './runtime';
 
-import * as Q from 'q';
 import * as Mustache from 'mustache';
 
 // whether we map names -> offsets in a Float64Array, or use names
@@ -50,27 +47,27 @@ var {{&className}} = function {{&className}}(name, parent, offset, symRefs) {
 {{&className}}.prototype.tables = {{&tableVals}};
 {{&className}}.prototype.calcInitial = function(dt, curr) {
 	dt = +dt;
-{{#isModule}}
+	{{#isModule}}
 	var globalCurr = curr;
 	curr = curr.subarray(this._shift, this._shift + this.nVars);
-{{/isModule}}
+	{{/isModule}}
 	{{&calcI}}
 };
 {{&className}}.prototype.calcFlows = function(dt, curr) {
 	dt = +dt;
-{{#isModule}}
+	{{#isModule}}
 	var globalCurr = curr;
 	curr = curr.subarray(this._shift, this._shift + this.nVars);
-{{/isModule}}
+	{{/isModule}}
 	{{&calcF}}
 };
 {{&className}}.prototype.calcStocks = function(dt, curr, next) {
 	dt = +dt;
-{{#isModule}}
+	{{#isModule}}
 	var globalCurr = curr;
 	curr = curr.subarray(this._shift, this._shift + this.nVars);
 	next = next.subarray(this._shift, this._shift + this.nVars);
-{{/isModule}}
+	{{/isModule}}
 	{{&calcS}}
 };
 
@@ -162,15 +159,10 @@ export class Sim {
 		this.worker.addEventListener('message', function(e: any): void {
 			let id = e.data[0];
 			let result = e.data[1];
-			let deferred = _this.promised[id];
+			let cb = _this.promised[id];
 			delete _this.promised[id];
-			if (deferred) {
-				if (result[1]) {
-					deferred.reject(result[1]);
-				} else {
-					deferred.resolve(result[0]);
-				}
-			}
+			if (cb)
+				cb(result[0], result[1]);
 		});
 	}
 
@@ -317,12 +309,18 @@ export class Sim {
 	}
 
 	// FIXME: any?
-	_post(...args: any[]): Q.Promise<any> {
+	_post(...args: any[]): Promise<any> {
 		let id = this.seq++;
-		let deferred = Q.defer();
-		this.promised[id] = deferred;
-		this.worker.postMessage([id].concat(args));
-		return deferred.promise;
+
+		return new Promise<any>((resolve, reject) => {
+			this.promised[id] = (result, err) => {
+				if (err !== undefined)
+					reject(err);
+				else
+					resolve(result);
+			};
+			this.worker.postMessage([id].concat(args));
+		});
 	}
 
 	close(): void {
@@ -330,97 +328,92 @@ export class Sim {
 		this.worker = null;
 	}
 
-	reset(): any {
+	reset(): Promise<any> {
 		return this._post('reset');
 	}
 
-	setValue(name: string, val: number): any {
+	setValue(name: string, val: number): Promise<any> {
 		return this._post('set_val', name, val);
 	}
 
-	value(...names: string[]): any {
+	value(...names: string[]): Promise<any> {
 		let args = ['get_val'].concat(names);
 		return this._post.apply(this, args);
 	}
 
-	series(...names: string[]): any {
+	series(...names: string[]): Promise<any> {
 		let args = ['get_series'].concat(names);
 		return this._post.apply(this, args);
 	}
 
-	dominance(overrides: {[n: string]: number}, indicators: string[]): any {
+	dominance(overrides: {[n: string]: number}, indicators: string[]): Promise<any> {
 		return this._post('dominance', overrides, indicators);
 	}
 
-	runTo(time: number): any {
+	runTo(time: number): Promise<any> {
 		return this._post('run_to', time);
 	}
 
-	runToEnd(): any {
+	runToEnd(): Promise<any> {
 		return this._post('run_to_end');
 	}
 
-	setDesiredSeries(names: string[]): any {
+	setDesiredSeries(names: string[]): Promise<any> {
 		return this._post('set_desired_series', names);
 	}
 
-	varNames(): Q.Promise<any> {
+	varNames(): Promise<any> {
 		return this._post('var_names');
 	}
 
-	csv(delim: string = ','): any {
-		let deferred = Q.defer();
+	csv(delim: string = ','): Promise<string> {
+		return new Promise((resolve, reject) => {
+			this.varNames()
+				.then((names: string[]) => {
+					// save so that we have a stable/sorted
+					// iteration order
+					vars = names;
+					return this.series(names);
+				})
+				.then((data: {[name: string]: type.Series}) => {
+					resolve(csvFromData(file));
+				});
+		});
+	}
 
-		let vars: string[];
+	private csvFromData(data: {[name: string]: type.Series}): string {
+		let file = '';
+		let series: {[name: string]: type.Series} = {};
+		let time: type.Series;
+		let header = 'time' + delim;
 
-		this.varNames()
-			.then(getAllSeries.bind(this))
-			.then(returnResults.bind(this));
-
-		function getAllSeries(names: string[]): Q.Promise<any> {
-			// save so that we have a stable/sorted
-			// iteration order
-			vars = names;
-			return this.series.apply(this, names);
+		// create the CSV header
+		for (let i = 0; i < vars.length; i++) {
+			let v = vars[i];
+			if (v === 'time') {
+				time = data[v];
+				continue;
+			}
+			header += v + delim;
+			series[v] = data[v];
 		}
 
-		function returnResults(data: {[name: string]: type.Series}): void {
-			let file = '';
-			let series: {[name: string]: type.Series} = {};
-			let time: type.Series;
-			let header = 'time' + delim;
+		file += header.substr(0, header.length-1);
+		file += '\n';
 
-			// create the CSV header
-			for (let i = 0; i < vars.length; i++) {
-				let v = vars[i];
-				if (v === 'time') {
-					time = data[v];
+		// now go timestep-by-timestep to generate each line
+		let nSteps = time.values.length;
+		for (let i = 0; i < nSteps; i++) {
+			let msg = '';
+			for (let v in series) {
+				if (!series.hasOwnProperty(v))
 					continue;
-				}
-				header += v + delim;
-				series[v] = data[v];
+				if (msg === '')
+					msg += series[v].time[i] + delim;
+				msg += series[v].values[i] + delim;
 			}
-
-			file += header.substr(0, header.length-1);
+			file += msg.substr(0, msg.length-1);
 			file += '\n';
-
-			// now go timestep-by-timestep to generate each line
-			let nSteps = time.values.length;
-			for (let i = 0; i < nSteps; i++) {
-				let msg = '';
-				for (let v in series) {
-					if (!series.hasOwnProperty(v))
-						continue;
-					if (msg === '')
-						msg += series[v].time[i] + delim;
-					msg += series[v].values[i] + delim;
-				}
-				file += msg.substr(0, msg.length-1);
-				file += '\n';
-			}
-			deferred.resolve(file);
 		}
-
-		return deferred.promise;
 	}
 }

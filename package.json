@@ -22,31 +22,20 @@
     "mdl.js": "./bin/mdl.js"
   },
   "dependencies": {
-    "mustache": "^2.1.3",
-    "q": "^1.4.1",
-    "xmldom": "^0.1.19"
+    "@types/hammerjs": "^2.0.35",
+    "@types/mustache": "^0.8.30",
+    "@types/snapsvg": "^0.4.29",
+    "hammerjs": "^2.0.8"
   },
   "devDependencies": {
-    "bower": "*",
     "browser-reload": "^1.1.0",
-    "browser-sync": "^2.11.1",
-    "chai": "^3.2.0",
-    "gulp": "^3.9.0",
-    "gulp-filter": "^3.0.1",
-    "gulp-load-plugins": "^0.10.0",
-    "gulp-mocha": "^2.1.3",
-    "gulp-requirejs-bp": "^0.1.5",
-    "gulp-tslint": "^4.3.1",
-    "gulp-typescript": "^2.10.0",
-    "gulp-util": "^3.0.6",
-    "merge2": "^0.3.6",
-    "mocha": "^2.3.0",
-    "requirejs": "^2.1.20",
-    "run-sequence": "^1.1.2",
-    "through2": "^2.0.0",
+    "browser-sync": "^2.18.13",
+    "chai": "^4.1.2",
+    "mocha": "^4.0.1",
+    "mustache": "^2.3.0",
     "tslint": "^5.7.0",
     "typescript": "^2.5.3",
-    "uglify-js": "^2.4.24"
+    "xmldom": "^0.1.27"
   },
   "engines": {
     "node": ">=0.10.24"
