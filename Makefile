@@ -109,7 +109,7 @@ $(RTEST_CMD): $(RTEST_DIR) .gitmodules
 
 $(TEST): lib node_modules $(TEST_SRCS)
 	@echo "  TS    test"
-	$(TSLINT) -c tslint.json $(TEST_SRCS)
+#	$(TSLINT) -c tslint.json $(TEST_SRCS)
 	$(TSC) $(TSFLAGS) -d -m commonjs --outDir test $(TEST_SRCS)
 	touch $@
 
