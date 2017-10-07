@@ -1,8 +1,14 @@
 {
+  "files": [
+    "test/draw.ts",
+    "test/lex.ts",
+    "test/parse.ts"
+  ],
+
   "compilerOptions": {
     "target": "es2016",
     "module": "es2015",
-    "outDir": "lib",
+    "outDir": "build-rt",
 
     "lib": [
       "dom",
@@ -14,8 +20,8 @@
     "noImplicitAny": true,
     "newLine": "LF",
 
-    "sourceMap": true,
-    "declaration": true,
+    "sourceMap": false,
+    "declaration": false,
     "removeComments": true,
 
     "strict": true,

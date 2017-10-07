@@ -1,4 +1,8 @@
 {
+  "files": [
+    "runtime.ts"
+  ],
+
   "compilerOptions": {
     "target": "es2016",
     "module": "es2015",

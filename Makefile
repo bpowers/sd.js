@@ -54,7 +54,7 @@ $(TSC) $(TSLINT) $(REQUIRE): node_modules
 
 build-rt: $(RT_SRCS) $(CONFIG)
 	@echo "  TS    $@"
-	$(TSLINT) -c tslint.rt.json $(RT_SRCS)
+	$(TSLINT) -c tslint.json $(RT_SRCS)
 	$(TSC) -p tsconfig.rt.json $(RT_SRCS)
 	touch $@
 
