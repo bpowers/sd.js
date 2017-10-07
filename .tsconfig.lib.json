@@ -1,5 +1,5 @@
 {
-  "files": {
+  "files": [
     "src/ast.ts",
     "src/common.ts",
     "src/compat.ts",
@@ -14,7 +14,7 @@
     "src/util.ts",
     "src/vars.ts",
     "src/xmile.ts"
-  }
+  ],
 
   "compilerOptions": {
     "target": "es2016",
@@ -37,7 +37,7 @@
 
     "strict": true,
 
-    "noUnusedLocals": true,
+    "noUnusedLocals": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
 

@@ -6,6 +6,12 @@
 
 import * as type from './type';
 
+export function exists<T>(object: T | null): T {
+	if (object === null)
+		throw 'expected non-null object';
+	return object;
+}
+
 export function titleCase(str: string): string {
 	'use strict';
 	return str.replace(/(?:^|\s)\w/g, function(match: string): string {

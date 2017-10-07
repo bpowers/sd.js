@@ -1,5 +1,4 @@
 
-REQUIRE   ?= node_modules/.bin/r.js
 TSLINT    ?= node_modules/.bin/tslint
 TSC       ?= node_modules/.bin/tsc
 MOCHA     ?= node_modules/.bin/mocha
@@ -18,7 +17,7 @@ LIB_MIN    = sd.min.js
 TARGETS    = $(LIB) $(LIB_MIN) lib
 # make sure we recompile when the Makefile (and associated
 # CFLAGS/LDFLAGS change) or any project files are changed.
-CONFIG     = Makefile $(TSC) $(TSLINT) $(REQUIRE) build.js
+CONFIG     = Makefile $(TSC) $(TSLINT)
 
 RTEST_DIR  = test/test-models
 RTEST_CMD  = $(RTEST_DIR)/regression-test.py
@@ -70,13 +69,11 @@ lib: $(LIB_SRCS) $(CONFIG)
 	$(TSC) -p .tsconfig.lib.json
 	touch $@
 
-$(LIB): build.js build $(RUNTIME) $(REQUIRE) $(ALMOND)
-	@echo "  R.JS  $@"
-	$(REQUIRE) -o $< $(QUIET_RJS)
+$(LIB): lib $(RUNTIME) $(REQUIRE) $(ALMOND)
+	@echo "  TODO  $@"
 
-$(LIB_MIN): build_min.js build $(REQUIRE) $(ALMOND)
-	@echo "  R.JS  $@"
-	$(REQUIRE) -o $< $(QUIET_RJS)
+$(LIB_MIN): lib $(REQUIRE) $(ALMOND)
+	@echo "  TODO  $@"
 
 $(RTEST_CMD): $(RTEST_DIR) .gitmodules
 	@echo "  GIT   $<"
@@ -97,7 +94,7 @@ rtest: lib $(RTEST_CMD)
 	./$(RTEST_CMD) ./bin/mdl.js $(RTEST_DIR)
 
 clean:
-	rm -rf build build-rt lib
+	rm -rf build-rt lib
 	rm -f sd.js sd.min.js
 	rm -f test/*.d.ts test/*.js
 	find . -name '*~' | xargs rm -f

@@ -5,7 +5,7 @@
 
 import {builtins} from './common';
 import {StringSet} from './type';
-import {set} from './util';
+import {exists, set} from './util';
 
 // constants, sort of...
 export const enum TokenType {
@@ -28,17 +28,23 @@ const OP: {[n: string]: string} = {
 // these are words reserved by SMILE
 export const RESERVED = set('if', 'then', 'else');
 
-function isWhitespace(ch: string): boolean {
+function isWhitespace(ch: string | null): boolean {
 	'use strict';
+	if (ch === null)
+		return false;
 	return /\s/.test(ch);
 }
-function isNumberStart(ch: string): boolean {
+function isNumberStart(ch: string | null): boolean {
 	'use strict';
+	if (ch === null)
+		return false;
 	return /[\d\.]/.test(ch);
 }
 // For use in isIdentifierStart.  See below.
-function isOperator(ch: string): boolean {
+function isOperator(ch: string | null): boolean {
 	'use strict';
+	if (ch === null)
+		return false;
 	return /[=><\[\]\(\)\^\+\-\*\/,]/.test(ch);
 }
 // It is the year 2015, but JS regex's don't support Unicode. The \w
@@ -70,7 +76,7 @@ export class Token {
 
 	get value(): number {
 		if (this.type !== TokenType.NUMBER)
-			return undefined;
+			throw 'Token.value called for non-number: ' + this.type;
 
 		return parseFloat(this.tok);
 	}
@@ -86,8 +92,8 @@ export class Lexer {
 	private line: number;
 	private lstart: number;
 
-	private rpeek: string; // single rune
-	private tpeek: Token; // next token
+	private rpeek: string | null; // single rune
+	private tpeek: Token | null; // next token
 
 	constructor(text: string) {
 		this.text = text.toLowerCase();
@@ -102,14 +108,14 @@ export class Lexer {
 		this.tpeek = null;
 	}
 
-	peek(): Token {
+	peek(): Token | null {
 		if (!this.tpeek)
 			this.tpeek = this.nextTok();
 
 		return this.tpeek;
 	}
 
-	nextTok(): Token {
+	nextTok(): Token | null {
 		if (this.tpeek) {
 			let tpeek = this.tpeek;
 			this.tpeek = null;
@@ -186,7 +192,7 @@ export class Lexer {
 		return new Token(op, TokenType.TOKEN, startLoc, startLoc.off(len));
 	}
 
-	private nextRune(): string {
+	private nextRune(): string | null {
 		if (this.pos < this.len - 1) {
 			this.rpeek = this.text[this.pos+1];
 		} else {
@@ -236,8 +242,10 @@ export class Lexer {
 		if (quoted)
 			this.nextRune();
 
-		let r: string;
+		let r: string | null;
 		while ((r = this.nextRune())) {
+			if (r === null)
+				break;
 			if ((isIdentifierStart(r) && r !== '"') || /\d/.test(r))
 				continue;
 			if (quoted) {
@@ -270,7 +278,7 @@ export class Lexer {
 	private lexNumber(startPos: SourceLoc): Token {
 		// we do a .toLowerCase before the string gets to here, so we
 		// don't need to match for lower and upper cased 'e's.
-		const numStr = /\d*(\.\d*)?(e(\d?(\.\d*)?)?)?/.exec(this.text.substring(this.pos))[0];
+		const numStr = exists(/\d*(\.\d*)?(e(\d?(\.\d*)?)?)?/.exec(this.text.substring(this.pos)))[0];
 		const len = numStr.length;
 		this.fastForward(len);
 		return new Token(
@@ -293,8 +301,7 @@ export function identifierSet(str: string): StringSet {
 	let lexer = new Lexer(str);
 	let result: StringSet = {};
 	let commentDepth = 0;
-	let tok: Token;
-	while ((tok = lexer.nextTok())) {
+	for (let tok = lexer.nextTok(); tok !== null; tok = lexer.nextTok()) {
 		if (tok.type === TokenType.IDENT && !(tok.tok in builtins)) {
 			result[tok.tok] = true;
 		}

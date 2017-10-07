@@ -12,7 +12,7 @@ import * as vars from './vars';
 import * as runtime from './runtime';
 import * as xmile from './xmile';
 
-import {dName, isNaN} from "./util";
+import {exists, dName, isNaN} from "./util";
 
 const PI = Math.PI;
 const sin = Math.sin;
@@ -168,7 +168,7 @@ function circleFromPoints(p1: Point, p2: Point, p3: Point): Circle {
 	const det = (p1.x - p2.x)*(p2.y - p3.y) - (p2.x - p3.x)*(p1.y - p2.y);
 	if (isZero(det)) {
 		console.log('blerg');
-		return;
+		throw 'zero determinant';
 	}
 	const idet = 1/det;
 	const cx = (bc*(p2.y - p3.y) - cd*(p1.y - p2.y))*idet;
@@ -180,32 +180,26 @@ function circleFromPoints(p1: Point, p2: Point, p3: Point): Circle {
 	};
 }
 
-function label(
-	paper: Snap.Paper, cx: number, cy: number, side: string, text: string,
-	rw = AUX_RADIUS, rh = AUX_RADIUS): Snap.Element {
-
+function label(	paper: Snap.Paper, cx: number, cy: number, side: string, text: string, rw = AUX_RADIUS, rh = AUX_RADIUS): Snap.Element {
 	'use strict';
-	let x: number, y: number;
+	let x = cx;
+	let y = cy;
 	switch (side) {
 	case 'top':
-		x = cx;
 		y = cy - rh - LABEL_PAD;
 		break;
 	case 'bottom':
-		x = cx;
 		y = cy + rh + LABEL_PAD;
 		break;
 	case 'left':
 		x = cx - rw - LABEL_PAD;
-		y = cy;
 		break;
 	case 'right':
 		x = cx + rw + LABEL_PAD;
-		y = cy;
 		break;
 	default:
 		// FIXME
-		console.log('unknown case ' + side);
+		console.log('unknown label case ' + side);
 	}
 
 	let lbl = paper.text(x, y, text.split('\n')).attr(TEXT_ATTR);
@@ -276,7 +270,7 @@ function label(
 		}
 
 		addCSSClass(lbl.node, 'right-aligned');
-		lbl.node.setAttribute('style', lbl.node.getAttribute('style').replace('middle', 'right'));
+		lbl.node.setAttribute('style', exists(lbl.node.getAttribute('style')).replace('middle', 'right'));
 		lbl.attr({
 			y: y - off,
 			x: x,
@@ -284,7 +278,7 @@ function label(
 		break;
 	case 'right':
 		addCSSClass(lbl.node, 'left-aligned');
-		lbl.node.setAttribute('style', lbl.node.getAttribute('style').replace('middle', 'left'));
+		lbl.node.setAttribute('style', exists(lbl.node.getAttribute('style')).replace('middle', 'left'));
 		lbl.attr({
 			y: y - (spans.length-2)*(maxH/2),
 		});
@@ -378,7 +372,7 @@ function sparkline(
 			})
 		);
 	} else {
-		let line = graph.node.querySelector('.spark-line');
+		let line = exists(graph.node.querySelector('.spark-line'));
 		line.setAttribute('d', p);
 		return graph;
 	}
@@ -395,8 +389,8 @@ export interface Ent {
 	cy: number;
 	set: Snap.Element;
 
-	to: string;
-	from: string;
+	to: string | null;
+	from: string | null;
 
 	init(): void;
 	draw(): void;
@@ -662,8 +656,8 @@ class DFlow implements Ent {
 	color: string;
 	labelSide: string;
 
-	to: string;
-	from: string;
+	to: string | null;
+	from: string | null;
 
 	set: Snap.Element;
 	graph: Snap.Element;
@@ -698,7 +692,7 @@ class DFlow implements Ent {
 			spath += (j === 0 ? 'M' : 'L') + pt.x + ',' + pt.y;
 		}
 
-		let from_cloud: Snap.Element;
+		let from_cloud: Snap.Element | undefined = undefined;
 		let cloud: Snap.Element;
 		this.set = this.drawing.group();
 		if (!this.from) {
@@ -726,7 +720,7 @@ class DFlow implements Ent {
 		}
 		// recalcualte path after cloud intersection
 		spath = '';
-		let arrowθ: number;
+		let arrowθ = 0;
 		for (let j = 0; j < pts.length; j++) {
 			let x = pts[j].x;
 			let y = pts[j].y;
@@ -777,7 +771,7 @@ class DFlow implements Ent {
 			'stroke-width': STROKE,
 			'stroke': this.color,
 		}));
-		if (from_cloud)
+		if (from_cloud !== undefined)
 			this.set.append(from_cloud);
 	}
 
@@ -872,11 +866,11 @@ class DConnector implements Ent {
 	visualize(): void {}
 
 	// TODO: handle old-style connectors w/ x and y but no angle.
-	private arcCircle(): Circle {
+	private arcCircle(): Circle | null {
 		const from = this.drawing.namedEnts[this.e.from];
 		const to = this.drawing.namedEnts[this.e.to];
 		if (!from || !to)
-			return;
+			return null;
 
 		if (!this.e.hasOwnProperty('angle')) {
 			return circleFromPoints(
@@ -1018,6 +1012,10 @@ class DConnector implements Ent {
 
 		const takeoffθ = this.takeoffθ();
 		const circ = this.arcCircle();
+		if (circ === null) {
+			console.log('FIXME: arcCircle returned null');
+			return;
+		}
 
 		let fromθ = atan2(from.cy - circ.y, from.cx - circ.x);
 		let toθ = atan2(to.cy - circ.y, to.cx - circ.x);
@@ -1142,7 +1140,7 @@ export class Drawing {
 			let selector = <string>svgElement;
 			if (selector.length > 0 && selector[0] === '#')
 				selector = selector.substr(1);
-			element = document.getElementById(selector);
+			element = exists(document.getElementById(selector));
 		} else {
 			element = svgElement;
 		}
@@ -1284,11 +1282,13 @@ export class Drawing {
 	}
 
 	transform(scale?: number, x?: number, y?: number): void {
-		if (arguments.length === 3) {
+		if (scale !== undefined)
 			this._t.scale = scale;
+		if (x !== undefined)
 			this._t.x = x;
+		if (y !== undefined)
 			this._t.y = y;
-		}
+
 		x = this._t.x + this._t.dx;
 		y = this._t.y + this._t.dy;
 		scale = this._t.scale + this._t.dscale;
