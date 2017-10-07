@@ -28,7 +28,6 @@
     "hammerjs": "^2.0.8"
   },
   "devDependencies": {
-    "browser-reload": "^1.1.0",
     "browser-sync": "^2.18.13",
     "chai": "^4.1.2",
     "mocha": "^4.0.1",
