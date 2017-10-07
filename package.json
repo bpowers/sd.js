@@ -44,9 +44,8 @@
     "requirejs": "^2.1.20",
     "run-sequence": "^1.1.2",
     "through2": "^2.0.0",
-    "tsd": "^0.6.4",
-    "tslint": "~3.15.1",
-    "typescript": "~1.7.5",
+    "tslint": "^5.7.0",
+    "typescript": "^2.5.3",
     "uglify-js": "^2.4.24"
   },
   "engines": {
