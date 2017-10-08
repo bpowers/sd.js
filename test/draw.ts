@@ -5,11 +5,6 @@
 'use strict';
 
 import * as chai from 'chai';
-
-declare var global: any;
-if (typeof window === 'undefined')
-	(<any>global).window = {window: {document: {}}};
-
 import * as draw from '../lib/draw';
 
 const expect = chai.expect;

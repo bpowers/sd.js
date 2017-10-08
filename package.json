@@ -24,7 +24,7 @@
   "dependencies": {
     "hammerjs": "^2.0.8",
     "mustache": "^2.3.0",
-    "snapsvg": "^0.5.1",
+    "snapsvg": "git://github.com/bpowers/Snap.svg#v0.5.1-node-fixes",
     "xmldom": "^0.1.27"
   },
   "devDependencies": {

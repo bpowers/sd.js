@@ -4,10 +4,6 @@ DOMParser = require('xmldom').DOMParser;
 Mustache = require('mustache');
 
 var fs = require('fs');
-
-if (typeof window === 'undefined')
-	global.window = {window: {document: {}}};
-
 var sd = require('../lib/sd');
 
 var argv = process.argv;
