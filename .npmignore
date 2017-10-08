@@ -1,12 +1,14 @@
 serve
 *~
 /.d8_history
-node_modules
+/node_modules
+/doc
+/runtime
 /worker.js
 perf.data
 perf.data.old
 v8.log
-/bower_components
 /build-rt
 /test
 /.vscode
+/node_modules
