@@ -1,0 +1,47 @@
+{
+  "files": [
+    "src/ast.ts",
+    "src/common.ts",
+    "src/compat.ts",
+    "src/draw.ts",
+    "src/lex.ts",
+    "src/model.ts",
+    "src/parse.ts",
+    "src/project.ts",
+    "src/sd.ts",
+    "src/sim.ts",
+    "src/type.ts",
+    "src/util.ts",
+    "src/vars.ts",
+    "src/xmile.ts"
+  ],
+
+  "compilerOptions": {
+    "target": "es2016",
+    "module": "commonjs",
+    "outDir": "lib",
+
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "es2016",
+      "es2017.sharedmemory"
+    ],
+
+    "noImplicitAny": true,
+    "newLine": "LF",
+
+    "sourceMap": true,
+    "declaration": true,
+    "removeComments": true,
+
+    "strict": true,
+    "strictNullChecks": false,
+
+    "noUnusedLocals": false,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+
+    "moduleResolution": "node"
+  }
+}

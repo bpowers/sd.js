@@ -173,7 +173,7 @@ const PARSE_TEST_FAILURES = [
 
 describe('parse', function(): void {
 	PARSE_TESTS.forEach(function(t: ParseTestData): void {
-		it('should parse ' + t.in, function(): void {
+		it('should parse ' + t.in, function(done): void {
 			let [node, err] = parse.eqn(t.in);
 			if (err) {
 				for (let i = 0; i < err.length; i++)
@@ -182,16 +182,18 @@ describe('parse', function(): void {
 			expect(node).not.to.be.null;
 			expect(err).to.be.null;
 			expect(node).to.deep.equal(t.out);
+			done();
 		});
 	});
 });
 
 describe('parse-failures', function(): void {
 	PARSE_TEST_FAILURES.forEach(function(eqn: string): void {
-		it('shouldn\'t parse ' + eqn, function(): void {
+		it('shouldn\'t parse ' + eqn, function(done): void {
 			let [node, err] = parse.eqn(eqn);
 			expect(node).to.be.null;
 			expect(err).not.to.be.null;
+			done();
 		});
 	});
 });

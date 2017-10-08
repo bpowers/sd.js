@@ -32,9 +32,10 @@ const ANGLE_CONVERT_TESTS: XmileToCanvasAngleTestData[] = [
 
 describe('convert from XMILE angle', function(): void {
 	ANGLE_CONVERT_TESTS.forEach(function(t: XmileToCanvasAngleTestData): void {
-		it('should convert ' + t.in + ' to ' + t.out, function(): void {
+		it('should convert ' + t.in + ' to ' + t.out, function(done): void {
 			let converted = draw.xmileToCanvasAngle(t.in);
 			expect(converted).to.equal(t.out);
+			done();
 		});
 	});
 });
