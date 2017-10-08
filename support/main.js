@@ -45,7 +45,7 @@ function getQueryParams(qs) {
 
 $(function(){
     var params = getQueryParams(document.location.search);
-    var modelPath = 'hares_and_foxes.xmile'; // 'population.xmile';
+    var modelPath = 'support/hares_and_foxes.xmile'; // 'population.xmile';
     if ('model' in params)
         modelPath = params['model'];
 

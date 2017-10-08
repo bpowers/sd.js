@@ -64,8 +64,8 @@ rtest: $(LIB) $(RTEST_CMD)
 	./$(RTEST_CMD) ./bin/mdl.js $(RTEST_DIR)
 
 clean:
-	rm -rf build-rt lib
-	rm -f sd.js sd.min.js
+	rm -rf build build-rt lib
+	rm -f sd.js sd.min.js sd.js.map sd.min.js.map
 	rm -f test/*.d.ts test/*.js
 	find . -name '*~' | xargs rm -f
 
