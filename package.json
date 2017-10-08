@@ -1,6 +1,6 @@
 {
   "name": "sd.js",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "system dynamics model simulation and visualization",
   "homepage": "http://sdlabs.io",
   "keywords": [
@@ -55,8 +55,8 @@
     "build:lib": "tsc -p .tsconfig.lib-cjs.json",
     "build:build": "tsc -p .tsconfig.lib.json",
     "build:browser": "rollup -c .rollup.lib.js",
-    "build": "npm-run-all build:pre build:runtime0 build:runtime1 -p build:lib build:build -s build:browser"
-    "prepublishOnly": "make clean && npm build",
+    "build": "npm-run-all build:pre build:runtime0 build:runtime1 -p build:lib build:build -s build:browser",
+    "prepublishOnly": "make clean && npm build"
   },
   "engines": {
     "node": ">=6.11.4"
