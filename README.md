@@ -1,6 +1,10 @@
 sd.js - System Dynamics for the web
 ===================================
 
+[![npm](https://img.shields.io/npm/v/sd.js.svg)]()
+[![David status](https://img.shields.io/david/libsd/sd.js.svg)]()
+[![David dev status](https://img.shields.io/david/dev/libsd/sd.js.svg)]()
+
 A modern, high performance, open source system dynamics engine for
 today's web and tomorrow's.  `sd.js` runs in all major browsers
 (IE11+, Chrome, Firefox, Safari), and on the server under

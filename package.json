@@ -25,7 +25,6 @@
     "hammerjs": "^2.0.8",
     "mustache": "^2.3.0",
     "snapsvg": "git://github.com/bpowers/Snap.svg#v0.5.1-node-fixes",
-    "watch": "^1.0.2",
     "xmldom": "^0.1.27"
   },
   "devDependencies": {
@@ -45,7 +44,8 @@
     "rollup-plugin-node-resolve": "^3.0.0",
     "rollup-plugin-sourcemaps": "^0.4.2",
     "tslint": "^5.7.0",
-    "typescript": "^2.5.3"
+    "typescript": "^2.5.3",
+    "watch": "^1.0.2"
   },
   "scripts": {
     "test": "tsc -p .tsconfig.test.json && mocha",
@@ -56,6 +56,7 @@
     "build:build": "tsc -p .tsconfig.lib.json",
     "build:browser": "rollup -c .rollup.lib.js",
     "build": "npm-run-all build:pre build:runtime0 build:runtime1 -p build:lib build:build -s build:browser"
+    "prepublishOnly": "make clean && npm build",
   },
   "engines": {
     "node": ">=6.11.4"
