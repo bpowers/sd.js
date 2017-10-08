@@ -5,7 +5,8 @@
 'use strict';
 
 import * as Hammer from 'hammerjs';
-import * as Snap from 'snapsvg';
+import * as SnapNS from 'snapsvg';
+const Snap: (DOM:SVGElement)=>SnapNS.Paper = (<any>SnapNS).default || SnapNS;
 
 import * as type from './type';
 import * as vars from './vars';
@@ -86,12 +87,10 @@ function addCSSClass(o: any, newClass: string): void {
 }
 
 function isZero(n: number, tolerance = 0.0000001): boolean {
-	'use strict';
 	return Math.abs(n) < tolerance;
 }
 
 function isEqual(a: number, b: number, tolerance = 0.0000001): boolean {
-	'use strict';
 	return isZero(a - b, tolerance);
 }
 
@@ -129,8 +128,6 @@ const SIDE_MAP: {[index: number]: string} = {
 };
 
 function findSide(element: xmile.ViewElement, defaultSide = 'bottom'): string {
-	'use strict';
-
 	if (element.labelSide) {
 		let side = element.labelSide;
 		// FIXME(bp) handle center 'side' case
@@ -181,7 +178,6 @@ function circleFromPoints(p1: Point, p2: Point, p3: Point): Circle {
 }
 
 function label(	paper: Snap.Paper, cx: number, cy: number, side: string, text: string, rw = AUX_RADIUS, rh = AUX_RADIUS): Snap.Element {
-	'use strict';
 	let x = cx;
 	let y = cy;
 	switch (side) {

@@ -2,6 +2,7 @@
 TSLINT    ?= node_modules/.bin/tslint
 TSC       ?= node_modules/.bin/tsc
 MOCHA     ?= node_modules/.bin/mocha
+ROLLUP    ?= node_modules/.bin/rollup
 
 RUNTIME    = src/runtime.ts
 # ensure runtime is only listed once
@@ -48,7 +49,7 @@ node_modules: package.json
 	yarn install
 	touch -c $@
 
-$(TSC) $(TSLINT) $(REQUIRE): node_modules
+$(TSC) $(TSLINT) $(ROLLUP): node_modules
 	touch -c $@
 
 build-rt: $(RT_SRCS) $(CONFIG)
@@ -64,16 +65,18 @@ $(RUNTIME): build-rt support/build-runtime.js
 # commonjs-based node target.  JS is an endless sea of sadness - we
 # need to run tsc twice, once for node's commonjs require style, and
 # another time for require.js and the browser.
-lib: $(LIB_SRCS) $(CONFIG)
+lib: $(LIB_SRCS) $(RUNTIME) $(CONFIG)
 	@echo "  TS    $@"
 	$(TSC) -p .tsconfig.lib.json
 	touch $@
 
-$(LIB): lib $(RUNTIME) $(REQUIRE) $(ALMOND)
-	@echo "  TODO  $@"
+$(LIB): lib $(ROLLUP)
+	@echo "  ROLL  $@"
+	$(ROLLUP) -c .rollup.lib.js
 
-$(LIB_MIN): lib $(REQUIRE) $(ALMOND)
+$(LIB_MIN): lib $(ROLLUP)
 	@echo "  TODO  $@"
+#	$(ROLLUP) -c .rollup.lib-min.js
 
 $(RTEST_CMD): $(RTEST_DIR) .gitmodules
 	@echo "  GIT   $<"

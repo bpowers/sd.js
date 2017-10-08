@@ -78,7 +78,7 @@ var main = new {{&mainClassName}}('main');
 
 main.resolveAllSymbolicRefs();
 
-var cmds = initCmds(main);
+cmds = initCmds(main);
 
 {{&epilogue}}`;
 
@@ -316,7 +316,7 @@ export class Sim {
 
 		return new Promise<any>((resolve, reject) => {
 			this.promised[id] = (result: any, err: any) => {
-				if (err !== undefined)
+				if (err !== undefined && err !== null)
 					reject(err);
 				else
 					resolve(result);

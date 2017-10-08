@@ -97,7 +97,6 @@ export function partition(array: any[], l: number, r: number, p: number): number
  *  Quicksort implementation, sorts in place.
  */
 export function sort(array: any[], l = 0, r = array.length-1, part = partition): void {
-	'use strict';
 	if (l >= r)
 		return;
 
