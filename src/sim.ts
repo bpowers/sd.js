@@ -11,6 +11,8 @@ import * as runtime from './runtime';
 
 import * as Mustache from 'mustache';
 
+import {exists} from './util';
+
 // whether we map names -> offsets in a Float64Array, or use names
 // as object property lookups.  With DEBUG = true, equations are
 // easier to debug but run slower.
@@ -313,7 +315,7 @@ export class Sim {
 		let id = this.seq++;
 
 		return new Promise<any>((resolve, reject) => {
-			this.promised[id] = (result, err) => {
+			this.promised[id] = (result: any, err: any) => {
 				if (err !== undefined)
 					reject(err);
 				else
@@ -368,20 +370,21 @@ export class Sim {
 
 	csv(delim: string = ','): Promise<string> {
 		return new Promise((resolve, reject) => {
+			let vars: string[] | null = null;
 			this.varNames()
 				.then((names: string[]) => {
 					// save so that we have a stable/sorted
 					// iteration order
 					vars = names;
-					return this.series(names);
+					return this.series(...names);
 				})
 				.then((data: {[name: string]: type.Series}) => {
-					resolve(csvFromData(file));
+					resolve(this.csvFromData(data, exists(vars), delim));
 				});
 		});
 	}
 
-	private csvFromData(data: {[name: string]: type.Series}): string {
+	private csvFromData(data: {[name: string]: type.Series}, vars: string[], delim: string): string {
 		let file = '';
 		let series: {[name: string]: type.Series} = {};
 		let time: type.Series;
@@ -415,5 +418,7 @@ export class Sim {
 			file += msg.substr(0, msg.length-1);
 			file += '\n';
 		}
+
+		return file;
 	}
 }
