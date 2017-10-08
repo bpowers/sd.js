@@ -47,9 +47,9 @@ $(LIB): node_modules
 	@echo "  YARN  $@"
 	yarn build
 
-# $(LIB_MIN): lib $(ROLLUP)
-#	@echo "  TODO  $@"
-#	$(ROLLUP) -c .rollup.lib-min.js
+$(LIB_MIN): $(LIB)
+	@echo "  TODO  $@"
+	cp $(LIB) $(LIB_MIN)
 
 $(RTEST_CMD): $(RTEST_DIR) .gitmodules
 	@echo "  GIT   $<"
