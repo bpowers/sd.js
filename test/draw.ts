@@ -2,11 +2,14 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-/// <reference path="../typings/tsd.d.ts" />
-
 'use strict';
 
 import * as chai from 'chai';
+
+declare var global: any;
+if (typeof window === 'undefined')
+	(<any>global).window = {window: {document: {}}};
+
 import * as draw from '../lib/draw';
 
 const expect = chai.expect;

@@ -2,14 +2,12 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-/// <reference path="../typings/tsd.d.ts" />
-
 'use strict';
 
 import * as chai from 'chai';
 import * as parse from '../lib/parse';
 import {SourceLoc} from '../lib/lex';
-import {Node, BinaryExpr, UnaryExpr, ParenExpr, IfExpr, CallExpr,
+import {Node, BinaryExpr, ParenExpr, IfExpr, CallExpr,
 	Ident, Constant} from '../lib/ast';
 
 const expect = chai.expect;

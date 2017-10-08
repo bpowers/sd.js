@@ -7,8 +7,8 @@
 
   "compilerOptions": {
     "target": "es2016",
-    "module": "es2015",
-    "outDir": "build-rt",
+    "module": "commonjs",
+    "outDir": "test",
 
     "lib": [
       "dom",

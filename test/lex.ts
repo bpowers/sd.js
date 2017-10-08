@@ -2,8 +2,6 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-/// <reference path="../typings/tsd.d.ts" />
-
 'use strict';
 
 import * as chai from 'chai';
@@ -289,8 +287,7 @@ describe('lex', function(): void {
 		it('should lex ' + t.in, function(): void {
 			let lexer = new Lexer(t.in);
 			let count = 0;
-			let tok: Token;
-			while ((tok = lexer.nextTok())) {
+			for (let tok = lexer.nextTok(); tok !== null; tok = lexer.nextTok()) {
 				let expected = t.out[count];
 				expect(tok.type).to.equal(expected.type);
 				expect(tok.tok).to.equal(expected.tok);

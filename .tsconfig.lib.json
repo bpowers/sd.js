@@ -19,7 +19,7 @@
   "compilerOptions": {
     "target": "es2016",
     "module": "es2015",
-    "outDir": "lib",
+    "outDir": "build",
 
     "lib": [
       "dom",

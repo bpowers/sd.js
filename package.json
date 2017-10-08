@@ -28,7 +28,9 @@
     "xmldom": "^0.1.27"
   },
   "devDependencies": {
+    "@types/chai": "^4.0.4",
     "@types/hammerjs": "^2.0.35",
+    "@types/mocha": "^2.2.43",
     "@types/mustache": "^0.8.30",
     "@types/snapsvg": "^0.4.29",
     "browser-sync": "^2.18.13",
@@ -46,12 +48,13 @@
   },
   "scripts": {
     "test": "tsc -p .tsconfig.test.json && mocha",
-    "build:pre": "node support/mkdirp.js build-rt lib",
+    "build:pre": "node support/mkdirp.js build-rt lib build",
     "build:runtime0": "tsc -p .tsconfig.rt.json",
     "build:runtime1": "node support/build-runtime.js src/runtime.ts",
-    "build:lib": "tsc -p .tsconfig.lib.json",
-    "build:lib-file": "rollup -c .rollup.lib.js",
-    "build": "npm-run-all build:pre build:runtime0 build:runtime1 build:lib build:lib-file"
+    "build:lib": "tsc -p .tsconfig.lib-cjs.json",
+    "build:build": "tsc -p .tsconfig.lib.json",
+    "build:browser": "rollup -c .rollup.lib.js",
+    "build": "npm-run-all build:pre build:runtime0 build:runtime1 -p build:lib build:build -s build:browser"
   },
   "engines": {
     "node": ">=6.11.4"
