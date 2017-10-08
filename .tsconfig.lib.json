@@ -36,6 +36,7 @@
     "removeComments": true,
 
     "strict": true,
+    "strictNullChecks": false,
 
     "noUnusedLocals": false,
     "noImplicitReturns": true,

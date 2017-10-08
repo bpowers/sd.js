@@ -35,7 +35,7 @@ const BINARY = [
 	"|",
 ];
 
-export function eqn(eqn: string): [Node, string[]] {
+export function eqn(eqn: string): [Node | null, string[] | null] {
 	'use strict';
 	let p = new Parser(eqn);
 	let ast = p.expr();
@@ -44,9 +44,9 @@ export function eqn(eqn: string): [Node, string[]] {
 	return [ast, null];
 }
 
-function binaryLevel(n: number, p: Parser, ops: string): ()=>Node {
+function binaryLevel(n: number, p: Parser, ops: string): ()=>(Node|null) {
 	'use strict';
-	return function(): Node {
+	return function(): Node | null {
 		let t = p.lexer.peek();
 		if (!t)
 			return null;

@@ -12,6 +12,12 @@ export function exists<T>(object: T | null): T {
 	return object;
 }
 
+export function defined<T>(object: T | undefined): T {
+	if (object === undefined)
+		throw 'expected non-undefined object';
+	return object;
+}
+
 export function titleCase(str: string): string {
 	'use strict';
 	return str.replace(/(?:^|\s)\w/g, function(match: string): string {
@@ -33,7 +39,6 @@ export function dName(s: string): string {
  *  {arg1: true, arg2: true, ...}
  */
 export function set(...args: string[]): any {
-	'use strict';
 	let result: type.StringSet = {};
 	for (let i = 0; i < args.length; ++i)
 		result[args[i]] = true;

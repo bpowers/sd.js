@@ -62,13 +62,11 @@ export class Model implements type.Model {
 	}
 
 	sim(isStandalone: boolean): sim.Sim {
-		let mod: type.Module;
-		if (this.name === 'main') {
-			mod = this.project.main;
-		} else {
-			mod = null; // new vars.Module(this.project, null, 'main', this.name);
-			console.log('FIXME: sim of non-main model');
+		if (this.name !== 'main') {
+			// mod = new vars.Module(this.project, null, 'main', this.name);
+			throw 'FIXME: sim of non-main model';
 		}
+		let mod = this.project.main;
 		return new sim.Sim(mod, isStandalone);
 	}
 
@@ -88,7 +86,7 @@ export class Model implements type.Model {
 	/**
 	 * Validates & figures out all necessary variable information.
 	 */
-	private parseVars(variables: xmile.Variable[]): xmile.Error {
+	private parseVars(variables: xmile.Variable[]): xmile.Error | null {
 		for (let i in variables) {
 			if (!variables.hasOwnProperty(i))
 				continue;
@@ -115,7 +113,7 @@ export class Model implements type.Model {
 				break;
 			case 'aux':
 				// FIXME: fix Variable/GF/Table nonsense
-				let aux: type.Variable = null;
+				let aux: type.Variable | null = null;
 				if (v.gf) {
 					let table = new vars.Table(this, v);
 					if (table.ok) {
@@ -123,12 +121,12 @@ export class Model implements type.Model {
 						aux = table;
 					}
 				}
-				if (!aux)
+				if (aux === null)
 					aux = new vars.Variable(this, v);
 				this.vars[ident] = aux;
 				break;
 			case 'flow':
-				let flow: type.Variable = null;
+				let flow: type.Variable | null = null;
 				if (v.gf) {
 					let table = new vars.Table(this, v);
 					if (table.ok) {
@@ -136,7 +134,7 @@ export class Model implements type.Model {
 						flow = table;
 					}
 				}
-				if (!flow)
+				if (flow === null)
 					flow = new vars.Variable(this, v);
 				this.vars[ident] = flow;
 			}
