@@ -2,8 +2,8 @@ sd.js - System Dynamics for the web
 ===================================
 
 [![npm](https://img.shields.io/npm/v/sd.js.svg)]()
-[![David status](https://img.shields.io/david/libsd/sd.js.svg)]()
-[![David dev status](https://img.shields.io/david/dev/libsd/sd.js.svg)]()
+[![David status](https://david-dm.org/sdlabs/sd.js.svg)](https://david-dm.org/sdlabs/sd.js#info=dependencies&view=table)
+[![David dev status](https://david-dm.org/sdlabs/sd.js/dev-status.svg)](https://david-dm.org/sdlabs/sd.js#info=devDependencies&view=table)
 
 A modern, high performance, open source system dynamics engine for
 today's web and tomorrow's.  `sd.js` runs in all major browsers
