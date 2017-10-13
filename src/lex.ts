@@ -4,16 +4,8 @@
 'use strict';
 
 import {builtins} from './common';
-import {StringSet} from './type';
+import {StringSet, TokenType, Token, SourceLoc} from './type';
 import {exists, set} from './util';
-
-// constants, sort of...
-export const enum TokenType {
-	TOKEN,
-	IDENT,
-	RESERVED,
-	NUMBER,
-}
 
 const OP: {[n: string]: string} = {
 	'not': '!',
@@ -55,31 +47,6 @@ function isOperator(ch: string | null): boolean {
 function isIdentifierStart(ch: string): boolean {
 	'use strict';
 	return !isNumberStart(ch) && !isWhitespace(ch) && (/[_\"]/.test(ch) || !isOperator(ch));
-}
-
-export class SourceLoc {
-	constructor(
-		public line: number,
-		public pos: number) {}
-
-	off(n: number): SourceLoc {
-		return new SourceLoc(this.line, this.pos+n);
-	}
-}
-
-export class Token {
-	constructor(
-		public tok: string,
-		public type: TokenType,
-		public startLoc?: SourceLoc,
-		public endLoc?: SourceLoc) {}
-
-	get value(): number {
-		if (this.type !== TokenType.NUMBER)
-			throw 'Token.value called for non-number: ' + this.type;
-
-		return parseFloat(this.tok);
-	}
 }
 
 // TODO(bp) better errors

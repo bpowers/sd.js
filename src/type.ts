@@ -78,6 +78,8 @@ export interface Variable {
 	ident: string;
 	eqn: string;
 
+	ast: any; // FIXME: this is any to fix circular deps
+
 	project: Project;
 	parent: Model;
 	model: Model;
@@ -110,4 +112,39 @@ export interface Reference extends Variable {
 
 export interface ReferenceMap {
 	[name: string]: Reference;
+}
+
+// FROM lex
+
+// constants, sort of...
+export const enum TokenType {
+	TOKEN,
+	IDENT,
+	RESERVED,
+	NUMBER,
+}
+
+export class SourceLoc {
+	constructor(
+		public line: number,
+		public pos: number) {}
+
+	off(n: number): SourceLoc {
+		return new SourceLoc(this.line, this.pos+n);
+	}
+}
+
+export class Token {
+	constructor(
+		public tok: string,
+		public type: TokenType,
+		public startLoc?: SourceLoc,
+		public endLoc?: SourceLoc) {}
+
+	get value(): number {
+		if (this.type !== TokenType.NUMBER)
+			throw 'Token.value called for non-number: ' + this.type;
+
+		return parseFloat(this.tok);
+	}
 }

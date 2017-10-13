@@ -4,7 +4,7 @@
 
 'use strict';
 
-import {Token, SourceLoc} from './lex';
+import {Token, SourceLoc} from './type';
 import {canonicalize} from './xmile';
 
 export interface Node {

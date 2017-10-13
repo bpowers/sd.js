@@ -4,9 +4,10 @@
 
 'use strict';
 
+import {TokenType, Token, SourceLoc} from './type';
 import {Node, BinaryExpr, UnaryExpr, ParenExpr, IfExpr, CallExpr,
 	Ident, Constant} from './ast';
-import {Lexer, Token, TokenType, SourceLoc} from './lex';
+import {Lexer} from './lex';
 
 
 const RESERVED = [

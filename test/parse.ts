@@ -6,7 +6,7 @@
 
 import * as chai from 'chai';
 import * as parse from '../lib/parse';
-import {SourceLoc} from '../lib/lex';
+import {SourceLoc} from '../lib/type';
 import {Node, BinaryExpr, ParenExpr, IfExpr, CallExpr,
 	Ident, Constant} from '../lib/ast';
 

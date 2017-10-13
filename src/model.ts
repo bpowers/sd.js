@@ -148,13 +148,18 @@ export class Model implements type.Model {
 	}
 
 	private instantiateImplicitModules(): xmile.Error | null {
+
+		let visitor = new BuiltinVisitor(this.project);
+
 		for (let name in this.vars) {
 			if (!this.vars.hasOwnProperty(name))
 				continue;
 
 			let v = this.vars[name];
 
-			// console.log('TODO: check ' + name);
+			// check for builtins that require module instantiations
+			if (v.ast)
+				v.ast = v.ast.walk(visitor);
 		}
 
 		return null;
@@ -163,53 +168,56 @@ export class Model implements type.Model {
 
 // An AST visitor to deal with desugaring calls to builtin functions
 // that are actually module instantiations
-class BuiltinVisitor implements ast.Visitor<boolean> {
+class BuiltinVisitor implements ast.Visitor<ast.Node> {
+	project: type.Project;
+	modules: type.ModuleMap;
+	vars: type.TableMap;
 
-	constructor() {
+	constructor(project: type.Project) {
+		this.project = project;
 	}
 
-	ident(n: ast.Ident): boolean {
-		return true;
+	ident(n: ast.Ident): ast.Node {
+		return n;
 	}
-	constant(n: ast.Constant): boolean {
-		return true;
+	constant(n: ast.Constant): ast.Node {
+		return n;
 	}
-	call(n: ast.CallExpr): boolean {
+	call(n: ast.CallExpr): ast.Node {
 		if (!n.fun.hasOwnProperty('ident')) {
 			console.log('// for now, only idents can be used as fns.');
 			console.log(n);
-			return false;
+			return n;
 		}
 		let fn = (<ast.Ident>n.fun).ident;
 		if (!(fn in common.builtins)) {
 			console.log('// unknown builtin: ' + fn);
-			return false;
+			return n;
 		}
 
+		let args = [];
 		for (let i = 0; i < n.args.length; i++) {
-			n.args[i].walk(this);
+			args.push(n.args[i].walk(this));
 		}
-		return true;
+		return new ast.CallExpr(n.fun, n._lParenPos, args, n._rParenPos);
 	}
-	if(n: ast.IfExpr): boolean {
-		n.cond.walk(this);
-		n.t.walk(this);
-		n.f.walk(this);
-		return true;
+	if(n: ast.IfExpr): ast.Node {
+		let cond = n.cond.walk(this);
+		let t = n.t.walk(this);
+		let f = n.f.walk(this);
+		return new ast.IfExpr(n._ifPos, cond, n._thenPos, t, n._elsePos, f);
 	}
-	paren(n: ast.ParenExpr): boolean {
-		n.x.walk(this);
-		return true;
+	paren(n: ast.ParenExpr): ast.Node {
+		let x = n.x.walk(this);
+		return new ast.ParenExpr(n._lPos, x, n._rPos);
 	}
-	unary(n: ast.UnaryExpr): boolean {
-		// if we're doing 'not', explicitly convert the result
-		// back to a number.
-		n.x.walk(this);
-		return true;
+	unary(n: ast.UnaryExpr): ast.Node {
+		let x = n.x.walk(this);
+		return new ast.UnaryExpr(n._opPos, n.op, x);
 	}
-	binary(n: ast.BinaryExpr): boolean {
-		n.l.walk(this);
-		n.r.walk(this);
-		return true;
+	binary(n: ast.BinaryExpr): ast.Node {
+		let l = n.l.walk(this);
+		let r = n.r.walk(this);
+		return new ast.BinaryExpr(l, n._opPos, n.op, r);
 	}
 }
