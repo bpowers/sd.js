@@ -11,17 +11,17 @@ export interface Node {
 	pos: SourceLoc;
 	end: SourceLoc; // the char after this token
 
-	walk(v: Visitor): boolean;
+	walk<T>(v: Visitor<T>): T;
 }
 
-export interface Visitor {
-	ident(n: Ident): boolean;
-	constant(n: Constant): boolean;
-	call(n: CallExpr): boolean;
-	if(n: IfExpr): boolean;
-	paren(n: ParenExpr): boolean;
-	unary(n: UnaryExpr): boolean;
-	binary(n: BinaryExpr): boolean;
+export interface Visitor<T> {
+	ident(n: Ident): T;
+	constant(n: Constant): T;
+	call(n: CallExpr): T;
+	if(n: IfExpr): T;
+	paren(n: ParenExpr): T;
+	unary(n: UnaryExpr): T;
+	binary(n: BinaryExpr): T;
 }
 
 export class Ident implements Node {
@@ -39,7 +39,7 @@ export class Ident implements Node {
 
 	get end(): SourceLoc { return this.pos.off(this.len); }
 
-	walk(v: Visitor): boolean {
+	walk<T>(v: Visitor<T>): T {
 		return v.ident(this);
 	}
 }
@@ -58,7 +58,7 @@ export class Constant implements Node {
 	get pos(): SourceLoc { return this._pos; }
 	get end(): SourceLoc { return this._pos.off(this._len); }
 
-	walk(v: Visitor): boolean {
+	walk<T>(v: Visitor<T>): T {
 		return v.constant(this);
 	}
 }
@@ -77,7 +77,7 @@ export class ParenExpr implements Node {
 	get pos(): SourceLoc { return this._lPos; }
 	get end(): SourceLoc { return this._rPos.off(1); }
 
-	walk(v: Visitor): boolean {
+	walk<T>(v: Visitor<T>): T {
 		return v.paren(this);
 	}
 }
@@ -99,7 +99,7 @@ export class CallExpr implements Node {
 	get pos(): SourceLoc { return this.fun.pos; }
 	get end(): SourceLoc { return this._rParenPos.off(1); }
 
-	walk(v: Visitor): boolean {
+	walk<T>(v: Visitor<T>): T {
 		return v.call(this);
 	}
 }
@@ -118,7 +118,7 @@ export class UnaryExpr implements Node {
 	get pos(): SourceLoc { return this._opPos; }
 	get end(): SourceLoc { return this.x.end; }
 
-	walk(v: Visitor): boolean {
+	walk<T>(v: Visitor<T>): T {
 		return v.unary(this);
 	}
 }
@@ -139,7 +139,7 @@ export class BinaryExpr implements Node {
 	get pos(): SourceLoc { return this.l.pos; }
 	get end(): SourceLoc { return this.r.end; }
 
-	walk(v: Visitor): boolean {
+	walk<T>(v: Visitor<T>): T {
 		return v.binary(this);
 	}
 }
@@ -164,7 +164,7 @@ export class IfExpr implements Node {
 	get pos(): SourceLoc { return this._ifPos; }
 	get end(): SourceLoc { return this.f.end; }
 
-	walk(v: Visitor): boolean {
+	walk<T>(v: Visitor<T>): T {
 		return v.if(this);
 	}
 }

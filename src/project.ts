@@ -122,7 +122,6 @@ export class Project implements type.Project {
 					continue;
 
 				let stdModel = stdModels[name];
-				console.log('adding ' + name + ' to context');
 				this.models[name] = stdModel;
 			}
 		}

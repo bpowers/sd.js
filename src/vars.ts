@@ -28,7 +28,7 @@ const JS_OP: {[op: string]: string} = {
 // AST with an instance of this class, the visitor.code member will
 // contain a string with valid JS code to be emitted into the
 // Simulation Worker.
-export class CodegenVisitor implements ast.Visitor {
+export class CodegenVisitor implements ast.Visitor<boolean> {
 	offsets: type.Offsets;
 	code: string = '';
 	isMain: boolean;

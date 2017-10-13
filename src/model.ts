@@ -11,6 +11,7 @@ import * as vars from './vars';
 import * as draw from './draw';
 import * as sim from './sim';
 import * as xmile from './xmile';
+import * as ast from './ast';
 
 
 const VAR_TYPES = util.set('module', 'stock', 'aux', 'flow');
@@ -147,6 +148,68 @@ export class Model implements type.Model {
 	}
 
 	private instantiateImplicitModules(): xmile.Error | null {
+		for (let name in this.vars) {
+			if (!this.vars.hasOwnProperty(name))
+				continue;
+
+			let v = this.vars[name];
+
+			// console.log('TODO: check ' + name);
+		}
+
 		return null;
+	}
+}
+
+// An AST visitor to deal with desugaring calls to builtin functions
+// that are actually module instantiations
+class BuiltinVisitor implements ast.Visitor<boolean> {
+
+	constructor() {
+	}
+
+	ident(n: ast.Ident): boolean {
+		return true;
+	}
+	constant(n: ast.Constant): boolean {
+		return true;
+	}
+	call(n: ast.CallExpr): boolean {
+		if (!n.fun.hasOwnProperty('ident')) {
+			console.log('// for now, only idents can be used as fns.');
+			console.log(n);
+			return false;
+		}
+		let fn = (<ast.Ident>n.fun).ident;
+		if (!(fn in common.builtins)) {
+			console.log('// unknown builtin: ' + fn);
+			return false;
+		}
+
+		for (let i = 0; i < n.args.length; i++) {
+			n.args[i].walk(this);
+		}
+		return true;
+	}
+	if(n: ast.IfExpr): boolean {
+		n.cond.walk(this);
+		n.t.walk(this);
+		n.f.walk(this);
+		return true;
+	}
+	paren(n: ast.ParenExpr): boolean {
+		n.x.walk(this);
+		return true;
+	}
+	unary(n: ast.UnaryExpr): boolean {
+		// if we're doing 'not', explicitly convert the result
+		// back to a number.
+		n.x.walk(this);
+		return true;
+	}
+	binary(n: ast.BinaryExpr): boolean {
+		n.l.walk(this);
+		n.r.walk(this);
+		return true;
 	}
 }
