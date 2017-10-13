@@ -149,13 +149,12 @@ export class Model implements type.Model {
 
 	private instantiateImplicitModules(): xmile.Error | null {
 
-		let visitor = new BuiltinVisitor(this.project);
-
 		for (let name in this.vars) {
 			if (!this.vars.hasOwnProperty(name))
 				continue;
 
 			let v = this.vars[name];
+			let visitor = new BuiltinVisitor(this.project, this, v);
 
 			// check for builtins that require module instantiations
 			if (v.ast)
@@ -166,15 +165,32 @@ export class Model implements type.Model {
 	}
 }
 
+function isIdent(n: ast.Node): boolean {
+	return n.hasOwnProperty('ident');
+}
+
+const stdlibArgs: {[n: string]: string[]} = {
+	'smth1': ['input', 'delay_time', 'initial_value'],
+	'smth3': ['input', 'delay_time', 'initial_value'],
+	'delay1': ['input', 'delay_time', 'initial_value'],
+	'delay3': ['input', 'delay_time', 'initial_value'],
+	'trend': ['input', 'delay_time', 'initial_value'],
+};
+
 // An AST visitor to deal with desugaring calls to builtin functions
 // that are actually module instantiations
 class BuiltinVisitor implements ast.Visitor<ast.Node> {
 	project: type.Project;
-	modules: type.ModuleMap;
-	vars: type.TableMap;
+	model: Model;
+	variable: type.Variable;
+	modules: type.ModuleMap = {};
+	vars: type.VariableMap = {};
+	n: number = 0;
 
-	constructor(project: type.Project) {
+	constructor(project: type.Project, m: Model, v: type.Variable) {
 		this.project = project;
+		this.model = m;
+		this.variable = v;
 	}
 
 	ident(n: ast.Ident): ast.Node {
@@ -184,21 +200,43 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
 		return n;
 	}
 	call(n: ast.CallExpr): ast.Node {
-		if (!n.fun.hasOwnProperty('ident')) {
-			console.log('// for now, only idents can be used as fns.');
-			console.log(n);
-			return n;
-		}
-		let fn = (<ast.Ident>n.fun).ident;
-		if (!(fn in common.builtins)) {
-			console.log('// unknown builtin: ' + fn);
-			return n;
-		}
-
 		let args = [];
 		for (let i = 0; i < n.args.length; i++) {
 			args.push(n.args[i].walk(this));
 		}
+
+		if (!isIdent(n.fun))
+			throw '// for now, only idents can be used as fns.';
+
+		let fn = (<ast.Ident>n.fun).ident;
+		if (fn in common.builtins)
+			return new ast.CallExpr(n.fun, n._lParenPos, args, n._rParenPos);
+
+		let model = <Model|null>this.project.model('stdlib·' + fn);
+		if (model === null)
+			throw 'unknown builtin: ' + fn;
+
+		let identArgs: string[] = [];
+		for (let i = 0; i < args.length; i++) {
+			let arg = args[i];
+			if (isIdent) {
+				identArgs.push((<ast.Ident>arg).ident);
+			} else {
+				let xVar = new xmile.Variable();
+				xVar.type = 'aux';
+				xVar.name = '·' + this.variable.ident + '·' + this.n + '·arg' + i;
+				xVar.eqn = arg.walk(new PrintVisitor());
+				let proxyVar = new vars.Variable(this.model, xVar);
+				this.vars[proxyVar.ident] = proxyVar;
+				identArgs.push(proxyVar.ident);
+			}
+		}
+		// create a variable for each arg
+		// create a new module
+			// return a new identifier for $module.output
+
+		this.n++;
+
 		return new ast.CallExpr(n.fun, n._lParenPos, args, n._rParenPos);
 	}
 	if(n: ast.IfExpr): ast.Node {
@@ -219,5 +257,47 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
 		let l = n.l.walk(this);
 		let r = n.r.walk(this);
 		return new ast.BinaryExpr(l, n._opPos, n.op, r);
+	}
+}
+
+// An AST visitor to deal with desugaring calls to builtin functions
+// that are actually module instantiations
+class PrintVisitor implements ast.Visitor<string> {
+	ident(n: ast.Ident): string {
+		return n.ident;
+	}
+	constant(n: ast.Constant): string {
+		return '' + n.value;
+	}
+	call(n: ast.CallExpr): string {
+		let s = n.fun.walk(this);
+		s += '(';
+		for (let i = 0; i < n.args.length; i++) {
+			s += n.args[i].walk(this);
+			if (i != n.args.length - 1)
+				s += ',';
+		}
+		s += ')';
+
+		return s;
+	}
+	if(n: ast.IfExpr): string {
+		let s = 'IF (';
+		s += n.cond.walk(this);
+		s += ') THEN (';
+		s += n.t.walk(this);
+		s += ') ELSE (';
+		s += n.f.walk(this);
+		s += ')';
+		return s;
+	}
+	paren(n: ast.ParenExpr): string {
+		return '(' + n.x.walk(this) + ')';
+	}
+	unary(n: ast.UnaryExpr): string {
+		return n.op + n.x.walk(this);
+	}
+	binary(n: ast.BinaryExpr): string {
+		return n.l.walk(this) + n.op + n.r.walk(this);
 	}
 }
