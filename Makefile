@@ -43,7 +43,7 @@ node_modules: package.json
 	yarn install
 	touch -c $@
 
-$(LIB): node_modules
+$(LIB): node_modules $(LIB_SRCS) $(RT_SRCS)
 	@echo "  YARN  $@"
 	yarn build
 
