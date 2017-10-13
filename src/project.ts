@@ -4,10 +4,13 @@
 
 'use strict';
 
+import * as xmldom from 'xmldom';
+
 import * as common from './common';
 import * as type from './type';
 import * as xmile from './xmile';
 import * as compat from './compat';
+import * as stdlib from './stdlib';
 
 import {Error} from './common';
 import {Model} from './model';
@@ -27,6 +30,23 @@ function getXmileElement(xmileDoc: XMLDocument): Element {
 	return null;
 }
 
+let stdModels: {[n: string]: Model} | null = null;
+
+function parseStdModels() {
+	stdModels = {};
+	for (let name in stdlib.xmileModels) {
+		if (!stdlib.xmileModels.hasOwnProperty(name))
+			continue;
+
+		let modelStr = stdlib.xmileModels[name];
+		let xml = (new xmldom.DOMParser()).parseFromString(modelStr, 'application/xml');
+		let ctx = new Project(xml, true);
+		let mdl = ctx.model(name);
+		let ident = mdl.ident;
+		stdModels['stdlib·' + ident] = mdl;
+	}
+}
+
 /**
  * Project is the container for a set of SD models.
  *
@@ -42,11 +62,11 @@ export class Project implements type.Project {
 	private xmile: XMLDocument;
 	private models: type.ModelMap;
 
-	constructor(xmileDoc: XMLDocument) {
+	constructor(xmileDoc: XMLDocument, skipStdlib = false) {
 		this.files = [];
 		this.models = {};
 		this.valid = false;
-		this.addDocument(xmileDoc, true);
+		this.addDocument(xmileDoc, true, skipStdlib);
 	}
 
 	model(name?: string): any {
@@ -56,7 +76,7 @@ export class Project implements type.Project {
 	}
 
 	// isMain should only be true when called from the constructor.
-	addDocument(xmileDoc: XMLDocument, isMain = false): Error {
+	addDocument(xmileDoc: XMLDocument, isMain = false, skipStdlib = false): Error {
 		if (!xmileDoc || xmileDoc.getElementsByTagName('parsererror').length !== 0) {
 			this.valid = false;
 			return Error.Version;
@@ -89,6 +109,21 @@ export class Project implements type.Project {
 			if (!file.simSpec) {
 				this.valid = false;
 				return new Error('isMain, but no sim spec');
+			}
+		}
+
+		if (!skipStdlib) {
+			if (stdModels === null)
+				parseStdModels();
+
+			// add standard models, like 'delay1' and 'smth3'.
+			for (let name in stdModels) {
+				if (!stdModels.hasOwnProperty(name))
+					continue;
+
+				let stdModel = stdModels[name];
+				console.log('adding ' + name + ' to context');
+				this.models[name] = stdModel;
 			}
 		}
 

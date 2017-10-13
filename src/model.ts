@@ -137,8 +137,16 @@ export class Model implements type.Model {
 				if (flow === null)
 					flow = new vars.Variable(this, v);
 				this.vars[ident] = flow;
+				break;
+			default:
+				throw 'unreachable: unknown type "' + v.type + '"';
 			}
 		}
+
+		return this.instantiateImplicitModules();
+	}
+
+	private instantiateImplicitModules(): xmile.Error | null {
 		return null;
 	}
 }

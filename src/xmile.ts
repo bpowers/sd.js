@@ -607,6 +607,8 @@ export class Model implements XNode {
 					let vchild = child.childNodes.item(j);
 					if (vchild.nodeType !== 1) // Element
 						continue;
+					if (typeof (<Attr>vchild).prefix !== 'undefined' && (<Attr>vchild).prefix === 'isee') // isee specific info
+						continue;
 					let v: Variable;
 					[v, err] = Variable.Build(vchild);
 					// FIXME: real logging

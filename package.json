@@ -33,6 +33,7 @@
     "@types/mocha": "^2.2.43",
     "@types/mustache": "^0.8.30",
     "@types/snapsvg": "^0.4.29",
+    "@types/xmldom": "^0.1.29",
     "browser-sync": "^2.18.13",
     "chai": "^4.1.2",
     "jquery": "^3.2.1",
