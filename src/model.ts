@@ -159,6 +159,19 @@ export class Model implements type.Model {
 			// check for builtins that require module instantiations
 			if (v.ast)
 				v.ast = v.ast.walk(visitor);
+
+			for (let name in visitor.vars) {
+				let v = visitor.vars[name];
+				if (name in this.vars)
+					throw 'builtin walk error, duplicate ' + name;
+				this.vars[name] = v;
+			}
+			for (let name in visitor.modules) {
+				let mod = visitor.modules[name];
+				if (name in this.modules)
+					throw 'builtin walk error, duplicate ' + name;
+				this.modules[name] = mod;
+			}
 		}
 
 		return null;
@@ -231,13 +244,25 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
 				identArgs.push(proxyVar.ident);
 			}
 		}
-		// create a variable for each arg
-		// create a new module
-			// return a new identifier for $module.output
+
+		let modName = '·' + this.variable.ident + '·' + this.n + '·' + fn;
+		let xMod = new xmile.Variable();
+		xMod.type = 'module';
+		xMod.name = modName;
+		xMod.connections = [];
+		for (let i = 0; i < identArgs.length; i++) {
+			let conn = new xmile.Connection();
+			conn.to = stdlibArgs[fn][i];
+			conn.from = '.' + identArgs[i];
+		}
+
+		let module = new vars.Module(this.project, this.model, xMod);
+		this.modules[modName] = module;
+		this.vars[modName] = module;
 
 		this.n++;
 
-		return new ast.CallExpr(n.fun, n._lParenPos, args, n._rParenPos);
+		return new ast.Ident(n.fun.pos, modName + '.output');
 	}
 	if(n: ast.IfExpr): ast.Node {
 		let cond = n.cond.walk(this);
