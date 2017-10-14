@@ -245,3 +245,16 @@ export function isNaN(n: number): boolean {
 	'use strict';
 	return n !== n;
 }
+
+export function SetUnion<T>(a: Set<T> | null, b: Set<T> | null): Set<T> {
+	if (!a)
+		return new Set<T>(b);
+	if (!b)
+		return new Set<T>(a);
+
+	let union = new Set<T>(a);
+	for (let element of b)
+		union.add(element);
+
+	return union;
+}

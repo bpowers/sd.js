@@ -13,6 +13,7 @@ import * as sim from './sim';
 import * as xmile from './xmile';
 import * as ast from './ast';
 
+import {identifierSet} from './vars';
 
 const VAR_TYPES = util.set('module', 'stock', 'aux', 'flow');
 
@@ -174,6 +175,10 @@ export class Model implements type.Model {
 					throw 'builtin walk error, duplicate ' + name;
 				this.modules[name] = mod;
 			}
+
+			// if we rewrote the AST, make sure to update our dependencies
+			v._deps = identifierSet(v.ast);
+			v._allDeps = undefined;
 		}
 
 		for (let name in this.modules) {

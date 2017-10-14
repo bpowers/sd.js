@@ -9,7 +9,6 @@ declare function isFinite(n: string|number): boolean;
 
 import * as common from './common';
 import * as util from './util';
-import {identifierSet} from './lex';
 import * as parse from './parse';
 import * as type from './type';
 import * as xmile from './xmile';
@@ -186,7 +185,7 @@ export class Variable implements type.Variable {
 
 		// for a flow or aux, we depend on variables that aren't built
 		// in functions in the equation.
-		this._deps = identifierSet(this.eqn);
+		this._deps = identifierSet(this.ast);
 	}
 
 	// returns a string of this variables initial equation. suitable for
@@ -449,4 +448,63 @@ export class Reference extends Variable implements type.Reference {
 		// don't want to implement yet.
 		return false;
 	}
+}
+
+// An AST visitor to deal with desugaring calls to builtin functions
+// that are actually module instantiations
+export class IdentifierSetVisitor implements ast.Visitor<Set<string>> {
+	ident(n: ast.Ident): Set<string> {
+		let set = new Set<string>();
+		set.add(n.ident);
+		return set;
+	}
+	constant(n: ast.Constant): Set<string> {
+		return new Set<string>();;
+	}
+	call(n: ast.CallExpr): Set<string> {
+		let set = new Set<string>();
+		for (let i = 0; i < n.args.length; i++) {
+			set = util.SetUnion(set, n.args[i].walk(this));
+		}
+
+		return set;
+	}
+	if(n: ast.IfExpr): Set<string> {
+		return util.SetUnion(
+			n.cond.walk(this),
+			util.SetUnion(n.t.walk(this), n.f.walk(this)));
+	}
+	paren(n: ast.ParenExpr): Set<string> {
+		return n.x.walk(this);
+	}
+	unary(n: ast.UnaryExpr): Set<string> {
+		return n.x.walk(this);
+	}
+	binary(n: ast.BinaryExpr): Set<string> {
+		return util.SetUnion(n.l.walk(this), n.r.walk(this));
+	}
+}
+
+/**
+ * For a given AST node string, returns a set of the identifiers
+ * referenced.  Identifiers exclude keywords (such as 'if' and 'then')
+ * as well as builtin functions ('pulse', 'max', etc).
+ *
+ * @param root An AST node.
+ * @return A set of all identifiers.
+ */
+export function identifierSet(root: ast.Node | undefined): type.StringSet {
+	'use strict';
+
+	let result: type.StringSet = {};
+	if (!root)
+		return result;
+
+	let idents = root.walk(new IdentifierSetVisitor());
+
+	for (let ident of idents) {
+		result[ident] = true;
+	}
+
+	return result;
 }

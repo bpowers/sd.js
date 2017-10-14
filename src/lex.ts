@@ -253,25 +253,3 @@ export class Lexer {
 			new SourceLoc(startPos.line, startPos.pos + len));
 	}
 }
-
-/**
- * For a given equation string, returns a set of the identifiers
- * found.  Identifiers exclude keywords (such as 'if' and 'then')
- * as well as builtin functions ('pulse', 'max', etc).
- *
- * @param str An equation string, to be parsed by our lexer.
- * @return A set of all identifiers.
- */
-export function identifierSet(str: string): StringSet {
-	'use strict';
-
-	let lexer = new Lexer(str);
-	let result: StringSet = {};
-	let commentDepth = 0;
-	for (let tok = lexer.nextTok(); tok !== null; tok = lexer.nextTok()) {
-		if (tok.type === TokenType.IDENT && !(tok.tok in builtins)) {
-			result[tok.tok] = true;
-		}
-	}
-	return result;
-}
