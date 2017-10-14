@@ -55,12 +55,10 @@ Open Source
 -----------
 
 `sd.js` code is offered under the MIT license.  See LICENSE for
-detials.  `sd.js` is built on
-[q.js](http://documentup.com/kriskowal/q/) (MIT licensed),
-[Snap.svg](http://snapsvg.io/) (Apache licensed), and
-[mustache.js](https://github.com/janl/mustache.js) (MIT licensed).
-These permissive licences mean you can use and build upon `sd.js`
-without concern for royalties.
+detials.  `sd.js` is built on [Snap.svg](http://snapsvg.io/) (Apache
+licensed), and [mustache.js](https://github.com/janl/mustache.js) (MIT
+licensed).  These permissive licences mean you can use and build upon
+`sd.js` without concern for royalties.
 
 Open Standards
 --------------
