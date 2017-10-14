@@ -7,7 +7,7 @@ sd.js - System Dynamics for the web
 
 A modern, high performance, open source system dynamics engine for
 today's web and tomorrow's.  `sd.js` runs in all major browsers
-(IE11+, Chrome, Firefox, Safari), and on the server under
+(Edge, Chrome, Firefox, Safari), and on the server under
 [node.js](https://nodejs.org).
 
 Clean, Simple API
