@@ -176,6 +176,11 @@ export class Model implements type.Model {
 			}
 		}
 
+		for (let name in this.modules) {
+			let mod = this.modules[name];
+			mod.updateRefs(this);
+		}
+
 		return null;
 	}
 }

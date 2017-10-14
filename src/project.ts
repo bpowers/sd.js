@@ -140,11 +140,16 @@ export class Project implements type.Project {
 				ident = 'main';
 			this.models[ident] = new Model(this, ident, xModel);
 		}
+		this.valid = true;
+
+		if (!('main' in this.models))
+			return null;
 
 		let modVar = new xmile.Variable();
 		modVar.name = 'main';
 		this.main = new Module(this, null, modVar);
-		this.valid = true;
+		this.main.updateRefs(this.models['main']);
+
 		return null;
 	}
 }

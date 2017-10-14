@@ -100,6 +100,7 @@ export interface Module extends Variable {
 	modelName: string;
 	refs: ReferenceMap;
 	referencedModels(all?: ModelDefSet): ModelDefSet;
+	updateRefs(model: Model): void;
 }
 
 export interface ModuleMap {

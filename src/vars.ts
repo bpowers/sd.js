@@ -339,6 +339,7 @@ export class Module extends Variable implements type.Module {
 			this._deps[ref.ptr] = true;
 		}
 	}
+
 	getDeps(): type.StringSet {
 		if (this._allDeps)
 			return this._allDeps;
@@ -373,6 +374,31 @@ export class Module extends Variable implements type.Module {
 		}
 		this._allDeps = allDeps;
 		return allDeps;
+	}
+
+	updateRefs(model: type.Model) {
+		for (let name in model.vars) {
+			let v = model.vars[name];
+			// skip modules
+			if (v.ident in model.modules)
+				continue;
+
+			// account for references into a child module
+			let deps = v._deps;
+			for (let name in deps) {
+				if (this.modelName === 'main')
+					console.log('// ' + v.ident + 'look ' + name);
+				if (!name.includes('.'))
+					continue;
+				if (this.modelName === 'main')
+					console.log('// got ' + name);
+				let conn = new xmile.Connection();
+				conn.from = name;
+				conn.to = name;
+				let ref = new Reference(conn);
+				this.refs[ref.ident] = ref;
+			}
+		}
 	}
 
 	referencedModels(all?: type.ModelDefSet): type.ModelDefSet {

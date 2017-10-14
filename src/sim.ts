@@ -74,7 +74,12 @@ var {{&className}} = function {{&className}}(name, parent, offset, symRefs) {
 };
 
 {{/models}}
-var main = new {{&mainClassName}}('main');
+var mainRefs = {
+	{{#mainRefs}}
+	'{{&name}}': '{{&ptr}}',
+	{{/mainRefs}}
+};
+var main = new {{&mainClassName}}('main', undefined, 0, mainRefs);
 
 main.resolveAllSymbolicRefs();
 
@@ -141,11 +146,21 @@ export class Sim {
 			compiledModels.push(this._process(models[n].model, models[n].modules));
 		}
 
+		let mainRefs: any[] = [];
+		for (let ref in root.refs) {
+			mainRefs.push({
+				'name': ref,
+				'ptr': root.refs[ref].ptr,
+			});
+		}
+		console.log('// mainRefs: ' + JSON.stringify(root.refs));
+
 		let source = Mustache.render(tmpl, {
 			'preamble': runtime.preamble,
 			'epilogue': isStandalone ? runtime.epilogue : 'onmessage = handleMessage;',
 			'mainClassName': util.titleCase(root.modelName),
-			'models': compiledModels
+			'models': compiledModels,
+			'mainRefs': mainRefs,
 		});
 		if (isStandalone) {
 			console.log(source);

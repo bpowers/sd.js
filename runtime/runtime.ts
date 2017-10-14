@@ -89,7 +89,7 @@ class Simulation {
 			if (!this.symRefs.hasOwnProperty(n))
 				continue;
 			let ctx: any;
-			if (this.symRefs[n][0] === '.') {
+			if (this.symRefs[n][0] === '.' || this === this.root()) {
 				ctx = this.root();
 			} else {
 				ctx = this.parent;
