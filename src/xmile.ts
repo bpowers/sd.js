@@ -703,6 +703,7 @@ export class Format implements XNode {
 export class Variable implements XNode {
 	type:            string;
 	name:            string;
+	model?:          string;
 	eqn:             string = '';
 	gf:              GF;
 	// mathml        Node;

@@ -51,13 +51,15 @@ export class Model implements type.Model {
 		return this.spec || this.project.simSpec;
 	}
 
-	lookup(id: string): type.Variable {
+	lookup(id: string): type.Variable | undefined {
 		if (id[0] === '.')
 			id = id.substr(1);
 		if (id in this.vars)
 			return this.vars[id];
 		let parts = id.split('.');
 		let module = this.modules[parts[0]];
+		if (!module)
+			return undefined;
 		let nextModel = this.project.model(module.modelName);
 		return nextModel.lookup(parts.slice(1).join('.'));
 	}
@@ -232,12 +234,12 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
 		let identArgs: string[] = [];
 		for (let i = 0; i < args.length; i++) {
 			let arg = args[i];
-			if (isIdent) {
+			if (isIdent(arg)) {
 				identArgs.push((<ast.Ident>arg).ident);
 			} else {
 				let xVar = new xmile.Variable();
 				xVar.type = 'aux';
-				xVar.name = '·' + this.variable.ident + '·' + this.n + '·arg' + i;
+				xVar.name = '$·' + this.variable.ident + '·' + this.n + '·arg' + i;
 				xVar.eqn = arg.walk(new PrintVisitor());
 				let proxyVar = new vars.Variable(this.model, xVar);
 				this.vars[proxyVar.ident] = proxyVar;
@@ -245,15 +247,17 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
 			}
 		}
 
-		let modName = '·' + this.variable.ident + '·' + this.n + '·' + fn;
+		let modName = '$·' + this.variable.ident + '·' + this.n + '·' + fn;
 		let xMod = new xmile.Variable();
 		xMod.type = 'module';
 		xMod.name = modName;
+		xMod.model = 'stdlib·' + fn;
 		xMod.connections = [];
 		for (let i = 0; i < identArgs.length; i++) {
 			let conn = new xmile.Connection();
 			conn.to = stdlibArgs[fn][i];
 			conn.from = '.' + identArgs[i];
+			xMod.connections.push(conn);
 		}
 
 		let module = new vars.Module(this.project, this.model, xMod);

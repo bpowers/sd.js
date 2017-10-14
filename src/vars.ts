@@ -323,8 +323,14 @@ export class Module extends Variable implements type.Module {
 		this.parent = parent;
 		this.xmile = v;
 		this.ident = v.ident;
-		// FIXME: not always true?
-		this.modelName = this.ident;
+		// This is a deviation from the XMILE spec, but is the
+		// only thing that makes sense -- having a 1 to 1
+		// relationship between model name and module name
+		// would be insane.
+		if (v.model)
+			this.modelName = v.model;
+		else
+			this.modelName = this.ident;
 		this.refs = {};
 		this._deps = {};
 		for (let i = 0; v.connections && i < v.connections.length; i++) {

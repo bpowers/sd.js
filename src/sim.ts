@@ -49,24 +49,24 @@ var {{&className}} = function {{&className}}(name, parent, offset, symRefs) {
 {{&className}}.prototype.tables = {{&tableVals}};
 {{&className}}.prototype.calcInitial = function(dt, curr) {
 	dt = +dt;
-	{{#isModule}}
 	var globalCurr = curr;
+	{{#isModule}}
 	curr = curr.subarray(this._shift, this._shift + this.nVars);
 	{{/isModule}}
 	{{&calcI}}
 };
 {{&className}}.prototype.calcFlows = function(dt, curr) {
 	dt = +dt;
-	{{#isModule}}
 	var globalCurr = curr;
+	{{#isModule}}
 	curr = curr.subarray(this._shift, this._shift + this.nVars);
 	{{/isModule}}
 	{{&calcF}}
 };
 {{&className}}.prototype.calcStocks = function(dt, curr, next) {
 	dt = +dt;
-	{{#isModule}}
 	var globalCurr = curr;
+	{{#isModule}}
 	curr = curr.subarray(this._shift, this._shift + this.nVars);
 	next = next.subarray(this._shift, this._shift + this.nVars);
 	{{/isModule}}
@@ -364,8 +364,8 @@ export class Sim {
 		return this._post('set_desired_series', names);
 	}
 
-	varNames(): Promise<any> {
-		return this._post('var_names');
+	varNames(includeHidden = false): Promise<any> {
+		return this._post('var_names', includeHidden);
 	}
 
 	csv(delim: string = ','): Promise<string> {

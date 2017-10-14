@@ -42,6 +42,7 @@ function parseStdModels() {
 		let xml = (new xmldom.DOMParser()).parseFromString(modelStr, 'application/xml');
 		let ctx = new Project(xml, true);
 		let mdl = ctx.model(name);
+		mdl.name = 'stdlib·' + mdl.name;
 		let ident = mdl.ident;
 		stdModels['stdlib·' + ident] = mdl;
 	}
@@ -72,6 +73,8 @@ export class Project implements type.Project {
 	model(name?: string): any {
 		if (!name)
 			name = 'main';
+		if (!(name in this.models))
+			return this.models['stdlib·' + name];
 		return this.models[name];
 	}
 

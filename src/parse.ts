@@ -155,6 +155,8 @@ class Parser {
 			let lParenLoc: SourceLoc;
 			if ((lParenLoc = this.consumeTok('(')))
 				return this.call(lhs, lParenLoc);
+			else if ((<Ident>lhs).ident === 'nan')
+				return new Constant(lhs.pos, (<Ident>lhs).ident);
 			else
 				return lhs;
 		}

@@ -15,7 +15,7 @@ if (typeof console === 'undefined') {
 main.runToEnd();
 let series: {[name: string]: Series} = {};
 let header = 'time\t';
-let vars = main.varNames();
+let vars = main.varNames(false);
 for (let i = 0; i < vars.length; i++) {
 	let v = vars[i];
 	if (v === 'time')

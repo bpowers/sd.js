@@ -28,6 +28,20 @@ to how includes interact with web-based tools.  CORS support should
 probably be mandated to allow in-browser cross-origin requests for
 XMILE files.
 
+Modules
+-------
+
+The spec says a module must have a `name="…" attribute w/valid XMILE
+identifier. If the optional resource is not specified, the name is
+required to match the name attribute of the submodel`.  This is an
+oversight that means we technically aren't allowed to instantite a
+model in 2 different modules becuase of the 1 to 1 relationship
+between module name and model name.
+
+We recognize an optional `model` attribute to specify the name of the
+model to use for a module.
+
+
 behavior
 --------
 

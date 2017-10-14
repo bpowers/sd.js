@@ -103,13 +103,16 @@ class Simulation {
 		}
 	}
 
-	varNames(): string[] {
-		let result = Object.keys(this.offsets).slice();
+	varNames(includeHidden: boolean): string[] {
+		let result = Object.keys(this.offsets)
+			.filter(v => (includeHidden || !v.startsWith('$·')));
 		for (let v in this.modules) {
 			if (!this.modules.hasOwnProperty(v))
 				continue;
+			if (!includeHidden && v.startsWith('$·'))
+				continue;
 			let ids: string[] = [];
-			let modVarNames = this.modules[v].varNames();
+			let modVarNames = this.modules[v].varNames(includeHidden);
 			for (let n in modVarNames) {
 				if (modVarNames.hasOwnProperty(n))
 					ids.push(v + '.' + modVarNames[n]);
@@ -335,8 +338,8 @@ function initCmds(main: Simulation): any {
 				return [main.value('time'), null];
 			}
 		},
-		'var_names': function(): [any, any] {
-			return [main.varNames(), null];
+		'var_names': function(includeHidden: boolean): [any, any] {
+			return [main.varNames(includeHidden), null];
 		},
 		'set_desired_series': function(names: string[]): [any, any] {
 			desiredSeries = names;
