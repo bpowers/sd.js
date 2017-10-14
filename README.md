@@ -8,7 +8,7 @@ sd.js - System Dynamics for the web
 A modern, high performance, open source system dynamics engine for
 today's web and tomorrow's.  `sd.js` runs in all major browsers
 (IE11+, Chrome, Firefox, Safari), and on the server under
-[node.js](https://nodejs.org) and [io.js](https://iojs.org).
+[node.js](https://nodejs.org).
 
 Clean, Simple API
 -----------------
@@ -75,20 +75,27 @@ on the web, and models created or modified in `sd.js` on the desktop.
 Building
 --------
 
-GNU Make, node.js and npm are required to build `sd.js`, as are
-some standard unix utilities.  Windows is not supported as a
-development platform (patches welcome).  Once those are installed on
-your system, you can simply run `make` to build the library for node
-and the browser:
+GNU Make, node.js and yarn are required to build `sd.js`, as are some
+standard unix utilities.  The build should work on Windows with yarn.
+Once those are installed on your system, you can simply run `make`
+(which simply ensures `yarn install` has run and wraps `yarn build`)
+to build the library for node and the browser:
 
 ```
 [bpowers@vyse sd.js]$ make
-  TS    build-rt
-  RT    src/runtime.ts
-  TS    lib
-  TS    build
-  R.JS  sd.js
-  R.JS  sd.min.js
+  YARN
+yarn install v1.1.0
+[1/5] Validating package.json...
+[2/5] Resolving packages...
+success Already up-to-date.
+Done in 0.36s.
+  YARN  sd.js
+yarn run v1.1.0
+$ npm-run-all build:pre build:runtime0 build:runtime1 -p build:lib build:build -s build:browser
+
+build/sd.js → sd.js...
+created sd.js in 1.6s
+Done in 7.35s.
 ```
 
 Run `make test` to run unit tests, and `make rtest` to run regression
@@ -114,11 +121,6 @@ tests against the XMILE models in the
   RTEST test/test-models/tests/logicals/test_logicals.xmile
   RTEST test/test-models/tests/if_stmt/if_stmt.xmile
   RTEST test/test-models/tests/exponentiation/exponentiation.xmile
-time 0.000 mismatch in output (0.0 != 2.0)
-time 1.000 mismatch in output (1.0 != 3.0)
-time 2.000 mismatch in output (4.0 != 0.0)
-time 3.000 mismatch in output (9.0 != 1.0)
-time 4.000 mismatch in output (16.0 != 6.0)
   RTEST test/test-models/tests/eval_order/eval_order.xmile
   RTEST test/test-models/tests/comparisons/comparisons.xmile
   RTEST test/test-models/tests/builtin_min/builtin_min.xmile
@@ -127,22 +129,19 @@ time 4.000 mismatch in output (16.0 != 6.0)
   RTEST test/test-models/samples/teacup/teacup_w_diagram.xmile
   RTEST test/test-models/samples/bpowers-hares_and_lynxes_modules/model.xmile
   RTEST test/test-models/samples/SIR/SIR.xmile
-Makefile:121: recipe for target 'rtest' failed
-make: *** [rtest] Error 1
 ```
 
-The standalone sd.js library for use in the browser is available at `sd.js`
-and minified at `sd.min.js`, and includes all the dependencies (Snap.svg,
-Mustache and Q).  For use under node, `require('sd')` should simply use the
-CommonJS modules in the `lib/` directory.
+The standalone sd.js library for use in the browser is available at
+`sd.js` and includes all required dependencies (Snap.svg and
+Mustache).  For use under node, `require('sd.js')` to simply use the
+CommonJS modules built in the `lib/` directory from the original
+TypeScript sources.
 
 TODO
 ----
 
-- implement Smooth1/3 and friends
 - ability to save XMILE docs
 - ignore dt 'reciprocal' on v10 and < v1.1b2 STELLA models
-- add-back (basic) isee compat support
 - intersection of arc w/ rectangle for takeoff from stock
 - intersection of arc w/ rounded-rect for takeoff from module
 - logging framework
