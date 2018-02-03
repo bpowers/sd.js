@@ -28,6 +28,8 @@
       "es2017.sharedmemory"
     ],
 
+    "strictPropertyInitialization": false,
+
     "noImplicitAny": true,
     "newLine": "LF",
 

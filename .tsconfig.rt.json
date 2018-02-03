@@ -17,6 +17,8 @@
 
     "types": [],
 
+    "strictPropertyInitialization": false,
+
     "noImplicitAny": true,
     "newLine": "LF",
 
