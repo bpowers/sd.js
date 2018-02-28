@@ -167,17 +167,15 @@ export class Sim {
 			return;
 		}
 		let blob = new Blob([source], {type: 'text/javascript'});
-		// TSFIXME: fixed in 1.6
-		this.worker = new Worker((<any>window).URL.createObjectURL(blob));
+		this.worker = new Worker(window.URL.createObjectURL(blob));
 		blob = null;
 		source = null;
-		let _this = this;
 		// FIXME: find any
-		this.worker.addEventListener('message', function(e: any): void {
+		this.worker.addEventListener('message', (e: any): void => {
 			let id = e.data[0];
 			let result = e.data[1];
-			let cb = _this.promised[id];
-			delete _this.promised[id];
+			let cb = this.promised[id];
+			delete this.promised[id];
 			if (cb)
 				cb(result[0], result[1]);
 		});
@@ -188,13 +186,17 @@ export class Sim {
 		let run_flows: type.Variable[] = [];
 		let run_stocks: type.Variable[] = [];
 
-		function isRef(n: string): boolean {
+		let initialsIncludes = (ident: string): boolean => {
+			return run_initials.some((v: type.Variable) => v.ident === ident);
+		}
+
+		let isRef = (n: string): boolean => {
 			for (let i = 0; i < modules.length; i++) {
 				if (n in modules[i].refs)
 					return true;
 			}
 			return false;
-		}
+		};
 
 		let offsets: type.Offsets = {};
 		let runtimeOffsets: type.Offsets = {};
@@ -211,6 +213,12 @@ export class Sim {
 				run_flows.push(v);
 				run_stocks.push(v);
 			} else if (v instanceof vars.Stock) {
+				// add any referenced vars to initials
+				for (let d in v.getDeps()) {
+					if (d === 'time' || initialsIncludes(d))
+						continue;
+					run_initials.push(model.lookup(d));
+				}
 				run_initials.push(v);
 				run_stocks.push(v);
 			} else if (v instanceof vars.Table) {
