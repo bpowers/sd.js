@@ -5,8 +5,6 @@ import commonjs from 'rollup-plugin-commonjs';
 
 export default {
 	input: 'build/sd.js',
-	name: 'sd',
-	sourcemap: true,
 	context: 'window',
 	plugins: [
 		resolve({
@@ -20,6 +18,8 @@ export default {
 		sourcemaps(),
 	],
 	output: {
+		name: 'sd',
+		sourcemap: true,
 		format: 'iife',
 		file: 'sd.js',
 	},
