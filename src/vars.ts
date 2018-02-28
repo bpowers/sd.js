@@ -386,7 +386,7 @@ export class Module extends Variable implements type.Module {
 			let deps = v._deps;
 			for (let name in deps) {
 				if (this.modelName === 'main')
-					console.log('// ' + v.ident + 'look ' + name);
+					console.log('// ' + v.ident + ' look ' + name);
 				if (!name.includes('.'))
 					continue;
 				if (this.modelName === 'main')
