@@ -24,54 +24,59 @@ const NLSP = DEBUG ? '\n\t' : '';
 const tmpl = `{{&preamble}}
 
 {{#models}}
-var {{&className}} = function {{&className}}(name, parent, offset, symRefs) {
-	this.name = name;
-	this.parent = parent;
-	// if we are a module, record the offset in the curr & next
-	// arrays we should be writing at
-	this._shift = i32(offset);
-	{{&init}}
-	this.modules = {{&modules}};
-	// symbolic references, which will get resolved into integer
-	// offsets in the ref map after all Simulation objects have
-	// been initialized.
-	this.symRefs = symRefs || {};
-	this.ref = {};
-	this.nVars = this.getNVars();
-	if (name === 'main')
-		this.reset();
+class {{&className}} extends Simulation {
+	constructor(name, parent, offset, symRefs) {
+		super();
+
+		this.initials = {{&initialVals}};
+		this.simSpec = {{&simSpecVals}};
+		this.offsets = {{&offsets}};
+		this.tables = {{&tableVals}};
+
+		this.name = name;
+		this.parent = parent;
+		// if we are a module, record the offset in the curr &
+		// next arrays we should be writing at
+		this._shift = i32(offset);
+		{{&init}}
+		this.modules = {{&modules}};
+		// symbolic references, which will get resolved into
+		// integer offsets in the ref map after all Simulation
+		// objects have been initialized.
+		this.symRefs = symRefs || {};
+		this.ref = {};
+		this.nVars = this.getNVars();
+		// who even knows what this does.
+		if (name === 'main')
+			this.reset();
+	}
+	calcInitial(dt, curr) {
+		dt = +dt;
+		let globalCurr = curr;
+		{{#isModule}}
+		curr = curr.subarray(this._shift, this._shift + this.nVars);
+		{{/isModule}}
+		{{&calcI}}
+	}
+	calcFlows(dt, curr) {
+		dt = +dt;
+		let globalCurr = curr;
+		{{#isModule}}
+		curr = curr.subarray(this._shift, this._shift + this.nVars);
+		{{/isModule}}
+		{{&calcF}}
+	}
+	calcStocks(dt, curr, next) {
+		dt = +dt;
+		let globalCurr = curr;
+		{{#isModule}}
+		curr = curr.subarray(this._shift, this._shift + this.nVars);
+		next = next.subarray(this._shift, this._shift + this.nVars);
+		{{/isModule}}
+		{{&calcS}}
+	}
 };
 
-{{&className}}.prototype = new Simulation();
-{{&className}}.prototype.initials = {{&initialVals}};
-{{&className}}.prototype.simSpec = {{&simSpecVals}};
-{{&className}}.prototype.offsets = {{&offsets}};
-{{&className}}.prototype.tables = {{&tableVals}};
-{{&className}}.prototype.calcInitial = function(dt, curr) {
-	dt = +dt;
-	var globalCurr = curr;
-	{{#isModule}}
-	curr = curr.subarray(this._shift, this._shift + this.nVars);
-	{{/isModule}}
-	{{&calcI}}
-};
-{{&className}}.prototype.calcFlows = function(dt, curr) {
-	dt = +dt;
-	var globalCurr = curr;
-	{{#isModule}}
-	curr = curr.subarray(this._shift, this._shift + this.nVars);
-	{{/isModule}}
-	{{&calcF}}
-};
-{{&className}}.prototype.calcStocks = function(dt, curr, next) {
-	dt = +dt;
-	var globalCurr = curr;
-	{{#isModule}}
-	curr = curr.subarray(this._shift, this._shift + this.nVars);
-	next = next.subarray(this._shift, this._shift + this.nVars);
-	{{/isModule}}
-	{{&calcS}}
-};
 
 {{/models}}
 var mainRefs = {
