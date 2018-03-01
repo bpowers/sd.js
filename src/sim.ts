@@ -46,9 +46,6 @@ class {{&className}} extends Simulation {
 		this.symRefs = symRefs || {};
 		this.ref = {};
 		this.nVars = this.getNVars();
-		// who even knows what this does.
-		if (name === 'main')
-			this.reset();
 	}
 	calcInitial(dt, curr) {
 		dt = +dt;
@@ -87,6 +84,7 @@ var mainRefs = {
 var main = new {{&mainClassName}}('main', undefined, 0, mainRefs);
 
 main.resolveAllSymbolicRefs();
+main.reset();
 
 cmds = initCmds(main);
 
