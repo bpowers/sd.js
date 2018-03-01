@@ -115,6 +115,16 @@ export class CodegenVisitor implements ast.Visitor<boolean> {
 			n.r.walk(this);
 			this.code += ')';
 			return true;
+		} else if (n.op === '=' && n.l instanceof ast.Constant && isNaN(n.l.value)) {
+			this.code += 'isNaN('
+			n.r.walk(this)
+			this.code += ')'
+			return true;
+		} else if (n.op === '=' && n.r instanceof ast.Constant && isNaN(n.r.value)) {
+			this.code += 'isNaN('
+			n.l.walk(this)
+			this.code += ')'
+			return true;
 		}
 
 		let op = n.op;
@@ -384,13 +394,11 @@ export class Module extends Variable implements type.Module {
 
 			// account for references into a child module
 			let deps = v._deps;
-			for (let name in deps) {
-				if (this.modelName === 'main')
-					console.log('// ' + v.ident + ' look ' + name);
+			for (let depName in deps) {
+				console.log(`// ${this.modelName} -- ${v.ident} look ${name}`);
 				if (!name.includes('.'))
 					continue;
-				if (this.modelName === 'main')
-					console.log('// got ' + name);
+				console.log(`// got ${name}`);
 				let conn = new xmile.Connection();
 				conn.from = name;
 				conn.to = name;
