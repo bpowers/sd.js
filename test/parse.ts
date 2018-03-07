@@ -155,6 +155,17 @@ const PARSE_TESTS: ParseTestData[] = [
 			l(0, 6), '+',
 			new Constant(l(0, 8), "6"))
 	},
+	{
+		in: "6 + 0 * 8",
+		out: new BinaryExpr(
+			new Constant(l(0, 0), '6'),
+			l(0, 2), '+',
+			new BinaryExpr(
+				new Constant(l(0, 4), '0'),
+				l(0, 6), '*',
+				new Constant(l(0, 8), '8'))
+		)
+	},
 ];
 
 const PARSE_TEST_FAILURES = [

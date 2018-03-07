@@ -45,21 +45,32 @@ export function eqn(eqn: string): [Node | null, string[] | null] {
 	return [ast, null];
 }
 
-function binaryLevel(n: number, p: Parser, ops: string): ()=>(Node|null) {
+function binaryLevel(n: number, p: Parser, ops: string): (maxLevel: number)=>(Node|null) {
 	'use strict';
-	return function(): Node | null {
+	return function(maxLevel: number): Node | null {
 		let t = p.lexer.peek();
+		// Ensure that we don't inadvertently mess up operator
+		// precedence when recursively calling back into
+		// binaryLevel.
+		if (n >= maxLevel)
+			return p.factor();
+
 		if (!t)
 			return null;
+
 		let next = p.levels[n+1];
-		let lhs = next();
+		let lhs = next(maxLevel);
 		if (!lhs)
 			return null;
 		// its ok if we didn't have a binary operator
 		for (let op = p.consumeAnyOf(ops); op; op = p.consumeAnyOf(ops)) {
 			// must call the next precedence level to
 			// preserve left-associativity
-			let rhs = next();
+
+			//find a right hand term, make sure that term isn't a compound term
+			//containing an operator of higher precedence then ours
+			let rhs = p.levels[0](n);
+
 			if (!rhs) {
 				p.errs.push('expected rhs of expr after "' + op.tok + '"');
 				return null;
@@ -74,21 +85,26 @@ function binaryLevel(n: number, p: Parser, ops: string): ()=>(Node|null) {
 class Parser {
 	lexer: Lexer;
 	errs: string[] = [];
-	levels: Array<()=>Node> = [];
+	levels: Array<(maxLevel: number)=>Node> = [];
 
 	constructor(eqn: string) {
 		this.lexer = new Lexer(eqn);
 		for (let i = 0; i < BINARY.length; i++) {
 			this.levels.push(binaryLevel(i, this, BINARY[i]));
 		}
-		this.levels.push(this.factor.bind(this));
+
+		// after all of the binary operator precedence levels,
+		// look for lower precedence factors (if,call,etc)
+		this.levels.push((maxLevel: number): (Node | null) => {
+			return this.factor();
+		});
 	}
 	get errors(): string[] {
 		return this.errs;
 	}
 
 	expr(): Node {
-		return this.levels[0]();
+		return this.levels[0](BINARY.length);
 	}
 	factor(): Node {
 		let lhs: Node;
