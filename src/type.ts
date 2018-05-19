@@ -52,7 +52,7 @@ export interface Model {
 	vars:    VariableMap;
 	simSpec: SimSpec;
 
-	lookup(name: string): Variable;
+	lookup(name: string): Variable | undefined;
 }
 
 export interface ModelMap {

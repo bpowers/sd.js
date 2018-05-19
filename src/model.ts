@@ -8,7 +8,6 @@ import * as common from './common';
 import * as type from './type';
 import * as util from './util';
 import * as vars from './vars';
-import * as draw from './draw';
 import * as sim from './sim';
 import * as xmile from './xmile';
 import * as ast from './ast';
@@ -44,6 +43,10 @@ export class Model implements type.Model {
 		return;
 	}
 
+	view(index: number): xmile.View {
+		return this.xModel.views[index];
+	}
+
 	get ident(): string {
 		return xmile.canonicalize(this.name);
 	}
@@ -72,19 +75,6 @@ export class Model implements type.Model {
 		}
 		let mod = this.project.main;
 		return new sim.Sim(mod, isStandalone);
-	}
-
-	drawing(
-		svgElementID: string,
-		overrideColors: boolean,
-		enableMousewheel: boolean,
-		stocksXYCenter = false): draw.Drawing {
-
-		// FIXME: return first 'stock_flow' view, allow
-		// returning other views.
-		return new draw.Drawing(
-			this, this.xModel.views[0], svgElementID,
-			overrideColors, enableMousewheel, stocksXYCenter);
 	}
 
 	/**

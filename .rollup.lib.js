@@ -4,7 +4,7 @@ import commonjs from 'rollup-plugin-commonjs';
 
 
 export default {
-	input: 'build/sd.js',
+	input: 'lib/sd.js',
 	context: 'window',
 	plugins: [
 		resolve({

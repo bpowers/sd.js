@@ -2,8 +2,6 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-'use strict';
-
 import * as common from './common';
 
 import {Project} from './project';
@@ -11,6 +9,9 @@ import {Model} from './model';
 
 export {Project} from './project';
 export {Model} from './model';
+
+export {Variable} from './type';
+export {View, ViewElement} from './xmile';
 
 export const Error = common.Error;
 
@@ -23,28 +24,24 @@ export const Error = common.Error;
  * @param xmlString A string containing a xmile model.
  * @return A valid Model object on success, or null on error.
  */
-export function newModel(xmlDoc: any): Model {
+export function newModel(xmlDoc: XMLDocument): Model|undefined {
 	let p = new Project(xmlDoc);
 	if (p.valid)
 		return p.model();
-	return null;
+	return undefined;
 }
 
-export function load(url: string, cb: (m: Model)=>void, errCb: (r: XMLHttpRequest)=>void): void {
-	let req = new XMLHttpRequest();
-	req.onreadystatechange = function(): void {
-		if (req.readyState !== 4)
-			return;
-		if (req.status >= 200 && req.status < 300) {
-			let xml = req.responseXML;
-			if (!xml)
-				xml = (new DOMParser()).parseFromString(req.responseText, 'application/xml');
-			let mdl = newModel(xml);
-			cb(mdl);
-		} else if (errCb) {
-			errCb(req);
-		}
-	};
-	req.open('GET', url, true);
-	req.send();
+export async function load(url: string): Promise<[Model, undefined] | [undefined, common.Error]> {
+	const response = await fetch(url);
+	if (response.status >= 400)
+		return [undefined, new common.Error(`fetch(${url}): status ${response.status}`)];
+	const body = await response.text();
+	const parser = new DOMParser();
+	const xml: XMLDocument = parser.parseFromString(body, 'application/xml');
+
+	const mdl = newModel(xml);
+	if (!mdl)
+		return [undefined, new common.Error("newModel failed")];
+
+	return [mdl, undefined];
 }

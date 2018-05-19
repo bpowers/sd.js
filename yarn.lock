@@ -6,14 +6,6 @@
   version "4.1.2"
   resolved "https://registry.yarnpkg.com/@types/chai/-/chai-4.1.2.tgz#f1af664769cfb50af805431c407425ed619daa21"
 
-"@types/hammerjs@^2.0.35":
-  version "2.0.35"
-  resolved "https://registry.yarnpkg.com/@types/hammerjs/-/hammerjs-2.0.35.tgz#7b7c950c7d54593e23bffc8d2b4feba9866a7277"
-
-"@types/mina@*":
-  version "0.4.0"
-  resolved "https://registry.yarnpkg.com/@types/mina/-/mina-0.4.0.tgz#7ff786a5f7d1ae4b41978cb3137be071fb879316"
-
 "@types/mocha@^2.2.43":
   version "2.2.48"
   resolved "https://registry.yarnpkg.com/@types/mocha/-/mocha-2.2.48.tgz#3523b126a0b049482e1c3c11877460f76622ffab"
@@ -21,12 +13,6 @@
 "@types/mustache@^0.8.30":
   version "0.8.30"
   resolved "https://registry.yarnpkg.com/@types/mustache/-/mustache-0.8.30.tgz#65e479073bc15e8ac834347f8f311b24220a277d"
-
-"@types/snapsvg@^0.4.29":
-  version "0.4.30"
-  resolved "https://registry.yarnpkg.com/@types/snapsvg/-/snapsvg-0.4.30.tgz#ded46bc6a164b62481d1213826e3b433301bc3cc"
-  dependencies:
-    "@types/mina" "*"
 
 "@types/xmldom@^0.1.29":
   version "0.1.29"
@@ -678,10 +664,6 @@ etag@^1.8.1, etag@~1.8.1:
   version "1.8.1"
   resolved "https://registry.yarnpkg.com/etag/-/etag-1.8.1.tgz#41ae2eeb65efa62268aebfea83ac7d79299b0887"
 
-eve@~0.5.1:
-  version "0.5.4"
-  resolved "https://registry.yarnpkg.com/eve/-/eve-0.5.4.tgz#67d080b9725291d7e389e34c26860dd97f1debaa"
-
 event-stream@~3.3.0:
   version "3.3.4"
   resolved "https://registry.yarnpkg.com/event-stream/-/event-stream-3.3.4.tgz#4ab4c9a0f5a54db9338b4c34d86bfce8f4b35571"
@@ -903,10 +885,6 @@ graceful-fs@^4.1.2, graceful-fs@^4.1.6:
 growl@1.10.3:
   version "1.10.3"
   resolved "https://registry.yarnpkg.com/growl/-/growl-1.10.3.tgz#1926ba90cf3edfe2adb4927f5880bc22c66c790f"
-
-hammerjs@^2.0.8:
-  version "2.0.8"
-  resolved "https://registry.yarnpkg.com/hammerjs/-/hammerjs-2.0.8.tgz#04ef77862cff2bb79d30f7692095930222bf60f1"
 
 har-schema@^1.0.5:
   version "1.0.5"
@@ -1954,12 +1932,6 @@ shell-quote@^1.6.1:
 signal-exit@^3.0.0:
   version "3.0.2"
   resolved "https://registry.yarnpkg.com/signal-exit/-/signal-exit-3.0.2.tgz#b5fdc08f1287ea1178628e415e25132b73646c6d"
-
-"snapsvg@git://github.com/bpowers/Snap.svg#v0.5.1-node-fixes":
-  version "0.5.1"
-  resolved "git://github.com/bpowers/Snap.svg#187412fa86d4fee53d22031709d0d7a022ded47d"
-  dependencies:
-    eve "~0.5.1"
 
 sntp@1.x.x:
   version "1.0.9"

@@ -22,17 +22,13 @@
     "mdl.js": "./bin/mdl.js"
   },
   "dependencies": {
-    "hammerjs": "^2.0.8",
     "mustache": "^2.3.0",
-    "snapsvg": "git://github.com/bpowers/Snap.svg#v0.5.1-node-fixes",
     "xmldom": "^0.1.27"
   },
   "devDependencies": {
     "@types/chai": "^4.0.4",
-    "@types/hammerjs": "^2.0.35",
     "@types/mocha": "^2.2.43",
     "@types/mustache": "^0.8.30",
-    "@types/snapsvg": "^0.4.29",
     "@types/xmldom": "^0.1.29",
     "browser-sync": "^2.24.0",
     "chai": "^4.1.2",
@@ -53,10 +49,9 @@
     "build:pre": "node support/mkdirp.js build-rt lib build",
     "build:runtime0": "tsc -p .tsconfig.rt.json",
     "build:runtime1": "node support/build-runtime.js src/runtime.ts",
-    "build:lib": "tsc -p .tsconfig.lib-cjs.json",
-    "build:build": "tsc -p .tsconfig.lib.json",
+    "build:lib": "tsc -p .tsconfig.lib.json",
     "build:browser": "rollup -c .rollup.lib.js",
-    "build": "npm-run-all build:pre build:runtime0 build:runtime1 -p build:lib build:build -s build:browser",
+    "build": "npm-run-all build:pre build:runtime0 build:runtime1 build:lib build:browser",
     "prepublishOnly": "make clean && npm run-script build"
   },
   "engines": {
