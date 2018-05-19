@@ -1,11 +1,6 @@
-// Copyright 2015 Bobby Powers. All rights reserved.
-// Use of this source code is governed by the MIT
-// license that can be found in the LICENSE file.
+// Copyright 2018 Bobby Powers
 
-'use strict';
-
-export function camelCase(s: string): string {
-	'use strict';
+export const camelCase = (s: string): string => {
 	let i = 0;
 	while ((i = s.indexOf('_')) >= 0 && i < s.length - 1) {
 		s = s.slice(0, i) + s.slice(i+1, i+2).toUpperCase() + s.slice(i+2);
@@ -13,18 +8,15 @@ export function camelCase(s: string): string {
 	return s;
 }
 
-export function splitOnComma(str: string): string[] {
-	'use strict';
+export const splitOnComma = (str: string): string[] => {
 	return str.split(',').map((el) => el.trim());
 }
 
-export function numberize(arr: string[]): number[] {
-	'use strict';
+export const numberize = (arr: string[]): number[] => {
 	return arr.map((el) => parseFloat(el));
 }
 
-export function i32(n: number): number {
-	'use strict';
+export const i32 = (n: number): number => {
 	return n|0;
 }
 
@@ -36,18 +28,16 @@ export class Error {
 declare function isFinite(n: string|number): boolean;
 
 // expects name to be lowercase
-function attr(node: Node, name: string): string {
-	'use strict';
-	for (let i = 0; i < node.attributes.length; i++) {
-		let attr = node.attributes.item(i);
+const attr = (el: Element, name: string): string => {
+	for (let i = 0; i < el.attributes.length; i++) {
+		let attr = el.attributes.item(i);
 		if (attr.name.toLowerCase() === name)
 			return attr.value;
 	}
 	return null;
 }
 
-function parseText(val: string): string|boolean|number {
-	'use strict';
+const parseText = (val: string): string|boolean|number => {
 	val = val.trim();
 	if (/^\s*$/.test(val))
 		return null;
@@ -58,12 +48,11 @@ function parseText(val: string): string|boolean|number {
 	return val;
 }
 
-function content(node: Node): string {
-	'use strict';
+const content = (el: Element): string => {
 	let text = '';
-	if (node.hasChildNodes()) {
-		for (let i = 0; i < node.childNodes.length; i++) {
-			let child: Node = node.childNodes.item(i);
+	if (el.hasChildNodes()) {
+		for (let i = 0; i < el.childNodes.length; i++) {
+			let child = <Element>el.childNodes.item(i);
 			switch (child.nodeType) {
 			case 3: // Text
 				text += child.nodeValue.trim();
@@ -77,7 +66,7 @@ function content(node: Node): string {
 	return text;
 }
 
-function num(v: any): [number, Error] {
+const num = (v: any): [number, Error] => {
 	'use strict';
 	if (typeof v === 'undefined' || v === null)
 		return [0, null];
@@ -89,8 +78,7 @@ function num(v: any): [number, Error] {
 	return [NaN, new Error('not number: ' + v)];
 }
 
-function bool(v: any): [boolean, Error] {
-	'use strict';
+const bool = (v: any): [boolean, Error] => {
 	if (typeof v === 'undefined' || v === null)
 		return [false, null];
 	if (typeof v === 'boolean')
@@ -114,7 +102,7 @@ export class Point implements XNode {
 	x: number;
 	y: number;
 
-	static Build(el: Node): [Point, Error] {
+	static Build(el: Element): [Point, Error] {
 		let pt = new Point();
 		let err: Error;
 
@@ -179,7 +167,7 @@ export class File implements XNode {
 	style:      Style;
 	models:     Model[]     = [];
 
-	static Build(el: Node): [File, Error] {
+	static Build(el: Element): [File, Error] {
 		let file = new File();
 		let err: Error = null;
 
@@ -197,7 +185,7 @@ export class File implements XNode {
 
 		for (let i = 0; i < el.childNodes.length; i++) {
 			let model: Model;
-			let child = el.childNodes.item(i);
+			let child = <Element>el.childNodes.item(i);
 			if (child.nodeType !== 1) // Element
 				continue;
 			switch (child.nodeName.toLowerCase()) {
@@ -239,11 +227,11 @@ export class SimSpec implements XNode {
 
 	[indexName: string]: any;
 
-	static Build(el: Node): [SimSpec, Error] {
+	static Build(el: Element): [SimSpec, Error] {
 		let simSpec = new SimSpec();
 		let err: Error;
 		for (let i = 0; i < el.childNodes.length; i++) {
-			let child = el.childNodes.item(i);
+			let child = <Element>el.childNodes.item(i);
 			if (child.nodeType !== 1) // Element
 				continue;
 			let name = camelCase(child.nodeName.toLowerCase());
@@ -317,7 +305,7 @@ export class Product implements XNode {
 	lang:    string = 'English';
 	version: string = '';
 
-	static Build(el: Node): [Product, Error] {
+	static Build(el: Element): [Product, Error] {
 		let product = new Product();
 		product.name = content(el);
 		for (let i = 0; i < el.attributes.length; i++) {
@@ -357,11 +345,11 @@ export class Header implements XNode {
 	uuid:        string; // IETF RFC4122 format (84-4-4-12 hex digits with the dashes)
 	// includes: Include[];
 
-	static Build(el: Node): [Header, Error] {
+	static Build(el: Element): [Header, Error] {
 		let header = new Header();
 		let err: Error;
 		for (let i = 0; i < el.childNodes.length; i++) {
-			let child = el.childNodes.item(i);
+			let child = <Element>el.childNodes.item(i);
 			if (child.nodeType !== 1) // Element
 				continue;
 			switch (child.nodeName.toLowerCase()) {
@@ -422,7 +410,7 @@ export class Dimension implements XNode {
 	name: string = '';
 	size: string = '';
 
-	static Build(el: Node): [Dimension, Error] {
+	static Build(el: Element): [Dimension, Error] {
 		let dim = new Dimension();
 		// TODO: implement
 		return [dim, null];
@@ -473,7 +461,7 @@ export class Options implements XNode {
 	// 'shadowed name' error.
 	[indexName: string]: any;
 
-	static Build(el: Node): [Options, Error] {
+	static Build(el: Element): [Options, Error] {
 		let options = new Options();
 		let err: Error;
 
@@ -487,7 +475,7 @@ export class Options implements XNode {
 		}
 
 		for (let i = 0; i < el.childNodes.length; i++) {
-			let child = el.childNodes.item(i);
+			let child = <Element>el.childNodes.item(i);
 			if (child.nodeType !== 1) // Element
 				continue;
 			let name = child.nodeName.toLowerCase();
@@ -541,7 +529,7 @@ export class Behavior implements XNode {
 	stockNonNegative: boolean = false;
 	flowNonNegative:  boolean = false;
 
-	static Build(el: Node): [Behavior, Error] {
+	static Build(el: Element): [Behavior, Error] {
 		let behavior = new Behavior();
 		// TODO
 		return [behavior, null];
@@ -584,7 +572,7 @@ export class Model implements XNode {
 	variables:   Variable[] = [];
 	views:       View[]     = [];
 
-	static Build(el: Node): [Model, Error] {
+	static Build(el: Element): [Model, Error] {
 		let model = new Model();
 		let err: Error;
 
@@ -598,19 +586,19 @@ export class Model implements XNode {
 		}
 
 		for (let i = 0; i < el.childNodes.length; i++) {
-			let child = el.childNodes.item(i);
+			let child = <Element>el.childNodes.item(i);
 			if (child.nodeType !== 1) // Element
 				continue;
 			switch (child.nodeName.toLowerCase()) {
 			case 'variables':
 				for (let j = 0; j < child.childNodes.length; j++) {
-					let vchild = child.childNodes.item(j);
+					let vchild = <Node>child.childNodes.item(j);
 					if (vchild.nodeType !== 1) // Element
 						continue;
 					if (typeof (<Attr>vchild).prefix !== 'undefined' && (<Attr>vchild).prefix === 'isee') // isee specific info
 						continue;
 					let v: Variable;
-					[v, err] = Variable.Build(vchild);
+					[v, err] = Variable.Build(<Element>vchild);
 					// FIXME: real logging
 					if (err)
 						return [null, new Error(child.nodeName + ' var: ' + err.error)];
@@ -619,7 +607,7 @@ export class Model implements XNode {
 				break;
 			case 'views':
 				for (let j = 0; j < child.childNodes.length; j++) {
-					let vchild = child.childNodes.item(j);
+					let vchild = <Element>child.childNodes.item(j);
 					if (vchild.nodeType !== 1) // Element
 						continue;
 					// TODO: style parsing
@@ -654,7 +642,7 @@ export class ArrayElement implements XNode {
 	eqn:       string;
 	gf:        GF;
 
-	static Build(el: Node): [ArrayElement, Error] {
+	static Build(el: Element): [ArrayElement, Error] {
 		let arrayEl = new ArrayElement();
 		console.log('TODO: array element');
 		return [arrayEl, null];
@@ -672,7 +660,7 @@ export class Range implements XNode {
 	auto:  boolean;
 	group: number; // 'unique number identifier'
 
-	static Build(el: Node): [Range, Error] {
+	static Build(el: Element): [Range, Error] {
 		let range = new Range();
 		console.log('TODO: range element');
 		return [range, null];
@@ -689,7 +677,7 @@ export class Format implements XNode {
 	displayAs:   string  = 'number'; // "number"|"currency"|"percent"
 	delimit000s: boolean = false; // include thousands separator
 
-	static Build(el: Node): [Format, Error] {
+	static Build(el: Element): [Format, Error] {
 		let fmt = new Format();
 		console.log('TODO: format element');
 		return [fmt, null];
@@ -736,7 +724,7 @@ export class Variable implements XNode {
 	// auxiliaries
 	flowConcept:     boolean; // :(
 
-	static Build(el: Node): [Variable, Error] {
+	static Build(el: Element): [Variable, Error] {
 		let v = new Variable();
 		let err: Error;
 
@@ -755,7 +743,7 @@ export class Variable implements XNode {
 		}
 
 		for (let i = 0; i < el.childNodes.length; i++) {
-			let child = el.childNodes.item(i);
+			let child = <Element>el.childNodes.item(i);
 			if (child.nodeType !== 1) // Element
 				continue;
 			switch (child.nodeName.toLowerCase()) {
@@ -809,7 +797,7 @@ export class Shape implements XNode {
 	height: number;
 	radius: number;
 
-	static Build(el: Node): [Shape, Error] {
+	static Build(el: Element): [Shape, Error] {
 		let shape = new Shape();
 		let err: Error;
 
@@ -883,7 +871,7 @@ export class ViewElement implements XNode {
 	// alias
 	of:                string;
 
-	static Build(el: Node): [ViewElement, Error] {
+	static Build(el: Element): [ViewElement, Error] {
 		let viewEl = new ViewElement();
 		let err: Error;
 
@@ -936,7 +924,7 @@ export class ViewElement implements XNode {
 		}
 
 		for (let i = 0; i < el.childNodes.length; i++) {
-			let child = el.childNodes.item(i);
+			let child = <Element>el.childNodes.item(i);
 			if (child.nodeType !== 1) // Element
 				continue;
 
@@ -952,7 +940,7 @@ export class ViewElement implements XNode {
 				break;
 			case 'pts':
 				for (let j = 0; j < child.childNodes.length; j++) {
-					let vchild = child.childNodes.item(j);
+					let vchild = <Element>child.childNodes.item(j);
 					if (vchild.nodeType !== 1) // Element
 						continue;
 					if (vchild.nodeName.toLowerCase() !== 'pt')
@@ -1007,7 +995,7 @@ export class View implements XNode {
 
 	elements:        ViewElement[] = [];
 
-	static Build(el: Node): [View, Error] {
+	static Build(el: Element): [View, Error] {
 		let view = new View();
 		let err: Error;
 
@@ -1085,7 +1073,7 @@ export class View implements XNode {
 		}
 
 		for (let i = 0; i < el.childNodes.length; i++) {
-			let child = el.childNodes.item(i);
+			let child = <Element>el.childNodes.item(i);
 			if (child.nodeType !== 1) // Element
 				continue;
 
@@ -1115,7 +1103,7 @@ export class GF implements XNode {
 	yScale:   Scale; // only affects the scale of the graph in the UI
 
 
-	static Build(el: Node): [GF, Error] {
+	static Build(el: Element): [GF, Error] {
 		let table = new GF();
 		let err: Error;
 
@@ -1131,7 +1119,7 @@ export class GF implements XNode {
 		}
 
 		for (let i = 0; i < el.childNodes.length; i++) {
-			let child = el.childNodes.item(i);
+			let child = <Element>el.childNodes.item(i);
 			if (child.nodeType !== 1) // Element
 				continue;
 			switch (child.nodeName.toLowerCase()) {
@@ -1173,7 +1161,7 @@ export class Scale implements XNode {
 	min: number;
 	max: number;
 
-	static Build(el: Node): [Scale, Error] {
+	static Build(el: Element): [Scale, Error] {
 		let scale = new Scale();
 		let err: Error;
 
@@ -1209,7 +1197,7 @@ export class Connection implements XNode {
 	to:   string;
 	from: string;
 
-	static Build(el: Node): [Connection, Error] {
+	static Build(el: Element): [Connection, Error] {
 		let conn = new Connection();
 		let err: Error;
 
