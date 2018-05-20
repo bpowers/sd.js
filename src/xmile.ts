@@ -966,6 +966,10 @@ export class ViewElement implements XNode {
 		return [viewEl, err];
 	}
 
+	get hasName(): boolean {
+		return this.name != undefined;
+	}
+
 	get ident(): string {
 		return canonicalize(this.name);
 	}

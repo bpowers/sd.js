@@ -10,6 +10,8 @@ import {Model} from './model';
 export {Project} from './project';
 export {Model} from './model';
 
+export {Stock} from './vars';
+
 export {Variable} from './type';
 export {View, ViewElement} from './xmile';
 
