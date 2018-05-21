@@ -985,6 +985,8 @@ export class ViewElement implements XNode {
 			return this.x;
 		case 'flow':
 			return this.x;
+		case 'module':
+			return this.x;
 		case 'stock':
 			if (this.width)
 				return this.x + .5 * this.width;
@@ -999,6 +1001,8 @@ export class ViewElement implements XNode {
 		case 'aux':
 			return this.y;
 		case 'flow':
+			return this.y;
+		case 'module':
 			return this.y;
 		case 'stock':
 			if (this.width)
