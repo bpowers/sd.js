@@ -884,6 +884,11 @@ export class ViewElement implements XNode {
 				// display-name, not canonicalized
 				viewEl.name = attr.value;
 				break;
+			case 'uid':
+				[viewEl.uid, err] = num(attr.value);
+				if (err)
+					return [null, new Error('uid: ' + err.error)];
+				break;
 			case 'x':
 				[viewEl.x, err] = num(attr.value);
 				if (err)
