@@ -981,7 +981,10 @@ export class ViewElement implements XNode {
 		case 'flow':
 			return this.x;
 		case 'stock':
-			return this.x + .5 * this.width;
+			if (this.width)
+				return this.x + .5 * this.width;
+			else
+				return this.x;
 		}
 		return NaN;
 	}
@@ -993,7 +996,10 @@ export class ViewElement implements XNode {
 		case 'flow':
 			return this.y;
 		case 'stock':
-			return this.y + .5 * this.height;
+			if (this.width)
+				return this.y + .5 * this.height;
+			else
+				return this.y;
 		}
 		return NaN;
 	}
