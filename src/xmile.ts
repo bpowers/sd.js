@@ -974,6 +974,30 @@ export class ViewElement implements XNode {
 		return canonicalize(this.name);
 	}
 
+	get cx(): number {
+		switch (this.type) {
+		case 'aux':
+			return this.x;
+		case 'flow':
+			return this.x;
+		case 'stock':
+			return this.x + .5 * this.width;
+		}
+		return NaN;
+	}
+
+	get cy(): number {
+		switch (this.type) {
+		case 'aux':
+			return this.y;
+		case 'flow':
+			return this.y;
+		case 'stock':
+			return this.y + .5 * this.height;
+		}
+		return NaN;
+	}
+
 	toXml(doc: XMLDocument, parent: Element): boolean {
 		return true;
 	}
