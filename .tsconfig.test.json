@@ -1,6 +1,5 @@
 {
   "files": [
-    "test/draw.ts",
     "test/lex.ts",
     "test/parse.ts"
   ],
