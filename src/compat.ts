@@ -4,13 +4,13 @@
 
 'use strict';
 
-import * as util from './util';
+import { Set } from 'immutable';
 
 const VENDOR = 'SDLabs';
 const PRODUCT = 'sd.js';
 const VERSION = '0.2.6';
 
-const VAR_TYPES = util.set('module', 'stock', 'aux', 'flow');
+const VAR_TYPES = Set<string>(['module', 'stock', 'aux', 'flow']);
 
 // FIXME: remove 'any'
 export interface Vendor {

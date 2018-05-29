@@ -2,10 +2,10 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-'use strict';
-
 // FIXME: this seems to fix a bug in Typescript 1.5
 declare function isFinite(n: string|number): boolean;
+
+import { Map, Set } from 'immutable';
 
 import * as common from './common';
 import * as util from './util';
@@ -22,6 +22,8 @@ const JS_OP: {[op: string]: string} = {
   '≠': '!==',
   '=': '===',
 };
+
+const defined = util.defined;
 
 // An AST visitor. after calling walk() on the root of an equation's
 // AST with an instance of this class, the visitor.code member will
@@ -172,8 +174,8 @@ export class Variable implements type.Variable {
   // only for modules
   model: type.Model;
 
-  _deps: type.StringSet;
-  _allDeps: type.StringSet;
+  _deps: Set<string>;
+  _allDeps: Set<string>;
 
   constructor(model?: type.Model, v?: xmile.Variable) {
     if (!arguments.length)
@@ -218,21 +220,20 @@ export class Variable implements type.Variable {
     return visitor.code;
   }
 
-  getDeps(): type.StringSet {
+  getDeps(): Set<string> {
     if (this._allDeps)
       return this._allDeps;
-    let allDeps: type.StringSet = {};
-    for (let n in this._deps) {
-      if (n in allDeps)
+    let allDeps = Set<string>();
+    for (const n of this._deps) {
+      if (allDeps.has(n))
         continue;
-      allDeps[n] = true;
-      let v = this.model.vars[n];
+      allDeps = allDeps.add(n);
+      let v = this.model.vars.get(n);
       if (!v)
         continue;
       let otherDeps = v.getDeps();
-      for (let nn in otherDeps) {
-        if (otherDeps.hasOwnProperty(nn))
-          allDeps[nn] = true;
+      for (const nn of otherDeps) {
+        allDeps = allDeps.add(nn);
       }
     }
     this._allDeps = allDeps;
@@ -323,7 +324,7 @@ export class Table extends Variable {
 
 export class Module extends Variable implements type.Module {
   modelName: string;
-  refs: type.ReferenceMap;
+  refs: Map<string, Reference>;
 
   constructor(project: type.Project, parent: type.Model, v: xmile.Variable) {
     super();
@@ -340,24 +341,21 @@ export class Module extends Variable implements type.Module {
       this.modelName = v.model;
     else
       this.modelName = this.ident;
-    this.refs = {};
-    this._deps = {};
+    this.refs = Map();
+    this._deps = Set<string>();
     for (let i = 0; v.connections && i < v.connections.length; i++) {
       let ref = new Reference(v.connections[i]);
-      this.refs[ref.ident] = ref;
-      this._deps[ref.ptr] = true;
+      this.refs = this.refs.set(ref.ident, ref);
+      this._deps = this._deps.add(ref.ptr);
     }
   }
 
-  getDeps(): type.StringSet {
+  getDeps(): Set<string> {
     if (this._allDeps)
       return this._allDeps;
-    let allDeps: type.StringSet = {};
-    for (let n in this._deps) {
-      if (!this._deps.hasOwnProperty(n))
-        continue;
-
-      if (n in allDeps)
+    let allDeps = Set<string>();
+    for (let n of this._deps) {
+      if (allDeps.has(n))
         continue;
 
       let context: type.Model;
@@ -373,12 +371,12 @@ export class Module extends Variable implements type.Module {
         console.log('couldnt find ' + n);
         continue;
       }
-      if (!(v instanceof Stock))
-        allDeps[parts[0]] = true;
+      if (!(v instanceof Stock)) {
+        allDeps = allDeps.add(parts[0]);
+      }
       let otherDeps = v.getDeps();
-      for (let nn in otherDeps) {
-        if (otherDeps.hasOwnProperty(nn))
-          allDeps[nn] = true;
+      for (const nn of otherDeps) {
+        allDeps = allDeps.add(nn);
       }
     }
     this._allDeps = allDeps;
@@ -386,8 +384,7 @@ export class Module extends Variable implements type.Module {
   }
 
   updateRefs(model: type.Model) {
-    for (let name in model.vars) {
-      let v = model.vars[name];
+    for (const [name, v] of model.vars) {
       // skip modules
       if (v.ident in model.modules)
         continue;
@@ -395,124 +392,116 @@ export class Module extends Variable implements type.Module {
       // account for references into a child module
       let deps = v._deps;
       for (let depName in deps) {
-        console.log(`// ${this.modelName} -- ${v.ident} look ${name}`);
-                    if (!name.includes('.'))
-                      continue;
-                    console.log(`// got ${name}`);
-                                let conn = new xmile.Connection();
-                                conn.from = name;
-                                conn.to = name;
-                                let ref = new Reference(conn);
-                                this.refs[ref.ident] = ref;
-                               }
-                   }
-      }
-
-      referencedModels(all?: type.ModelDefSet): type.ModelDefSet {
-        if (!all)
-          all = {};
-        let mdl = this.project.model(this.modelName);
-        const name = mdl.name;
-        if (all[name]) {
-          all[name].modules.push(this);
-        } else {
-          all[name] = {
-            model:   mdl,
-            modules: [this],
-          };
-        }
-        for (let n in mdl.modules) {
-          if (mdl.modules.hasOwnProperty(n))
-            mdl.modules[n].referencedModels(all);
-        }
-        return all;
+        console.log(`/* ${this.modelName} -- ${v.ident} look ${name} */`);
+        if (!name.includes('.'))
+          continue;
+        console.log(`/* got ${name} */`);
+        const conn = new xmile.Connection();
+        conn.from = name;
+        conn.to = name;
+        const ref = new Reference(conn);
+        this.refs = this.refs.set(ref.ident, ref);
       }
     }
+  }
 
-    export class Reference extends Variable implements type.Reference {
-      xmileConn: xmile.Connection;
-      ptr: string;
+  referencedModels(all?: Map<string, type.ModelDef>): Map<string, type.ModelDef> {
+    if (!all)
+      all = Map();
+    const mdl = this.project.model(this.modelName);
+    const name = mdl.name;
+    if (all.has(name)) {
+      const def = defined(all.get(name)).update("modules", (modules: Set<type.Module>) => modules.add(this));
+      all = all.set(name, def);
+    } else {
+      all.set(name, new type.ModelDef({
+        model:   mdl,
+        modules: Set<type.Module>([this]),
+      }));
+    }
+    for (const [name, module] of mdl.modules) {
+      all = module.referencedModels(all);
+    }
+    return all;
+  }
+}
 
-      constructor(conn: xmile.Connection) {
-        super();
-        // FIXME: there is maybe something cleaner to do here?
-        this.xmile = null;
-        this.xmileConn = conn;
-        this.ident = conn.to;
-        this.ptr = conn.from;
-      }
+export class Reference extends Variable implements type.Reference {
+  xmileConn: xmile.Connection;
+  ptr: string;
 
-      code(v: type.Offsets): string {
-        return 'curr["' + this.ptr + '"]';
-      }
+  constructor(conn: xmile.Connection) {
+    super();
+    // FIXME: there is maybe something cleaner to do here?
+    this.xmile = null;
+    this.xmileConn = conn;
+    this.ident = conn.to;
+    this.ptr = conn.from;
+  }
 
-      lessThan(that: Variable): boolean {
-        return this.ptr in that.getDeps();
-      }
+  code(v: type.Offsets): string {
+    return 'curr["' + this.ptr + '"]';
+  }
 
-      isConst(): boolean {
-        // FIXME(bp) should actually lookup whether this.ptr is const,
-        // but that requires module instance walking in Model which I
-        // don't want to implement yet.
-        return false;
-      }
+  lessThan(that: Variable): boolean {
+    return this.ptr in that.getDeps();
+  }
+
+  isConst(): boolean {
+    // FIXME(bp) should actually lookup whether this.ptr is const,
+    // but that requires module instance walking in Model which I
+    // don't want to implement yet.
+    return false;
+  }
+}
+
+// An AST visitor to deal with desugaring calls to builtin functions
+// that are actually module instantiations
+export class IdentifierSetVisitor implements ast.Visitor<Set<string>> {
+  ident(n: ast.Ident): Set<string> {
+    return Set<string>([n.ident]);
+  }
+  constant(n: ast.Constant): Set<string> {
+    return Set<string>();
+  }
+  call(n: ast.CallExpr): Set<string> {
+    let set = Set<string>();
+    for (let i = 0; i < n.args.length; i++) {
+      set = set.union(n.args[i].walk(this));
     }
 
-    // An AST visitor to deal with desugaring calls to builtin functions
-    // that are actually module instantiations
-    export class IdentifierSetVisitor implements ast.Visitor<Set<string>> {
-      ident(n: ast.Ident): Set<string> {
-        let set = new Set<string>();
-        set.add(n.ident);
-        return set;
-      }
-      constant(n: ast.Constant): Set<string> {
-        return new Set<string>();;
-      }
-      call(n: ast.CallExpr): Set<string> {
-        let set = new Set<string>();
-        for (let i = 0; i < n.args.length; i++) {
-          set = util.SetUnion(set, n.args[i].walk(this));
-        }
+    return set;
+  }
+  if(n: ast.IfExpr): Set<string> {
+    const condIdents = n.cond.walk(this);
+    const trueIdents = n.t.walk(this);
+    const falseIdents = n.f.walk(this);
+    return condIdents.union(trueIdents).union(falseIdents);
+  }
+  paren(n: ast.ParenExpr): Set<string> {
+    return n.x.walk(this);
+  }
+  unary(n: ast.UnaryExpr): Set<string> {
+    return n.x.walk(this);
+  }
+  binary(n: ast.BinaryExpr): Set<string> {
+    const leftIdents = n.l.walk(this);
+    const rightIdents = n.r.walk(this);
+    return leftIdents.union(rightIdents);
+  }
+}
 
-        return set;
-      }
-      if(n: ast.IfExpr): Set<string> {
-        return util.SetUnion(
-          n.cond.walk(this),
-          util.SetUnion(n.t.walk(this), n.f.walk(this)));
-      }
-      paren(n: ast.ParenExpr): Set<string> {
-        return n.x.walk(this);
-      }
-      unary(n: ast.UnaryExpr): Set<string> {
-        return n.x.walk(this);
-      }
-      binary(n: ast.BinaryExpr): Set<string> {
-        return util.SetUnion(n.l.walk(this), n.r.walk(this));
-      }
-    }
+/**
+ * For a given AST node string, returns a set of the identifiers
+ * referenced.  Identifiers exclude keywords (such as 'if' and 'then')
+ * as well as builtin functions ('pulse', 'max', etc).
+ *
+ * @param root An AST node.
+ * @return A set of all identifiers.
+ */
+export function identifierSet(root: ast.Node | undefined): Set<string> {
+  if (!root)
+    return Set<string>();
 
-    /**
-     * For a given AST node string, returns a set of the identifiers
-     * referenced.  Identifiers exclude keywords (such as 'if' and 'then')
-     * as well as builtin functions ('pulse', 'max', etc).
-     *
-     * @param root An AST node.
-     * @return A set of all identifiers.
-     */
-    export function identifierSet(root: ast.Node | undefined): type.StringSet {
-      'use strict';
-
-      let result: type.StringSet = {};
-      if (!root)
-        return result;
-
-      let idents = root.walk(new IdentifierSetVisitor());
-
-      for (let ident of idents) {
-        result[ident] = true;
-      }
-
-      return result;
-    }
+  return root.walk(new IdentifierSetVisitor());
+}

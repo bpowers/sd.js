@@ -2,8 +2,6 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-'use strict';
-
 import * as type from './type';
 
 export function exists<T>(object: T | null): T {
@@ -19,7 +17,6 @@ export function defined<T>(object: T | undefined): T {
 }
 
 export function titleCase(str: string): string {
-  'use strict';
   return str.replace(/(?:^|\s)\w/g, function(match: string): string {
     return match.toUpperCase();
   });
@@ -28,27 +25,12 @@ export function titleCase(str: string): string {
 /// dName converts a string into the format the user
 /// expects to see on a diagram.
 export function dName(s: string): string {
-  'use strict';
   return s.replace(/\\n/g, '\n').replace(/_/g, ' ');
-}
-
-/**
- * Turns the array of arguments into a hashset.
- * Bascially an object like:
- *
- *  {arg1: true, arg2: true, ...}
- */
-export function set(...args: string[]): any {
-  let result: type.StringSet = {};
-  for (let i = 0; i < args.length; ++i)
-    result[args[i]] = true;
-  return result;
 }
 
 // swap the values at 2 indexes in the specified array, used for
 // quicksort.
 function swap(array: any[], a: number, b: number): void {
-  'use strict';
   let tmp = array[a];
   array[a] = array[b];
   array[b] = tmp;
@@ -57,7 +39,6 @@ function swap(array: any[], a: number, b: number): void {
 // partition used in quicksort, based off pseudocode
 // on wikipedia
 export function partition(array: any[], l: number, r: number, p: number): number {
-  'use strict';
   let pValue = array[p];
   // move the pivot to the end
   swap(array, p, r);
@@ -116,7 +97,6 @@ export function sort(array: any[], l = 0, r = array.length-1, part = partition):
  * @return The y-value of the given index.
  */
 export function lookup(table: any, index: number): number {
-  'use strict';
   const size = table.x.length;
   if (size === 0)
     return NaN;
@@ -158,7 +138,6 @@ export function lookup(table: any, index: number): number {
  *  Returns the minimum of either of the arguments
  */
 export function min(a: number, b: number): number {
-  'use strict';
   return a < b ? a : b;
 }
 
@@ -167,7 +146,6 @@ export function min(a: number, b: number): number {
  * parseFloat on every item in arr.
  */
 export function numArr(arr: any[]): number[] {
-  'use strict';
   let result: number[] = [];
   for (let i = 0; i < arr.length; i++) {
     result.push(parseFloat(arr[i]));
@@ -176,14 +154,12 @@ export function numArr(arr: any[]): number[] {
 }
 
 export function floatAttr(o: any, n: any): number {
-  'use strict';
   return parseFloat(o.getAttribute(n));
 }
 
 // wrapper/re-implementation of querySelector that works under
 // Node with xmldom.
 export function qs(e: any, s: any): any {
-  'use strict';
   if (e.querySelector)
     return e.querySelector(s);
 
@@ -208,7 +184,6 @@ export function qs(e: any, s: any): any {
 }
 
 export function querySelectorInner(e: any, selectors: any): any {
-  'use strict';
   let sel = selectors[0];
   let rest = selectors.slice(1);
   let result: any[] = [];
@@ -231,7 +206,6 @@ export function querySelectorInner(e: any, selectors: any): any {
 // wrapper/re-implementation of querySelectorAll that works under
 // Node with xmldom
 export function qsa(e: any, s: any): any {
-  'use strict';
   if (e.querySelectorAll)
     return e.querySelectorAll(s);
   let selectors = s.split('>').map(function(sel: string): string {
@@ -242,19 +216,5 @@ export function qsa(e: any, s: any): any {
 }
 
 export function isNaN(n: number): boolean {
-  'use strict';
   return n !== n;
-}
-
-export function SetUnion<T>(a: Set<T> | null, b: Set<T> | null): Set<T> {
-  if (!a)
-    return new Set<T>(b);
-  if (!b)
-    return new Set<T>(a);
-
-  let union = new Set<T>(a);
-  for (let element of b)
-    union.add(element);
-
-  return union;
 }

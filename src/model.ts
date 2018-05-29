@@ -4,6 +4,8 @@
 
 'use strict';
 
+import { Set } from 'immutable';
+
 import * as common from './common';
 import * as type from './type';
 import * as util from './util';
@@ -12,9 +14,7 @@ import * as sim from './sim';
 import * as xmile from './xmile';
 import * as ast from './ast';
 
-import {identifierSet} from './vars';
-
-const VAR_TYPES = util.set('module', 'stock', 'aux', 'flow');
+const VAR_TYPES = Set<string>(['module', 'stock', 'aux', 'flow']);
 
 export class Model implements type.Model {
   name:    string;
@@ -167,7 +167,7 @@ export class Model implements type.Model {
       }
 
       // if we rewrote the AST, make sure to update our dependencies
-      v._deps = identifierSet(v.ast);
+      v._deps = Set(v.ast);
       v._allDeps = undefined;
     }
 

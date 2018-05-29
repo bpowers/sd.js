@@ -2,21 +2,13 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-'use strict';
+import { Map, Record, Set } from 'immutable';
 
 import * as xmile from './xmile';
-
-export interface StringSet {
-  [name: string]: boolean;
-}
 
 export interface Table {
   x: number[];
   y: number[];
-}
-
-export interface TableMap {
-  [name: string]: Table;
 }
 
 export interface SimSpec {
@@ -46,30 +38,37 @@ export interface Model {
   name:    string;
   ident:   string;
   valid:   boolean;
-  modules: ModuleMap;
-  tables:  TableMap;
+  modules: Map<string, Module>;
+  tables:  Map<string, Table>;
   project: Project;
-  vars:    VariableMap;
+  vars:    Map<string, Variable>;
   simSpec: SimSpec;
 
   lookup(name: string): Variable | undefined;
-}
-
-export interface ModelMap {
-  [name: string]: Model;
 }
 
 export interface Offsets {
   [name: string]: number|string;
 }
 
-export interface ModelDef {
-  model: Model;
-  modules: Module[];
+interface ModelDefProps {
+  model: Model | undefined;
+  modules: Set<Module>;
 }
 
-export interface ModelDefSet {
-  [name: string]: ModelDef;
+const modelDefDefaults: ModelDefProps = {
+  model: undefined,
+  modules: Set<Module>(),
+};
+
+export class ModelDef extends Record(modelDefDefaults) {
+    constructor(params: ModelDefProps) {
+        super(params);
+    }
+
+    get<T extends keyof ModelDefProps>(value: T): ModelDefProps[T] {
+      return super.get(value);
+    }
 }
 
 export interface Variable {
@@ -84,35 +83,23 @@ export interface Variable {
   parent: Model;
   model: Model;
 
-  _deps: StringSet;
-  _allDeps: StringSet;
+  _deps: Set<string>;
+  _allDeps: Set<string>;
 
   isConst(): boolean;
-  getDeps(): StringSet;
+  getDeps(): Set<string>;
   code(v: Offsets): string;
-}
-
-export interface VariableMap {
-  [name: string]: Variable;
 }
 
 export interface Module extends Variable {
   modelName: string;
-  refs: ReferenceMap;
-  referencedModels(all?: ModelDefSet): ModelDefSet;
+  refs: Map<string, Reference>;
+  referencedModels(all?: Map<string, ModelDef>): Map<string, ModelDef>;
   updateRefs(model: Model): void;
-}
-
-export interface ModuleMap {
-  [name: string]: Module;
 }
 
 export interface Reference extends Variable {
   ptr: string;
-}
-
-export interface ReferenceMap {
-  [name: string]: Reference;
 }
 
 // FROM lex

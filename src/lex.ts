@@ -2,9 +2,11 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-import {builtins} from './common';
-import {StringSet, TokenType, Token, SourceLoc} from './type';
-import {exists, set} from './util';
+import { Map, Set } from 'immutable';
+
+import { builtins} from './common';
+import { TokenType, Token, SourceLoc } from './type';
+import { exists } from './util';
 
 const OP: {[n: string]: string} = {
   'not': '!',
@@ -17,7 +19,7 @@ const OP: {[n: string]: string} = {
 // the equations, especially for the macros
 
 // these are words reserved by SMILE
-export const RESERVED = set('if', 'then', 'else');
+export const RESERVED = Set<string>(['if', 'then', 'else']);
 
 function isWhitespace(ch: string | null): boolean {
   'use strict';
