@@ -12,6 +12,7 @@
   "author": "Bobby Powers <bobbypowers@gmail.com>",
   "license": "MIT",
   "main": "./lib/sd.js",
+  "module": "./build/sd.js",
   "typings": "./lib/sd.d.js",
   "repository": {
     "type": "git",
