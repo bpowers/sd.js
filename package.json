@@ -23,6 +23,7 @@
     "mdl.js": "./bin/mdl.js"
   },
   "dependencies": {
+    "immutable": "^3.8.2",
     "mustache": "^2.3.0",
     "xmldom": "^0.1.27"
   },
