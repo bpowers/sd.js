@@ -48,9 +48,10 @@
     "build:pre": "node support/mkdirp.js build-rt lib build",
     "build:runtime0": "tsc -p .tsconfig.rt.json",
     "build:runtime1": "node support/build-runtime.js src/runtime.ts",
-    "build:lib": "tsc -p .tsconfig.lib.json",
+    "build:lib": "tsc -p .tsconfig.lib-cjs.json",
+    "build:build": "tsc -p .tsconfig.lib.json",
     "build:browser": "rollup -c .rollup.lib.js",
-    "build": "npm-run-all build:pre build:runtime0 build:runtime1 build:lib build:browser",
+    "build": "npm-run-all build:pre build:runtime0 build:runtime1 -p build:lib build:build -s build:browser",
     "prepublishOnly": "make clean && npm run-script build"
   },
   "engines": {
