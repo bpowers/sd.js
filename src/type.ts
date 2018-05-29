@@ -7,145 +7,145 @@
 import * as xmile from './xmile';
 
 export interface StringSet {
-	[name: string]: boolean;
+  [name: string]: boolean;
 }
 
 export interface Table {
-	x: number[];
-	y: number[];
+  x: number[];
+  y: number[];
 }
 
 export interface TableMap {
-	[name: string]: Table;
+  [name: string]: Table;
 }
 
 export interface SimSpec {
-	start:     number;
-	stop:      number;
-	dt:        number;
-	saveStep:  number;
-	method:    string;
-	timeUnits: string;
+  start:     number;
+  stop:      number;
+  dt:        number;
+  saveStep:  number;
+  method:    string;
+  timeUnits: string;
 }
 
 export interface Series {
-	name:   string;
-	time:   Float64Array;
-	values: Float64Array;
+  name:   string;
+  time:   Float64Array;
+  values: Float64Array;
 }
 
 export interface Project {
-	name:    string;
-	simSpec: SimSpec;
-	main:    Module;
+  name:    string;
+  simSpec: SimSpec;
+  main:    Module;
 
-	model(name?: string): Model;
+  model(name?: string): Model;
 }
 
 export interface Model {
-	name:    string;
-	ident:   string;
-	valid:   boolean;
-	modules: ModuleMap;
-	tables:  TableMap;
-	project: Project;
-	vars:    VariableMap;
-	simSpec: SimSpec;
+  name:    string;
+  ident:   string;
+  valid:   boolean;
+  modules: ModuleMap;
+  tables:  TableMap;
+  project: Project;
+  vars:    VariableMap;
+  simSpec: SimSpec;
 
-	lookup(name: string): Variable | undefined;
+  lookup(name: string): Variable | undefined;
 }
 
 export interface ModelMap {
-	[name: string]: Model;
+  [name: string]: Model;
 }
 
 export interface Offsets {
-	[name: string]: number|string;
+  [name: string]: number|string;
 }
 
 export interface ModelDef {
-	model: Model;
-	modules: Module[];
+  model: Model;
+  modules: Module[];
 }
 
 export interface ModelDefSet {
-	[name: string]: ModelDef;
+  [name: string]: ModelDef;
 }
 
 export interface Variable {
-	xmile: xmile.Variable;
+  xmile: xmile.Variable;
 
-	ident: string;
-	eqn: string;
+  ident: string;
+  eqn: string;
 
-	ast: any; // FIXME: this is any to fix circular deps
+  ast: any; // FIXME: this is any to fix circular deps
 
-	project: Project;
-	parent: Model;
-	model: Model;
+  project: Project;
+  parent: Model;
+  model: Model;
 
-	_deps: StringSet;
-	_allDeps: StringSet;
+  _deps: StringSet;
+  _allDeps: StringSet;
 
-	isConst(): boolean;
-	getDeps(): StringSet;
-	code(v: Offsets): string;
+  isConst(): boolean;
+  getDeps(): StringSet;
+  code(v: Offsets): string;
 }
 
 export interface VariableMap {
-	[name: string]: Variable;
+  [name: string]: Variable;
 }
 
 export interface Module extends Variable {
-	modelName: string;
-	refs: ReferenceMap;
-	referencedModels(all?: ModelDefSet): ModelDefSet;
-	updateRefs(model: Model): void;
+  modelName: string;
+  refs: ReferenceMap;
+  referencedModels(all?: ModelDefSet): ModelDefSet;
+  updateRefs(model: Model): void;
 }
 
 export interface ModuleMap {
-	[name: string]: Module;
+  [name: string]: Module;
 }
 
 export interface Reference extends Variable {
-	ptr: string;
+  ptr: string;
 }
 
 export interface ReferenceMap {
-	[name: string]: Reference;
+  [name: string]: Reference;
 }
 
 // FROM lex
 
 // constants, sort of...
 export const enum TokenType {
-	TOKEN,
-	IDENT,
-	RESERVED,
-	NUMBER,
+  TOKEN,
+  IDENT,
+  RESERVED,
+  NUMBER,
 }
 
 export class SourceLoc {
-	constructor(
-		public line: number,
-		public pos: number) {}
+  constructor(
+    public line: number,
+    public pos: number) {}
 
-	off(n: number): SourceLoc {
-		return new SourceLoc(this.line, this.pos+n);
-	}
+  off(n: number): SourceLoc {
+    return new SourceLoc(this.line, this.pos+n);
+  }
 }
 
 export class Token {
-	constructor(
-		public tok: string,
-		public type: TokenType,
-		public startLoc?: SourceLoc,
-		public endLoc?: SourceLoc) {}
+  constructor(
+    public tok: string,
+    public type: TokenType,
+    public startLoc?: SourceLoc,
+    public endLoc?: SourceLoc) {}
 
-	get value(): number {
-		if (this.type !== TokenType.NUMBER)
-			throw 'Token.value called for non-number: ' + this.type;
+  get value(): number {
+    if (this.type !== TokenType.NUMBER)
+      throw 'Token.value called for non-number: ' + this.type;
 
-		return parseFloat(this.tok);
-	}
+    return parseFloat(this.tok);
+  }
 }

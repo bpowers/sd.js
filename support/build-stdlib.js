@@ -36,7 +36,7 @@ function buildBundle() {
 	off += bundle.write('export const xmileModels: {[name: string]: string} = {', off);
 
 	for (let variable in content) {
-		off += bundle.write("\n\t'", off);
+		off += bundle.write("\n  '", off);
 		off += bundle.write(variable, off);
 		off += bundle.write("': ", off);
 		let value = content[variable];
