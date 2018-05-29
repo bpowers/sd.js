@@ -2,6 +2,8 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
+import { Record } from 'immutable';
+
 export const camelCase = (s: string): string => {
   let i = 0;
   while ((i = s.indexOf('_')) >= 0 && i < s.length - 1) {

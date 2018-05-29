@@ -852,9 +852,9 @@ immutable@3.8.2, immutable@^3.7.6:
   version "3.8.2"
   resolved "https://registry.yarnpkg.com/immutable/-/immutable-3.8.2.tgz#c2439951455bb39913daf281376f1530e104adf3"
 
-"immutable@https://github.com/facebook/immutable-js#901bd403b9864cf2b1681165c9f9b73a1ccc17d5":
+immutable@^4.0.0-rc.9:
   version "4.0.0-rc.9"
-  resolved "https://github.com/facebook/immutable-js#901bd403b9864cf2b1681165c9f9b73a1ccc17d5"
+  resolved "https://registry.yarnpkg.com/immutable/-/immutable-4.0.0-rc.9.tgz#1e6e0094e649013ec3742d2b5aeeca5eeda4f0bf"
 
 indexof@0.0.1:
   version "0.0.1"

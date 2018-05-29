@@ -23,7 +23,7 @@
     "mdl.js": "./bin/mdl.js"
   },
   "dependencies": {
-    "immutable": "https://github.com/facebook/immutable-js#901bd403b9864cf2b1681165c9f9b73a1ccc17d5",
+    "immutable": "^4.0.0-rc.9",
     "mustache": "^2.3.0",
     "xmldom": "^0.1.27"
   },
