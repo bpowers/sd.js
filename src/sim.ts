@@ -4,6 +4,8 @@
 
 'use strict';
 
+import { Map, Set } from 'immutable';
+
 import * as util from './util';
 import * as type from './type';
 import * as vars from './vars';
@@ -135,25 +137,22 @@ export class Sim {
     this.promised = {}; // callback storage, keyed by message id
     this.idSeq = {}; // variable offset sequence.  Time is always offset 0
 
-    let models = root.referencedModels();
-    let compiledModels: TemplateContext[] = [];
-    for (let n in models) {
-      if (!models.hasOwnProperty(n))
-        continue;
-
+    const models = root.referencedModels();
+    const compiledModels: TemplateContext[] = [];
+    for (const [n, modelDef] of models) {
       if (n === 'main') {
         this.idSeq[n] = 1; // add 1 for time
       } else {
         this.idSeq[n] = 0;
       }
-      compiledModels.push(this._process(models[n].model, models[n].modules));
+      compiledModels.push(this._process(modelDef.model, modelDef.modules));
     }
 
-    let mainRefs: any[] = [];
-    for (let ref in root.refs) {
+    const mainRefs: any[] = [];
+    for (const [ref, ptr] of root.refs) {
       mainRefs.push({
         'name': ref,
-        'ptr': root.refs[ref].ptr,
+        'ptr': ptr,
       });
     }
     console.log('// mainRefs: ' + JSON.stringify(root.refs));
@@ -184,18 +183,18 @@ export class Sim {
     });
   }
 
-  _process(model: type.Model, modules: type.Module[]): TemplateContext {
-    let run_initials: type.Variable[] = [];
-    let run_flows: type.Variable[] = [];
-    let run_stocks: type.Variable[] = [];
+  _process(model: type.Model, modules: Set<type.Module>): TemplateContext {
+    const runInitials: type.Variable[] = [];
+    const runFlows: type.Variable[] = [];
+    const runStocks: type.Variable[] = [];
 
-    let initialsIncludes = (ident: string): boolean => {
-      return run_initials.some((v: type.Variable) => v.ident === ident);
+    const initialsIncludes = (ident: string): boolean => {
+      return runInitials.some((v: type.Variable) => v.ident === ident);
     }
 
-    let isRef = (n: string): boolean => {
-      for (let i = 0; i < modules.length; i++) {
-        if (n in modules[i].refs)
+    const isRef = (n: string): boolean => {
+      for (const module of modules) {
+        if (module.refs.has(n))
           return true;
       }
       return false;
@@ -206,31 +205,27 @@ export class Sim {
 
     // decide which run lists each variable has to be, based on
     // its type and const-ness
-    for (let n in model.vars) {
-      if (!model.vars.hasOwnProperty(n))
-        continue;
-
-      let v = model.vars[n];
+    for (const [n, v] of model.vars) {
       if (v instanceof vars.Module) {
-        run_initials.push(v);
-        run_flows.push(v);
-        run_stocks.push(v);
+        runInitials.push(v);
+        runFlows.push(v);
+        runStocks.push(v);
       } else if (v instanceof vars.Stock) {
         // add any referenced vars to initials
-        for (let d in v.getDeps()) {
+        for (const d of v.getDeps()) {
           if (d === 'time' || initialsIncludes(d))
             continue;
-          run_initials.push(model.lookup(d));
+          runInitials.push(model.lookup(d));
         }
-        run_initials.push(v);
-        run_stocks.push(v);
+        runInitials.push(v);
+        runStocks.push(v);
       } else if (v instanceof vars.Table) {
-        run_flows.push(v);
+        runFlows.push(v);
       } else if (v.isConst()) {
-        run_initials.push(v);
-        run_stocks.push(v);
+        runInitials.push(v);
+        runStocks.push(v);
       } else {
-        run_flows.push(v);
+        runFlows.push(v);
       }
 
       if (!(v instanceof vars.Module) && !isRef(n)) {
@@ -246,8 +241,8 @@ export class Sim {
 
     // stocks don't have to be sorted, since they can only depend
     // on values calculated in the flows phase.
-    util.sort(run_initials);
-    util.sort(run_flows);
+    util.sort(runInitials);
+    util.sort(runFlows);
 
     let initials: {[name: string]: number} = {};
     let tables: {[name: string]: type.Table} = {};
@@ -255,9 +250,9 @@ export class Sim {
     let ci: string[] = [], cf: string[] = [], cs: string[] = [];
     // FIXME(bp) some auxiliaries are referred to in stock intial
     // equations, they need to be promoted into initials.
-    for (let i = 0; i < run_initials.length; i++) {
+    for (let i = 0; i < runInitials.length; i++) {
       let eqn: string;
-      let v = run_initials[i];
+      let v = runInitials[i];
       if (v instanceof vars.Module) {
         eqn = 'this.modules["' + v.ident + '"].calcInitial(dt, curr);';
       } else {
@@ -269,9 +264,9 @@ export class Sim {
       }
       ci.push(eqn);
     }
-    for (let i = 0; i < run_flows.length; i++) {
+    for (let i = 0; i < runFlows.length; i++) {
       let eqn: string;
-      let v = run_flows[i];
+      let v = runFlows[i];
       eqn = null;
       if (v instanceof vars.Module) {
         eqn = 'this.modules["' + v.ident + '"].calcFlows(dt, curr);';
@@ -282,9 +277,9 @@ export class Sim {
         continue;
       cf.push(eqn);
     }
-    for (let i = 0; i < run_stocks.length; i++) {
+    for (let i = 0; i < runStocks.length; i++) {
       let eqn: string;
-      let v = run_stocks[i];
+      let v = runStocks[i];
       if (v instanceof vars.Module) {
         cs.push('this.modules["' + v.ident + '"].calcStocks(dt, curr, next);');
       } else if (!v.hasOwnProperty('initial')) {
@@ -293,13 +288,10 @@ export class Sim {
         cs.push("next[" + offsets[v.ident] + "] = " + v.code(offsets) + ';');
       }
     }
-    for (let n in model.tables) {
-      if (!model.tables.hasOwnProperty(n))
-        continue;
-
+    for (const [n, table] of model.tables) {
       tables[n] = {
-        'x': model.tables[n].x,
-        'y': model.tables[n].y,
+        'x': table.x,
+        'y': table.y,
       };
     }
     let additional = '';
@@ -312,18 +304,13 @@ export class Sim {
     }
     let mods: string[] = [];
     mods.push('{');
-    for (let n in model.modules) {
-      if (!model.modules.hasOwnProperty(n))
-        continue;
+    for (const [n, module] of model.modules) {
       init.push('var ' + n + 'Refs = {');
-      for (let ref in model.modules[n].refs) {
-        if (!model.modules[n].refs.hasOwnProperty(ref))
-          continue;
-
-        init.push('    "' + ref + '": "' + model.modules[n].refs[ref].ptr + '",');
+      for (let [refName, ref] of module.refs) {
+        init.push('    "' + refName + '": "' + ref.ptr + '",');
       }
       init.push('};');
-      init.push('var ' + n + ' = new ' + util.titleCase(model.modules[n].modelName) + '("' + n + '", this, off, ' + n + 'Refs);');
+      init.push('var ' + n + ' = new ' + util.titleCase(module.modelName) + '("' + n + '", this, off, ' + n + 'Refs);');
       init.push('off += ' + n + '.nVars;');
       mods.push('    "' + n + '": ' + n + ',');
     }

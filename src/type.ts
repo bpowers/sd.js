@@ -47,6 +47,7 @@ export interface Model {
   lookup(name: string): Variable | undefined;
 }
 
+// FIXME: use a Map
 export interface Offsets {
   [name: string]: number|string;
 }
