@@ -391,7 +391,7 @@ export class Module extends Variable implements type.Module {
 
       // account for references into a child module
       let deps = v._deps;
-      for (let depName in deps) {
+      for (const depName of deps) {
         console.log(`/* ${this.modelName} -- ${v.ident} look ${name} */`);
         if (!name.includes('.'))
           continue;

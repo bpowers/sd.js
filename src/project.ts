@@ -1,8 +1,8 @@
-// Copyright 2015 Bobby Powers. All rights reserved.
+// Copyright 2018 Bobby Powers. All rights reserved.
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-'use strict';
+import { Map } from 'immutable';
 
 import * as xmldom from 'xmldom';
 
@@ -12,39 +12,35 @@ import * as xmile from './xmile';
 import * as compat from './compat';
 import * as stdlib from './stdlib';
 
-import {Error} from './common';
-import {Model} from './model';
-import {Module} from './vars';
+import { Error } from './common';
+import { Model } from './model';
+import { Module } from './vars';
+import { exists } from './util';
 
-function getXmileElement(xmileDoc: XMLDocument): Element {
-  'use strict';
+const getXmileElement = (xmileDoc: XMLDocument): Element | undefined => {
   // in Chrome/Firefox, item 0 is xmile.  Under node's XML DOM
   // item 0 is the <xml> prefix.  And I guess there could be
   // text nodes in there, so just explictly look for xmile
-  let i: number;
-  for (i = 0; i < xmileDoc.childNodes.length; i++) {
+  for (let i = 0; i < xmileDoc.childNodes.length; i++) {
     let node = <Element>xmileDoc.childNodes.item(i);
     if (node.tagName === 'xmile')
       return node;
   }
-  return null;
-}
+  return undefined;
+};
 
-let stdModels: {[n: string]: Model} | null = null;
+let stdModels: Map<string, type.Model> | undefined = undefined;
 
 function parseStdModels() {
-  stdModels = {};
-  for (let name in stdlib.xmileModels) {
-    if (!stdlib.xmileModels.hasOwnProperty(name))
-      continue;
-
-    let modelStr = stdlib.xmileModels[name];
+  stdModels = Map();
+  for (const name in stdlib.xmileModels) {
+    const modelStr = stdlib.xmileModels[name];
     let xml = (new xmldom.DOMParser()).parseFromString(modelStr, 'application/xml');
     let ctx = new Project(xml, true);
     let mdl = ctx.model(name);
     mdl.name = 'stdlib·' + mdl.name;
     let ident = mdl.ident;
-    stdModels['stdlib·' + ident] = mdl;
+    stdModels = stdModels.set('stdlib·' + ident, mdl);
   }
 }
 
@@ -61,25 +57,26 @@ export class Project implements type.Project {
 
   private files: xmile.File[];
   private xmile: XMLDocument;
-  private models: type.ModelMap;
+  private models: Map<string, type.Model>;
 
   constructor(xmileDoc: XMLDocument, skipStdlib = false) {
     this.files = [];
-    this.models = {};
+    this.models = Map();
     this.valid = false;
     this.addDocument(xmileDoc, true, skipStdlib);
   }
 
-  model(name?: string): any {
+  model(name?: string): type.Model | undefined {
     if (!name)
       name = 'main';
-    if (!(name in this.models))
-      return this.models['stdlib·' + name];
-    return this.models[name];
+    if (this.models.has(name))
+      return this.models.get(name);
+
+    return this.models.get('stdlib·' + name);
   }
 
   // isMain should only be true when called from the constructor.
-  addDocument(xmileDoc: XMLDocument, isMain = false, skipStdlib = false): Error {
+  addDocument(xmileDoc: XMLDocument, isMain = false, skipStdlib = false): Error | undefined {
     if (!xmileDoc || xmileDoc.getElementsByTagName('parsererror').length !== 0) {
       this.valid = false;
       return Error.Version;
@@ -116,16 +113,12 @@ export class Project implements type.Project {
     }
 
     if (!skipStdlib) {
-      if (stdModels === null)
+      if (stdModels === undefined)
         parseStdModels();
 
       // add standard models, like 'delay1' and 'smth3'.
-      for (let name in stdModels) {
-        if (!stdModels.hasOwnProperty(name))
-          continue;
-
-        let stdModel = stdModels[name];
-        this.models[name] = stdModel;
+      for (const [name, stdModel] of stdModels) {
+        this.models = this.models.set(name, stdModel);
       }
     }
 
@@ -138,18 +131,20 @@ export class Project implements type.Project {
       let ident = xModel.ident;
       if (ident === '' && !('main' in this.models))
         ident = 'main';
-      this.models[ident] = new Model(this, ident, xModel);
+      this.models = this.models.set(ident, new Model(this, ident, xModel));
     }
     this.valid = true;
 
-    if (!('main' in this.models))
-      return null;
+    if (!this.models.has('main'))
+      return undefined;
 
-    let modVar = new xmile.Variable();
+    const mainModel = exists(this.models.get('main'));
+
+    const modVar = new xmile.Variable();
     modVar.name = 'main';
     this.main = new Module(this, null, modVar);
-    this.main.updateRefs(this.models['main']);
+    this.main.updateRefs(mainModel);
 
-    return null;
+    return undefined;
   }
 }

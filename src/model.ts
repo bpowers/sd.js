@@ -4,7 +4,7 @@
 
 'use strict';
 
-import { Set } from 'immutable';
+import { Map, Set } from 'immutable';
 
 import * as common from './common';
 import * as type from './type';
@@ -21,9 +21,9 @@ export class Model implements type.Model {
   valid:   boolean;
   project: type.Project;
   xModel:  xmile.Model;
-  modules: type.ModuleMap   = {};
-  tables:  type.TableMap    = {};
-  vars:    type.VariableMap = {};
+  modules: Map<string, type.Module>   = Map();
+  tables:  Map<string, type.Table>    = Map();
+  vars:    Map<string, type.Variable> = Map();
 
   private spec: type.SimSpec;
 
@@ -32,9 +32,6 @@ export class Model implements type.Model {
     this.xModel = xModel;
 
     this.name = ident;
-    this.vars = {};
-    this.tables = {};
-    this.modules = {};
 
     this.parseVars(xModel.variables);
 
@@ -58,10 +55,10 @@ export class Model implements type.Model {
   lookup(id: string): type.Variable | undefined {
     if (id[0] === '.')
       id = id.substr(1);
-    if (id in this.vars)
-      return this.vars[id];
+    if (this.vars.has(id))
+      return this.vars.get(id);
     let parts = id.split('.');
-    let module = this.modules[parts[0]];
+    let module = this.modules.get(parts[0]);
     if (!module)
       return undefined;
     let nextModel = this.project.model(module.modelName);
@@ -98,12 +95,12 @@ export class Model implements type.Model {
       switch (v.type) {
       case 'module':
         let module = new vars.Module(this.project, this, v);
-        this.modules[ident] = module;
-        this.vars[ident] = module;
+        this.modules = this.modules.set(ident, module);
+        this.vars = this.vars.set(ident, module);
         break;
       case 'stock':
         let stock = new vars.Stock(this, v);
-        this.vars[ident] = stock;
+        this.vars = this.vars.set(ident, stock);
         break;
       case 'aux':
         // FIXME: fix Variable/GF/Table nonsense
@@ -111,26 +108,26 @@ export class Model implements type.Model {
         if (v.gf) {
           let table = new vars.Table(this, v);
           if (table.ok) {
-            this.tables[ident] = table;
+            this.tables = this.tables.set(ident, table);
             aux = table;
           }
         }
         if (aux === null)
           aux = new vars.Variable(this, v);
-        this.vars[ident] = aux;
+        this.vars = this.vars.set(ident, aux);
         break;
       case 'flow':
         let flow: type.Variable | null = null;
         if (v.gf) {
           let table = new vars.Table(this, v);
           if (table.ok) {
-            this.tables[ident] = table;
+            this.tables = this.tables.set(ident, table);
             flow = table;
           }
         }
         if (flow === null)
           flow = new vars.Variable(this, v);
-        this.vars[ident] = flow;
+        this.vars = this.vars.set(ident, flow);
         break;
       default:
         throw 'unreachable: unknown type "' + v.type + '"';
@@ -142,28 +139,22 @@ export class Model implements type.Model {
 
   private instantiateImplicitModules(): xmile.Error | null {
 
-    for (let name in this.vars) {
-      if (!this.vars.hasOwnProperty(name))
-        continue;
-
-      let v = this.vars[name];
+    for (const [name, v] of this.vars) {
       let visitor = new BuiltinVisitor(this.project, this, v);
 
       // check for builtins that require module instantiations
       if (v.ast)
         v.ast = v.ast.walk(visitor);
 
-      for (let name in visitor.vars) {
-        let v = visitor.vars[name];
-        if (name in this.vars)
+      for (const [name, v] of visitor.vars) {
+        if (this.vars.has(name))
           throw 'builtin walk error, duplicate ' + name;
-        this.vars[name] = v;
+        this.vars = this.vars.set(name, v);
       }
-      for (let name in visitor.modules) {
-        let mod = visitor.modules[name];
-        if (name in this.modules)
+      for (const [name, mod] of visitor.modules) {
+        if (this.modules.has(name))
           throw 'builtin walk error, duplicate ' + name;
-        this.modules[name] = mod;
+        this.modules = this.modules.set(name, mod);
       }
 
       // if we rewrote the AST, make sure to update our dependencies
@@ -171,8 +162,7 @@ export class Model implements type.Model {
       v._allDeps = undefined;
     }
 
-    for (let name in this.modules) {
-      let mod = this.modules[name];
+    for (const [name, mod] of this.modules) {
       mod.updateRefs(this);
     }
 
@@ -198,8 +188,8 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
   project: type.Project;
   model: Model;
   variable: type.Variable;
-  modules: type.ModuleMap = {};
-  vars: type.VariableMap = {};
+  modules: Map<string, type.Module> = Map();
+  vars: Map<string, type.Variable>  = Map();
   n: number = 0;
 
   constructor(project: type.Project, m: Model, v: type.Variable) {
@@ -242,7 +232,7 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
         xVar.name = '$·' + this.variable.ident + '·' + this.n + '·arg' + i;
         xVar.eqn = arg.walk(new PrintVisitor());
         let proxyVar = new vars.Variable(this.model, xVar);
-        this.vars[proxyVar.ident] = proxyVar;
+        this.vars = this.vars.set(proxyVar.ident, proxyVar);
         identArgs.push(proxyVar.ident);
       }
     }
@@ -261,8 +251,8 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
     }
 
     let module = new vars.Module(this.project, this.model, xMod);
-    this.modules[modName] = module;
-    this.vars[modName] = module;
+    this.modules = this.modules.set(modName, module);
+    this.vars = this.vars.set(modName, module);
 
     this.n++;
 

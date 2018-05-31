@@ -1,19 +1,19 @@
-// Copyright 2015 Bobby Powers. All rights reserved.
+// Copyright 2018 Bobby Powers. All rights reserved.
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
 import * as common from './common';
 
-import {Project} from './project';
-import {Model} from './model';
+import { Project } from './project';
+import { Model } from './model';
 
-export {Project} from './project';
-export {Model} from './model';
+export { Project } from './project';
+export { Model } from './model';
 
-export {Stock} from './vars';
+export { Stock } from './vars';
 
-export {Variable} from './type';
-export {View, ViewElement} from './xmile';
+export { Variable } from './type';
+export { View, ViewElement } from './xmile';
 
 export const Error = common.Error;
 
@@ -31,7 +31,7 @@ export function newModel(xmlDoc: XMLDocument): Model|undefined {
   if (!p.valid)
     return undefined;
 
-  return p.model();
+  return p.model() as Model;
 }
 
 export async function load(url: string): Promise<[Model, undefined] | [undefined, common.Error]> {
