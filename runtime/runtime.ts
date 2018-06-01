@@ -404,6 +404,16 @@ function min(a: number, b: number): number {
   return a < b ? a : b;
 }
 
+function abs(a: number): number {
+  a = +a;
+  return Math.abs(a);
+}
+
+function exp(a: number): number {
+  a = +a;
+  return Math.exp(a);
+}
+
 function safediv(a: number, b: number, alternative?: number): number {
   'use strict';
 

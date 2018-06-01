@@ -22,12 +22,14 @@ export interface Properties {
 // whether identifiers are a builtin.  Implementation is in
 // Builtin module in runtime_src.js
 export const builtins: Map<string, Properties> = Map({
+  'abs': {},
+  'exp': {},
   'max': {},
   'min': {},
-  'safediv': {},
   'pulse': {
     usesTime: true,
   },
+  'safediv': {},
 });
 
 export const reserved: Set<string> = Set<string>(['if', 'then', 'else']);
