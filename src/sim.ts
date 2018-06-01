@@ -20,8 +20,8 @@ import {exists} from './util';
 // easier to debug but run slower.
 let DEBUG = true;
 
-const SP = DEBUG ? '\t' : '';
-const NLSP = DEBUG ? '\n\t' : '';
+const SP = DEBUG ? '  ' : '';
+const NLSP = DEBUG ? '\n  ' : '';
 
 const tmpl = `{{&preamble}}
 
@@ -78,12 +78,12 @@ class {{&className}} extends Simulation {
 
 
 {{/models}}
-var mainRefs = {
+const mainRefs = {
   {{#mainRefs}}
   '{{&name}}': '{{&ptr}}',
   {{/mainRefs}}
 };
-var main = new {{&mainClassName}}('main', undefined, 0, mainRefs);
+const main = new {{&mainClassName}}('main', undefined, 0, mainRefs);
 
 main.resolveAllSymbolicRefs();
 main.reset();
@@ -232,7 +232,7 @@ export class Sim {
         let off = this.nextID(model.name);
         runtimeOffsets[n] = off;
         if (DEBUG) {
-          offsets[n] = off + '/*' + n + '*/';
+          offsets[n] = `${off}/*${n}*/`;
         } else {
           offsets[n] = off;
         }
@@ -254,13 +254,13 @@ export class Sim {
       let eqn: string;
       let v = runInitials[i];
       if (v instanceof vars.Module) {
-        eqn = 'this.modules["' + v.ident + '"].calcInitial(dt, curr);';
+        eqn = `this.modules["${v.ident}"].calcInitial(dt, curr);`;
       } else {
         if (isRef(v.ident))
           continue;
         if (v.isConst())
           initials[v.ident] = parseFloat(v.eqn);
-        eqn = "curr[" + offsets[v.ident] + "] = " + vars.Variable.prototype.code.apply(v, [offsets]) + ';';
+        eqn = `curr[${offsets[v.ident]}] = ${vars.Variable.prototype.code.apply(v, [offsets])};`;
       }
       ci.push(eqn);
     }
@@ -269,9 +269,9 @@ export class Sim {
       let v = runFlows[i];
       eqn = null;
       if (v instanceof vars.Module) {
-        eqn = 'this.modules["' + v.ident + '"].calcFlows(dt, curr);';
+        eqn = `this.modules["${v.ident}"].calcFlows(dt, curr);`;
       } else if (!isRef(v.ident)) {
-        eqn = "curr[" + offsets[v.ident] + "] = " + v.code(offsets) + ';';
+        eqn = `curr[${offsets[v.ident]}] = ${v.code(offsets)};`;
       }
       if (!eqn)
         continue;
@@ -296,21 +296,21 @@ export class Sim {
     }
     let additional = '';
     let init: string[] = [];
-    if (Object.keys(model.modules).length) {
+    if (model.modules.size > 0) {
       // +1 for implicit time
       if (model.ident === 'main')
         additional = ' + 1';
-      init.push('var off = Object.keys(this.offsets).length' + additional + ';');
+      init.push('let off = Object.keys(this.offsets).length' + additional + ';');
     }
     let mods: string[] = [];
     mods.push('{');
     for (const [n, module] of model.modules) {
-      init.push('var ' + n + 'Refs = {');
+      init.push('const ' + n + 'Refs = {');
       for (let [refName, ref] of module.refs) {
         init.push('    "' + refName + '": "' + ref.ptr + '",');
       }
       init.push('};');
-      init.push('var ' + n + ' = new ' + util.titleCase(module.modelName) + '("' + n + '", this, off, ' + n + 'Refs);');
+      init.push('const ' + n + ' = new ' + util.titleCase(module.modelName) + '("' + n + '", this, off, ' + n + 'Refs);');
       init.push('off += ' + n + '.nVars;');
       mods.push('    "' + n + '": ' + n + ',');
     }
@@ -421,7 +421,7 @@ export class Sim {
     let nSteps = time.values.length;
     for (let i = 0; i < nSteps; i++) {
       let msg = '';
-      for (let v in series) {
+      for (const v in series) {
         if (!series.hasOwnProperty(v))
           continue;
         if (msg === '')

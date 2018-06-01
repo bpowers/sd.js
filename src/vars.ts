@@ -14,14 +14,14 @@ import * as type from './type';
 import * as xmile from './xmile';
 import * as ast from './ast';
 
-const JS_OP: {[op: string]: string} = {
+const JsOps: Map<string, string> = Map({
   '&': '&&',
   '|': '||',
   '≥': '>=',
   '≤': '<=',
   '≠': '!==',
   '=': '===',
-};
+});
 
 const defined = util.defined;
 
@@ -61,13 +61,14 @@ export class CodegenVisitor implements ast.Visitor<boolean> {
       return false;
     }
     let fn = (<ast.Ident>n.fun).ident;
-    if (!(fn in common.builtins)) {
+    if (!common.builtins.has(fn)) {
       console.log('// unknown builtin: ' + fn);
       return false;
     }
     this.code += fn;
     this.code += '(';
-    if (common.builtins[fn].usesTime) {
+    const builtin = defined(common.builtins.get(fn));
+    if (builtin.usesTime) {
       this.code += 'dt, ';
       this.refTime();
       if (n.args.length)
@@ -131,8 +132,8 @@ export class CodegenVisitor implements ast.Visitor<boolean> {
 
     let op = n.op;
     // only need to convert some of them
-    if (n.op in JS_OP)
-      op = JS_OP[n.op];
+    if (JsOps.has(n.op))
+      op = JsOps.get(n.op);
     this.code += '(';
     n.l.walk(this);
     this.code += op;
@@ -241,7 +242,7 @@ export class Variable implements type.Variable {
   }
 
   lessThan(that: Variable): boolean {
-    return this.ident in that.getDeps();
+    return that.getDeps().has(this.ident);
   }
 
   isConst(): boolean {
@@ -386,7 +387,7 @@ export class Module extends Variable implements type.Module {
   updateRefs(model: type.Model) {
     for (const [name, v] of model.vars) {
       // skip modules
-      if (v.ident in model.modules)
+      if (model.modules.has(v.ident))
         continue;
 
       // account for references into a child module
@@ -414,7 +415,7 @@ export class Module extends Variable implements type.Module {
       const def = defined(all.get(name)).update("modules", (modules: Set<type.Module>) => modules.add(this));
       all = all.set(name, def);
     } else {
-      all.set(name, new type.ModelDef({
+      all = all.set(name, new type.ModelDef({
         model:   mdl,
         modules: Set<type.Module>([this]),
       }));
@@ -444,7 +445,7 @@ export class Reference extends Variable implements type.Reference {
   }
 
   lessThan(that: Variable): boolean {
-    return this.ptr in that.getDeps();
+    return that.getDeps().has(this.ptr);
   }
 
   isConst(): boolean {
@@ -499,9 +500,9 @@ export class IdentifierSetVisitor implements ast.Visitor<Set<string>> {
  * @param root An AST node.
  * @return A set of all identifiers.
  */
-export function identifierSet(root: ast.Node | undefined): Set<string> {
+export const identifierSet = (root: ast.Node | undefined): Set<string> => {
   if (!root)
     return Set<string>();
 
   return root.walk(new IdentifierSetVisitor());
-}
+};

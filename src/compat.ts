@@ -10,7 +10,7 @@ const VENDOR = 'SDLabs';
 const PRODUCT = 'sd.js';
 const VERSION = '0.2.6';
 
-const VAR_TYPES = Set<string>(['module', 'stock', 'aux', 'flow']);
+const VarTypes = Set<string>(['module', 'stock', 'aux', 'flow']);
 
 // FIXME: remove 'any'
 export interface Vendor {
@@ -46,7 +46,7 @@ class Isee {
       }
 
       mdl.variables = {};
-      for (let type in VAR_TYPES) {
+      for (let type of VarTypes) {
         if (!mdl[type])
           continue;
         mdl.variables[type] = mdl[type];

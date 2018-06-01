@@ -124,10 +124,7 @@ export class Project implements type.Project {
 
     // FIXME: merge the other parts of the model into the
     // project
-    for (let i in file.models) {
-      if (!file.models.hasOwnProperty(i))
-        continue;
-      let xModel = file.models[i];
+    for (const xModel of file.models) {
       let ident = xModel.ident;
       if (ident === '' && !('main' in this.models))
         ident = 'main';

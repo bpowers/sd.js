@@ -188,10 +188,7 @@ export function querySelectorInner(e: any, selectors: any): any {
   let rest = selectors.slice(1);
   let result: any[] = [];
   let child: any;
-  for (let i in e.childNodes) {
-    if (!e.hasOwnProperty(i))
-      continue;
-    child = e.childNodes[i];
+  for (const child of e.childNodes) {
     if (child.tagName && child.tagName.toLowerCase() === sel) {
       if (rest.length) {
         result = result.concat(querySelectorInner(child, rest));

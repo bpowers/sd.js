@@ -14,6 +14,8 @@ import * as sim from './sim';
 import * as xmile from './xmile';
 import * as ast from './ast';
 
+const identifierSet = vars.identifierSet;
+
 const VAR_TYPES = Set<string>(['module', 'stock', 'aux', 'flow']);
 
 export class Model implements type.Model {
@@ -85,7 +87,7 @@ export class Model implements type.Model {
       let ident = v.ident;
 
       // FIXME: is this too simplistic?
-      if (ident in this.vars)
+      if (this.vars.has(ident))
         return new xmile.Error('duplicate var ' + ident);
 
       switch (v.type) {
@@ -154,7 +156,7 @@ export class Model implements type.Model {
       }
 
       // if we rewrote the AST, make sure to update our dependencies
-      v._deps = Set(v.ast);
+      v._deps = identifierSet(v.ast);
       v._allDeps = undefined;
     }
 
@@ -210,7 +212,7 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
       throw '// for now, only idents can be used as fns.';
 
     let fn = (<ast.Ident>n.fun).ident;
-    if (fn in common.builtins)
+    if (common.builtins.has(fn))
       return new ast.CallExpr(n.fun, n._lParenPos, args, n._rParenPos);
 
     let model = <Model|null>this.project.model('stdlib·' + fn);

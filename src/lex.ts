@@ -4,7 +4,7 @@
 
 import { Map, Set } from 'immutable';
 
-import { builtins} from './common';
+import { builtins, reserved } from './common';
 import { TokenType, Token, SourceLoc } from './type';
 import { exists } from './util';
 
@@ -15,27 +15,18 @@ const OP: Map<string, string> = Map({
   'mod': '%',
 });
 
-// the idea is to use the scanner (& an eventual parser) to validate
-// the equations, especially for the macros
-
-// these are words reserved by SMILE
-export const RESERVED = Set<string>(['if', 'then', 'else']);
-
 function isWhitespace(ch: string | null): boolean {
-  'use strict';
   if (ch === null)
     return false;
   return /\s/.test(ch);
 }
 function isNumberStart(ch: string | null): boolean {
-  'use strict';
   if (ch === null)
     return false;
   return /[\d\.]/.test(ch);
 }
 // For use in isIdentifierStart.  See below.
 function isOperator(ch: string | null): boolean {
-  'use strict';
   if (ch === null)
     return false;
   return /[=><\[\]\(\)\^\+\-\*\/,]/.test(ch);
@@ -46,7 +37,6 @@ function isOperator(ch: string | null): boolean {
 // not an operator or number or space.  I think this should be ok, but
 // I can also imagine it missing something important.
 function isIdentifierStart(ch: string): boolean {
-  'use strict';
   return !isNumberStart(ch) && !isWhitespace(ch) && (/[_\"]/.test(ch) || !isOperator(ch));
 }
 
@@ -233,7 +223,7 @@ export class Lexer {
 
     let type = TokenType.IDENT;
 
-    if (RESERVED.has(ident)) {
+    if (reserved.has(ident)) {
       type = TokenType.RESERVED;
     } else if (OP.has(ident)) {
       type = TokenType.TOKEN;

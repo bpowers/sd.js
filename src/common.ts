@@ -2,6 +2,8 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
+import { Map, Set } from 'immutable';
+
 export class Error {
   static Version: Error = new Error('bad xml or unknown smile version');
   static BadTime: Error = new Error('bad time (control) data');
@@ -19,16 +21,12 @@ export interface Properties {
 
 // whether identifiers are a builtin.  Implementation is in
 // Builtin module in runtime_src.js
-export const builtins: {[name: string]: Properties} = {
+export const builtins: Map<string, Properties> = Map({
   'max': {},
   'min': {},
   'pulse': {
     usesTime: true,
   },
-};
+});
 
-export const reserved = {
-  'if': true,
-  'then': true,
-  'else': true,
-};
+export const reserved: Set<string> = Set<string>(['if', 'then', 'else']);
