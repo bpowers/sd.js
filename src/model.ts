@@ -78,11 +78,7 @@ export class Model implements type.Model {
    * Validates & figures out all necessary variable information.
    */
   private parseVars(variables: xmile.Variable[]): xmile.Error | null {
-    for (let i in variables) {
-      if (!variables.hasOwnProperty(i))
-        continue;
-
-      let v = variables[i];
+    for (const v of variables) {
       // IMPORTANT: we need to use the canonicalized
       // identifier, not the 'xmile name', which is
       // what I like to think of as the display name.

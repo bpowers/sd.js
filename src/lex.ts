@@ -8,12 +8,12 @@ import { builtins} from './common';
 import { TokenType, Token, SourceLoc } from './type';
 import { exists } from './util';
 
-const OP: {[n: string]: string} = {
+const OP: Map<string, string> = Map({
   'not': '!',
   'and': '&',
   'or':  '|',
   'mod': '%',
-};
+});
 
 // the idea is to use the scanner (& an eventual parser) to validate
 // the equations, especially for the macros
@@ -233,11 +233,11 @@ export class Lexer {
 
     let type = TokenType.IDENT;
 
-    if (ident in RESERVED) {
+    if (RESERVED.has(ident)) {
       type = TokenType.RESERVED;
-    } else if (ident in OP) {
+    } else if (OP.has(ident)) {
       type = TokenType.TOKEN;
-      ident = OP[ident];
+      ident = exists(OP.get(ident));
     }
 
     return new Token(ident, type, startPos, startPos.off(len));

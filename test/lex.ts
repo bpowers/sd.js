@@ -291,6 +291,9 @@ describe('lex', function(): void {
 			for (let tok = lexer.nextTok(); tok !== null; tok = lexer.nextTok()) {
 				let expected = t.out[count];
 				expect(tok.type).to.equal(expected.type);
+        if (tok.type !== expected.type) {
+          console.log(`errrr: ${tok} -- ${expected}`);
+        }
 				expect(tok.tok).to.equal(expected.tok);
 				count++;
 			}
