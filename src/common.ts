@@ -24,6 +24,7 @@ export interface Properties {
 export const builtins: Map<string, Properties> = Map({
   'max': {},
   'min': {},
+  'safediv': {},
   'pulse': {
     usesTime: true,
   },

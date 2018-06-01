@@ -404,6 +404,19 @@ function min(a: number, b: number): number {
   return a < b ? a : b;
 }
 
+function safediv(a: number, b: number, alternative?: number): number {
+  'use strict';
+
+  a = +a;
+  b = +b;
+
+  if (b !== 0) {
+    return a / b;
+  }
+
+  return alternative ? alternative : 0;
+}
+
 function pulse(dt: number, time: number, volume: number, firstPulse: number, interval: number): number {
   'use strict';
 
