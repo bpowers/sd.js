@@ -31,7 +31,7 @@ export interface Project {
   simSpec: SimSpec;
   main:    Module;
 
-  model(name?: string): Model;
+  model(name?: string): Model | undefined;
 }
 
 export interface Model {

@@ -15,7 +15,7 @@ import * as stdlib from './stdlib';
 import { Error } from './common';
 import { Model } from './model';
 import { Module } from './vars';
-import { exists } from './util';
+import { defined } from './util';
 
 const getXmileElement = (xmileDoc: XMLDocument): Element | undefined => {
   // in Chrome/Firefox, item 0 is xmile.  Under node's XML DOM
@@ -135,7 +135,7 @@ export class Project implements type.Project {
     if (!this.models.has('main'))
       return undefined;
 
-    const mainModel = exists(this.models.get('main'));
+    const mainModel = defined(this.models.get('main'));
 
     const modVar = new xmile.Variable();
     modVar.name = 'main';
