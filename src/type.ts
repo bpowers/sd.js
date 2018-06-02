@@ -12,36 +12,36 @@ export interface Table {
 }
 
 export interface SimSpec {
-  start:     number;
-  stop:      number;
-  dt:        number;
-  saveStep:  number;
-  method:    string;
+  start: number;
+  stop: number;
+  dt: number;
+  saveStep: number;
+  method: string;
   timeUnits: string;
 }
 
 export interface Series {
-  name:   string;
-  time:   Float64Array;
+  name: string;
+  time: Float64Array;
   values: Float64Array;
 }
 
 export interface Project {
-  name:    string;
+  name: string;
   simSpec: SimSpec;
-  main:    Module;
+  main: Module;
 
   model(name?: string): Model | undefined;
 }
 
 export interface Model {
-  name:    string;
-  ident:   string;
-  valid:   boolean;
+  name: string;
+  ident: string;
+  valid: boolean;
   modules: Map<string, Module>;
-  tables:  Map<string, Table>;
+  tables: Map<string, Table>;
   project: Project;
-  vars:    Map<string, Variable>;
+  vars: Map<string, Variable>;
   simSpec: SimSpec;
 
   lookup(name: string): Variable | undefined;
@@ -49,7 +49,7 @@ export interface Model {
 
 // FIXME: use a Map
 export interface Offsets {
-  [name: string]: number|string;
+  [name: string]: number | string;
 }
 
 interface ModelDefProps {
@@ -63,13 +63,13 @@ const modelDefDefaults: ModelDefProps = {
 };
 
 export class ModelDef extends Record(modelDefDefaults) {
-    constructor(params: ModelDefProps) {
-        super(params);
-    }
+  constructor(params: ModelDefProps) {
+    super(params);
+  }
 
-    get<T extends keyof ModelDefProps>(value: T): ModelDefProps[T] {
-      return super.get(value);
-    }
+  get<T extends keyof ModelDefProps>(value: T): ModelDefProps[T] {
+    return super.get(value);
+  }
 }
 
 export interface Variable {
@@ -114,12 +114,10 @@ export const enum TokenType {
 }
 
 export class SourceLoc {
-  constructor(
-    public line: number,
-    public pos: number) {}
+  constructor(public line: number, public pos: number) {}
 
   off(n: number): SourceLoc {
-    return new SourceLoc(this.line, this.pos+n);
+    return new SourceLoc(this.line, this.pos + n);
   }
 }
 
@@ -128,7 +126,8 @@ export class Token {
     public tok: string,
     public type: TokenType,
     public startLoc?: SourceLoc,
-    public endLoc?: SourceLoc) {}
+    public endLoc?: SourceLoc,
+  ) {}
 
   get value(): number {
     if (this.type !== TokenType.NUMBER)

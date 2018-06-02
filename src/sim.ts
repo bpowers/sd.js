@@ -13,7 +13,7 @@ import * as runtime from './runtime';
 
 import * as Mustache from 'mustache';
 
-import {exists} from './util';
+import { exists } from './util';
 
 // whether we map names -> offsets in a Float64Array, or use names
 // as object property lookups.  With DEBUG = true, equations are
@@ -106,7 +106,17 @@ export class TemplateContext {
   calcS: string;
   offsets: string;
 
-  constructor(model: type.Model, mods: any, init: any, initials: any, tables: any, runtimeOffsets: any, ci: any, cf: any, cs: any) {
+  constructor(
+    model: type.Model,
+    mods: any,
+    init: any,
+    initials: any,
+    tables: any,
+    runtimeOffsets: any,
+    ci: any,
+    cf: any,
+    cs: any,
+  ) {
     this.name = model.name;
     this.className = util.titleCase(model.name);
     this.isModule = model.name !== 'main';
@@ -151,36 +161,38 @@ export class Sim {
     const mainRefs: any[] = [];
     for (const [ref, ptr] of root.refs) {
       mainRefs.push({
-        'name': ref,
-        'ptr': ptr,
+        name: ref,
+        ptr: ptr,
       });
     }
     console.log('// mainRefs: ' + JSON.stringify(root.refs));
 
     let source = Mustache.render(tmpl, {
-      'preamble': runtime.preamble,
-      'epilogue': isStandalone ? runtime.epilogue : 'onmessage = handleMessage;',
-      'mainClassName': util.titleCase(root.modelName),
-      'models': compiledModels,
-      'mainRefs': mainRefs,
+      preamble: runtime.preamble,
+      epilogue: isStandalone ? runtime.epilogue : 'onmessage = handleMessage;',
+      mainClassName: util.titleCase(root.modelName),
+      models: compiledModels,
+      mainRefs: mainRefs,
     });
     if (isStandalone) {
       console.log(source);
       return;
     }
-    let blob = new Blob([source], {type: 'text/javascript'});
+    let blob = new Blob([source], { type: 'text/javascript' });
     this.worker = new Worker(window.URL.createObjectURL(blob));
     blob = null;
     source = null;
     // FIXME: find any
-    this.worker.addEventListener('message', (e: any): void => {
-      let id = e.data[0];
-      let result = e.data[1];
-      let cb = this.promised[id];
-      delete this.promised[id];
-      if (cb)
-        cb(result[0], result[1]);
-    });
+    this.worker.addEventListener(
+      'message',
+      (e: any): void => {
+        let id = e.data[0];
+        let result = e.data[1];
+        let cb = this.promised[id];
+        delete this.promised[id];
+        if (cb) cb(result[0], result[1]);
+      },
+    );
   }
 
   _process(model: type.Model, modules: Set<type.Module>): TemplateContext {
@@ -190,12 +202,11 @@ export class Sim {
 
     const initialsIncludes = (ident: string): boolean => {
       return runInitials.some((v: type.Variable) => v.ident === ident);
-    }
+    };
 
     const isRef = (n: string): boolean => {
       for (const module of modules) {
-        if (module.refs.has(n))
-          return true;
+        if (module.refs.has(n)) return true;
       }
       return false;
     };
@@ -213,8 +224,7 @@ export class Sim {
       } else if (v instanceof vars.Stock) {
         // add any referenced vars to initials
         for (const d of v.getDeps()) {
-          if (d === 'time' || initialsIncludes(d))
-            continue;
+          if (d === 'time' || initialsIncludes(d)) continue;
           runInitials.push(model.lookup(d));
         }
         runInitials.push(v);
@@ -244,10 +254,12 @@ export class Sim {
     util.sort(runInitials);
     util.sort(runFlows);
 
-    let initials: {[name: string]: number} = {};
-    let tables: {[name: string]: type.Table} = {};
+    let initials: { [name: string]: number } = {};
+    let tables: { [name: string]: type.Table } = {};
 
-    let ci: string[] = [], cf: string[] = [], cs: string[] = [];
+    let ci: string[] = [],
+      cf: string[] = [],
+      cs: string[] = [];
     // FIXME(bp) some auxiliaries are referred to in stock intial
     // equations, they need to be promoted into initials.
     for (let i = 0; i < runInitials.length; i++) {
@@ -256,11 +268,12 @@ export class Sim {
       if (v instanceof vars.Module) {
         eqn = `this.modules["${v.ident}"].calcInitial(dt, curr);`;
       } else {
-        if (isRef(v.ident))
-          continue;
-        if (v.isConst())
-          initials[v.ident] = parseFloat(v.eqn);
-        eqn = `curr[${offsets[v.ident]}] = ${vars.Variable.prototype.code.apply(v, [offsets])};`;
+        if (isRef(v.ident)) continue;
+        if (v.isConst()) initials[v.ident] = parseFloat(v.eqn);
+        eqn = `curr[${offsets[v.ident]}] = ${vars.Variable.prototype.code.apply(
+          v,
+          [offsets],
+        )};`;
       }
       ci.push(eqn);
     }
@@ -273,8 +286,7 @@ export class Sim {
       } else if (!isRef(v.ident)) {
         eqn = `curr[${offsets[v.ident]}] = ${v.code(offsets)};`;
       }
-      if (!eqn)
-        continue;
+      if (!eqn) continue;
       cf.push(eqn);
     }
     for (let i = 0; i < runStocks.length; i++) {
@@ -283,24 +295,27 @@ export class Sim {
       if (v instanceof vars.Module) {
         cs.push('this.modules["' + v.ident + '"].calcStocks(dt, curr, next);');
       } else if (!v.hasOwnProperty('initial')) {
-        cs.push("next[" + offsets[v.ident] + "] = curr[" + offsets[v.ident] + '];');
+        cs.push(
+          'next[' + offsets[v.ident] + '] = curr[' + offsets[v.ident] + '];',
+        );
       } else {
-        cs.push("next[" + offsets[v.ident] + "] = " + v.code(offsets) + ';');
+        cs.push('next[' + offsets[v.ident] + '] = ' + v.code(offsets) + ';');
       }
     }
     for (const [n, table] of model.tables) {
       tables[n] = {
-        'x': table.x,
-        'y': table.y,
+        x: table.x,
+        y: table.y,
       };
     }
     let additional = '';
     let init: string[] = [];
     if (model.modules.size > 0) {
       // +1 for implicit time
-      if (model.ident === 'main')
-        additional = ' + 1';
-      init.push('let off = Object.keys(this.offsets).length' + additional + ';');
+      if (model.ident === 'main') additional = ' + 1';
+      init.push(
+        'let off = Object.keys(this.offsets).length' + additional + ';',
+      );
     }
     let mods: string[] = [];
     mods.push('{');
@@ -310,13 +325,33 @@ export class Sim {
         init.push('    "' + refName + '": "' + ref.ptr + '",');
       }
       init.push('};');
-      init.push('const ' + n + ' = new ' + util.titleCase(module.modelName) + '("' + n + '", this, off, ' + n + 'Refs);');
+      init.push(
+        'const ' +
+          n +
+          ' = new ' +
+          util.titleCase(module.modelName) +
+          '("' +
+          n +
+          '", this, off, ' +
+          n +
+          'Refs);',
+      );
       init.push('off += ' + n + '.nVars;');
       mods.push('    "' + n + '": ' + n + ',');
     }
     mods.push('}');
 
-    return new TemplateContext(model, mods, init, initials, tables, runtimeOffsets, ci, cf, cs);
+    return new TemplateContext(
+      model,
+      mods,
+      init,
+      initials,
+      tables,
+      runtimeOffsets,
+      ci,
+      cf,
+      cs,
+    );
   }
 
   nextID(modelName: string): number {
@@ -329,10 +364,8 @@ export class Sim {
 
     return new Promise<any>((resolve, reject) => {
       this.promised[id] = (result: any, err: any) => {
-        if (err !== undefined && err !== null)
-          reject(err);
-        else
-          resolve(result);
+        if (err !== undefined && err !== null) reject(err);
+        else resolve(result);
       };
       this.worker.postMessage([id].concat(args));
     });
@@ -361,7 +394,10 @@ export class Sim {
     return this._post.apply(this, args);
   }
 
-  dominance(overrides: {[n: string]: number}, indicators: string[]): Promise<any> {
+  dominance(
+    overrides: { [n: string]: number },
+    indicators: string[],
+  ): Promise<any> {
     return this._post('dominance', overrides, indicators);
   }
 
@@ -391,15 +427,19 @@ export class Sim {
           vars = names;
           return this.series(...names);
         })
-        .then((data: {[name: string]: type.Series}) => {
+        .then((data: { [name: string]: type.Series }) => {
           resolve(this.csvFromData(data, exists(vars), delim));
         });
     });
   }
 
-  private csvFromData(data: {[name: string]: type.Series}, vars: string[], delim: string): string {
+  private csvFromData(
+    data: { [name: string]: type.Series },
+    vars: string[],
+    delim: string,
+  ): string {
     let file = '';
-    let series: {[name: string]: type.Series} = {};
+    let series: { [name: string]: type.Series } = {};
     let time: type.Series;
     let header = 'time' + delim;
 
@@ -414,7 +454,7 @@ export class Sim {
       series[v] = data[v];
     }
 
-    file += header.substr(0, header.length-1);
+    file += header.substr(0, header.length - 1);
     file += '\n';
 
     // now go timestep-by-timestep to generate each line
@@ -422,13 +462,11 @@ export class Sim {
     for (let i = 0; i < nSteps; i++) {
       let msg = '';
       for (const v in series) {
-        if (!series.hasOwnProperty(v))
-          continue;
-        if (msg === '')
-          msg += series[v].time[i] + delim;
+        if (!series.hasOwnProperty(v)) continue;
+        if (msg === '') msg += series[v].time[i] + delim;
         msg += series[v].values[i] + delim;
       }
-      file += msg.substr(0, msg.length-1);
+      file += msg.substr(0, msg.length - 1);
       file += '\n';
     }
 

@@ -5,30 +5,33 @@
 import { Map, Set } from 'immutable';
 
 import { builtins, reserved } from './common';
-import { TokenType, Token, SourceLoc } from './type';
+import { SourceLoc, Token, TokenType } from './type';
 import { exists } from './util';
 
 const OP: Map<string, string> = Map({
-  'not': '!',
-  'and': '&',
-  'or':  '|',
-  'mod': '%',
+  not: '!',
+  and: '&',
+  or: '|',
+  mod: '%',
 });
 
 function isWhitespace(ch: string | null): boolean {
-  if (ch === null)
+  if (ch === null) {
     return false;
+  }
   return /\s/.test(ch);
 }
 function isNumberStart(ch: string | null): boolean {
-  if (ch === null)
+  if (ch === null) {
     return false;
+  }
   return /[\d\.]/.test(ch);
 }
 // For use in isIdentifierStart.  See below.
 function isOperator(ch: string | null): boolean {
-  if (ch === null)
+  if (ch === null) {
     return false;
+  }
   return /[=><\[\]\(\)\^\+\-\*\/,]/.test(ch);
 }
 // It is the year 2015, but JS regex's don't support Unicode. The \w
@@ -37,7 +40,11 @@ function isOperator(ch: string | null): boolean {
 // not an operator or number or space.  I think this should be ok, but
 // I can also imagine it missing something important.
 function isIdentifierStart(ch: string): boolean {
-  return !isNumberStart(ch) && !isWhitespace(ch) && (/[_\"]/.test(ch) || !isOperator(ch));
+  return (
+    !isNumberStart(ch) &&
+    !isWhitespace(ch) &&
+    (/[_\"]/.test(ch) || !isOperator(ch))
+  );
 }
 
 // TODO(bp) better errors
@@ -67,84 +74,88 @@ export class Lexer {
   }
 
   peek(): Token | null {
-    if (!this.tpeek)
+    if (!this.tpeek) {
       this.tpeek = this.nextTok();
+    }
 
     return this.tpeek;
   }
 
   nextTok(): Token | null {
     if (this.tpeek) {
-      let tpeek = this.tpeek;
+      const tpeek = this.tpeek;
       this.tpeek = null;
       return tpeek;
     }
 
     this.skipWhitespace();
-    let peek = this.rpeek;
+    const peek = this.rpeek;
 
     // at the end of the input, peek is null.
-    if (peek === null || peek === undefined)
+    if (peek === null || peek === undefined) {
       return null;
+    }
 
     // keep track of the start of the token, relative to the start of
     // the current line.
-    let start: number = this.pos - this.lstart;
-    let startLoc = new SourceLoc(this.line, start);
+    const start: number = this.pos - this.lstart;
+    const startLoc = new SourceLoc(this.line, start);
 
-    if (isNumberStart(peek))
+    if (isNumberStart(peek)) {
       return this.lexNumber(startLoc);
+    }
 
-    if (isIdentifierStart(peek))
+    if (isIdentifierStart(peek)) {
       return this.lexIdentifier(startLoc);
+    }
 
-    let pos = this.pos;
+    const pos = this.pos;
     let len = 1;
 
     // match two-char tokens; if its not a 2 char token return the
     // single char tok.
     switch (peek) {
-    case '=':
-      this.nextRune();
-      if (this.rpeek === '=') {
+      case '=':
         this.nextRune();
-        len++;
-      }
-      break;
-    case '<':
-      this.nextRune();
-      if (this.rpeek === '=' || this.rpeek === '>') {
+        if (this.rpeek === '=') {
+          this.nextRune();
+          len++;
+        }
+        break;
+      case '<':
         this.nextRune();
-        len++;
-      }
-      break;
-    case '>':
-      this.nextRune();
-      if (this.rpeek === '=') {
+        if (this.rpeek === '=' || this.rpeek === '>') {
+          this.nextRune();
+          len++;
+        }
+        break;
+      case '>':
         this.nextRune();
-        len++;
-      }
-      break;
-    default:
-      this.nextRune();
-      break;
+        if (this.rpeek === '=') {
+          this.nextRune();
+          len++;
+        }
+        break;
+      default:
+        this.nextRune();
+        break;
     }
 
-    let op = this.text.substring(pos, pos+len);
+    let op = this.text.substring(pos, pos + len);
     // replace common multi-run ops with single-rune
     // equivalents.
     switch (op) {
-    case '>=':
-      op = '≥';
-      break;
-    case '<=':
-      op = '≤';
-      break;
-    case '<>':
-      op = '≠';
-      break;
-    default:
-      break;
+      case '>=':
+        op = '≥';
+        break;
+      case '<=':
+        op = '≤';
+        break;
+      case '<>':
+        op = '≠';
+        break;
+      default:
+        break;
     }
 
     return new Token(op, TokenType.TOKEN, startLoc, startLoc.off(len));
@@ -152,7 +163,7 @@ export class Lexer {
 
   private nextRune(): string | null {
     if (this.pos < this.len - 1) {
-      this.rpeek = this.text[this.pos+1];
+      this.rpeek = this.text[this.pos + 1];
     } else {
       this.rpeek = null;
     }
@@ -169,16 +180,18 @@ export class Lexer {
         this.lstart = this.pos + 1;
       }
       if (inComment) {
-        if (this.rpeek === '}')
+        if (this.rpeek === '}') {
           inComment = false;
+        }
         continue;
       }
       if (this.rpeek === '{') {
         inComment = true;
         continue;
       }
-      if (!isWhitespace(this.rpeek))
+      if (!isWhitespace(this.rpeek)) {
         break;
+      }
     } while (this.nextRune() !== null);
   }
 
@@ -194,18 +207,21 @@ export class Lexer {
   private lexIdentifier(startPos: SourceLoc): Token {
     const quoted = this.rpeek === '"';
 
-    let line = this.line;
-    let pos = this.pos;
+    const line = this.line;
+    const pos = this.pos;
 
-    if (quoted)
+    if (quoted) {
       this.nextRune();
+    }
 
     let r: string | null;
     while ((r = this.nextRune())) {
-      if (r === null)
+      if (r === null) {
         break;
-      if ((isIdentifierStart(r) && r !== '"') || /\d/.test(r))
+      }
+      if ((isIdentifierStart(r) && r !== '"') || /\d/.test(r)) {
         continue;
+      }
       if (quoted) {
         if (r === '"') {
           // eat closing "
@@ -218,8 +234,8 @@ export class Lexer {
       break;
     }
 
-    let len = this.pos - pos;
-    let ident = this.text.substring(pos, pos+len);
+    const len = this.pos - pos;
+    let ident = this.text.substring(pos, pos + len);
 
     let type = TokenType.IDENT;
 
@@ -236,11 +252,16 @@ export class Lexer {
   private lexNumber(startPos: SourceLoc): Token {
     // we do a .toLowerCase before the string gets to here, so we
     // don't need to match for lower and upper cased 'e's.
-    const numStr = exists(/\d*(\.\d*)?(e(\d?(\.\d*)?)?)?/.exec(this.text.substring(this.pos)))[0];
+    const numStr = exists(
+      /\d*(\.\d*)?(e(\d?(\.\d*)?)?)?/.exec(this.text.substring(this.pos)),
+    )[0];
     const len = numStr.length;
     this.fastForward(len);
     return new Token(
-      numStr, TokenType.NUMBER, startPos,
-      new SourceLoc(startPos.line, startPos.pos + len));
+      numStr,
+      TokenType.NUMBER,
+      startPos,
+      new SourceLoc(startPos.line, startPos.pos + len),
+    );
   }
 }

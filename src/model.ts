@@ -19,13 +19,13 @@ const identifierSet = vars.identifierSet;
 const VAR_TYPES = Set<string>(['module', 'stock', 'aux', 'flow']);
 
 export class Model implements type.Model {
-  name:    string;
-  valid:   boolean;
+  name: string;
+  valid: boolean;
   project: type.Project;
-  xModel:  xmile.Model;
-  modules: Map<string, type.Module>   = Map();
-  tables:  Map<string, type.Table>    = Map();
-  vars:    Map<string, type.Variable> = Map();
+  xModel: xmile.Model;
+  modules: Map<string, type.Module> = Map();
+  tables: Map<string, type.Table> = Map();
+  vars: Map<string, type.Variable> = Map();
 
   private spec: type.SimSpec;
 
@@ -55,15 +55,18 @@ export class Model implements type.Model {
   }
 
   lookup(id: string): type.Variable | undefined {
-    if (id[0] === '.')
+    if (id[0] === '.') {
       id = id.substr(1);
-    if (this.vars.has(id))
+    }
+    if (this.vars.has(id)) {
       return this.vars.get(id);
-    let parts = id.split('.');
+    }
+    const parts = id.split('.');
     let module = this.modules.get(parts[0]);
-    if (!module)
+    if (!module) {
       return undefined;
-    let nextModel = this.project.model(module.modelName);
+    }
+    const nextModel = this.project.model(module.modelName);
     return nextModel.lookup(parts.slice(1).join('.'));
   }
 
@@ -72,7 +75,7 @@ export class Model implements type.Model {
       // mod = new vars.Module(this.project, null, 'main', this.name);
       throw 'FIXME: sim of non-main model';
     }
-    let mod = this.project.main;
+    const mod = this.project.main;
     return new sim.Sim(mod, isStandalone);
   }
 
@@ -91,44 +94,46 @@ export class Model implements type.Model {
         return new xmile.Error('duplicate var ' + ident);
 
       switch (v.type) {
-      case 'module':
-        let module = new vars.Module(this.project, this, v);
-        this.modules = this.modules.set(ident, module);
-        this.vars = this.vars.set(ident, module);
-        break;
-      case 'stock':
-        let stock = new vars.Stock(this, v);
-        this.vars = this.vars.set(ident, stock);
-        break;
-      case 'aux':
-        // FIXME: fix Variable/GF/Table nonsense
-        let aux: type.Variable | null = null;
-        if (v.gf) {
-          let table = new vars.Table(this, v);
-          if (table.ok) {
-            this.tables = this.tables.set(ident, table);
-            aux = table;
+        case 'module':
+          let module = new vars.Module(this.project, this, v);
+          this.modules = this.modules.set(ident, module);
+          this.vars = this.vars.set(ident, module);
+          break;
+        case 'stock':
+          let stock = new vars.Stock(this, v);
+          this.vars = this.vars.set(ident, stock);
+          break;
+        case 'aux':
+          // FIXME: fix Variable/GF/Table nonsense
+          let aux: type.Variable | null = null;
+          if (v.gf) {
+            let table = new vars.Table(this, v);
+            if (table.ok) {
+              this.tables = this.tables.set(ident, table);
+              aux = table;
+            }
           }
-        }
-        if (aux === null)
-          aux = new vars.Variable(this, v);
-        this.vars = this.vars.set(ident, aux);
-        break;
-      case 'flow':
-        let flow: type.Variable | null = null;
-        if (v.gf) {
-          let table = new vars.Table(this, v);
-          if (table.ok) {
-            this.tables = this.tables.set(ident, table);
-            flow = table;
+          if (aux === null) {
+            aux = new vars.Variable(this, v);
           }
-        }
-        if (flow === null)
-          flow = new vars.Variable(this, v);
-        this.vars = this.vars.set(ident, flow);
-        break;
-      default:
-        throw 'unreachable: unknown type "' + v.type + '"';
+          this.vars = this.vars.set(ident, aux);
+          break;
+        case 'flow':
+          let flow: type.Variable | null = null;
+          if (v.gf) {
+            let table = new vars.Table(this, v);
+            if (table.ok) {
+              this.tables = this.tables.set(ident, table);
+              flow = table;
+            }
+          }
+          if (flow === null) {
+            flow = new vars.Variable(this, v);
+          }
+          this.vars = this.vars.set(ident, flow);
+          break;
+        default:
+          throw 'unreachable: unknown type "' + v.type + '"';
       }
     }
 
@@ -136,17 +141,14 @@ export class Model implements type.Model {
   }
 
   private instantiateImplicitModules(): xmile.Error | null {
-
     for (const [name, v] of this.vars) {
       let visitor = new BuiltinVisitor(this.project, this, v);
 
       // check for builtins that require module instantiations
-      if (v.ast)
-        v.ast = v.ast.walk(visitor);
+      if (v.ast) v.ast = v.ast.walk(visitor);
 
       for (const [name, v] of visitor.vars) {
-        if (this.vars.has(name))
-          throw 'builtin walk error, duplicate ' + name;
+        if (this.vars.has(name)) throw 'builtin walk error, duplicate ' + name;
         this.vars = this.vars.set(name, v);
       }
       for (const [name, mod] of visitor.modules) {
@@ -172,12 +174,12 @@ function isIdent(n: ast.Node): boolean {
   return n.hasOwnProperty('ident');
 }
 
-const stdlibArgs: {[n: string]: string[]} = {
-  'smth1': ['input', 'delay_time', 'initial_value'],
-  'smth3': ['input', 'delay_time', 'initial_value'],
-  'delay1': ['input', 'delay_time', 'initial_value'],
-  'delay3': ['input', 'delay_time', 'initial_value'],
-  'trend': ['input', 'delay_time', 'initial_value'],
+const stdlibArgs: { [n: string]: string[] } = {
+  smth1: ['input', 'delay_time', 'initial_value'],
+  smth3: ['input', 'delay_time', 'initial_value'],
+  delay1: ['input', 'delay_time', 'initial_value'],
+  delay3: ['input', 'delay_time', 'initial_value'],
+  trend: ['input', 'delay_time', 'initial_value'],
 };
 
 // An AST visitor to deal with desugaring calls to builtin functions
@@ -187,7 +189,7 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
   model: Model;
   variable: type.Variable;
   modules: Map<string, type.Module> = Map();
-  vars: Map<string, type.Variable>  = Map();
+  vars: Map<string, type.Variable> = Map();
   n: number = 0;
 
   constructor(project: type.Project, m: Model, v: type.Variable) {
@@ -208,16 +210,18 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
       args.push(n.args[i].walk(this));
     }
 
-    if (!isIdent(n.fun))
+    if (!isIdent(n.fun)) {
       throw '// for now, only idents can be used as fns.';
+    }
 
     let fn = (<ast.Ident>n.fun).ident;
     if (common.builtins.has(fn))
       return new ast.CallExpr(n.fun, n._lParenPos, args, n._rParenPos);
 
-    let model = <Model|null>this.project.model('stdlib·' + fn);
-    if (model === null)
+    let model = <Model | null>this.project.model('stdlib·' + fn);
+    if (model === null) {
       throw 'unknown builtin: ' + fn;
+    }
 
     let identArgs: string[] = [];
     for (let i = 0; i < args.length; i++) {
@@ -296,8 +300,7 @@ class PrintVisitor implements ast.Visitor<string> {
     s += '(';
     for (let i = 0; i < n.args.length; i++) {
       s += n.args[i].walk(this);
-      if (i != n.args.length - 1)
-        s += ',';
+      if (i != n.args.length - 1) s += ',';
     }
     s += ')';
 

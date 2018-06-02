@@ -23,8 +23,7 @@ const getXmileElement = (xmileDoc: XMLDocument): Element | undefined => {
   // text nodes in there, so just explictly look for xmile
   for (let i = 0; i < xmileDoc.childNodes.length; i++) {
     let node = <Element>xmileDoc.childNodes.item(i);
-    if (node.tagName === 'xmile')
-      return node;
+    if (node.tagName === 'xmile') return node;
   }
   return undefined;
 };
@@ -35,7 +34,10 @@ function parseStdModels() {
   stdModels = Map();
   for (const name in stdlib.xmileModels) {
     const modelStr = stdlib.xmileModels[name];
-    let xml = (new xmldom.DOMParser()).parseFromString(modelStr, 'application/xml');
+    let xml = new xmldom.DOMParser().parseFromString(
+      modelStr,
+      'application/xml',
+    );
     let ctx = new Project(xml, true);
     let mdl = ctx.model(name);
     mdl.name = 'stdlib·' + mdl.name;
@@ -50,10 +52,10 @@ function parseStdModels() {
  * A single project may include models + non-model elements
  */
 export class Project implements type.Project {
-  name:    string;
-  valid:   boolean;
+  name: string;
+  valid: boolean;
   simSpec: type.SimSpec;
-  main:    type.Module;
+  main: type.Module;
 
   private files: xmile.File[];
   private xmile: XMLDocument;
@@ -67,17 +69,22 @@ export class Project implements type.Project {
   }
 
   model(name?: string): type.Model | undefined {
-    if (!name)
-      name = 'main';
-    if (this.models.has(name))
-      return this.models.get(name);
+    if (!name) name = 'main';
+    if (this.models.has(name)) return this.models.get(name);
 
     return this.models.get('stdlib·' + name);
   }
 
   // isMain should only be true when called from the constructor.
-  addDocument(xmileDoc: XMLDocument, isMain = false, skipStdlib = false): Error | undefined {
-    if (!xmileDoc || xmileDoc.getElementsByTagName('parsererror').length !== 0) {
+  addDocument(
+    xmileDoc: XMLDocument,
+    isMain = false,
+    skipStdlib = false,
+  ): Error | undefined {
+    if (
+      !xmileDoc ||
+      xmileDoc.getElementsByTagName('parsererror').length !== 0
+    ) {
       this.valid = false;
       return Error.Version;
     }
@@ -113,8 +120,7 @@ export class Project implements type.Project {
     }
 
     if (!skipStdlib) {
-      if (stdModels === undefined)
-        parseStdModels();
+      if (stdModels === undefined) parseStdModels();
 
       // add standard models, like 'delay1' and 'smth3'.
       for (const [name, stdModel] of stdModels) {
@@ -126,14 +132,12 @@ export class Project implements type.Project {
     // project
     for (const xModel of file.models) {
       let ident = xModel.ident;
-      if (ident === '' && !('main' in this.models))
-        ident = 'main';
+      if (ident === '' && !('main' in this.models)) ident = 'main';
       this.models = this.models.set(ident, new Model(this, ident, xModel));
     }
     this.valid = true;
 
-    if (!this.models.has('main'))
-      return undefined;
+    if (!this.models.has('main')) return undefined;
 
     const mainModel = defined(this.models.get('main'));
 

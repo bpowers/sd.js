@@ -4,7 +4,7 @@
 
 import { Record } from 'immutable';
 
-import { Token, SourceLoc } from './type';
+import { SourceLoc, Token } from './type';
 import { canonicalize } from './xmile';
 
 export interface Node {
@@ -37,7 +37,9 @@ export class Ident implements Node {
     this.len = name.length;
   }
 
-  get end(): SourceLoc { return this.pos.off(this.len); }
+  get end(): SourceLoc {
+    return this.pos.off(this.len);
+  }
 
   walk<T>(v: Visitor<T>): T {
     return v.ident(this);
@@ -46,17 +48,21 @@ export class Ident implements Node {
 
 export class Constant implements Node {
   value: number;
-  _pos: SourceLoc;
-  _len: number;
+  private pos: SourceLoc;
+  private len: number;
 
   constructor(pos: SourceLoc, value: string) {
     this.value = parseFloat(value);
-    this._pos = pos;
-    this._len = value.length;
+    this.pos = pos;
+    this.len = value.length;
   }
 
-  get pos(): SourceLoc { return this._pos; }
-  get end(): SourceLoc { return this._pos.off(this._len); }
+  get pos(): SourceLoc {
+    return this.pos;
+  }
+  get end(): SourceLoc {
+    return this.pos.off(this._len);
+  }
 
   walk<T>(v: Visitor<T>): T {
     return v.constant(this);
@@ -65,17 +71,21 @@ export class Constant implements Node {
 
 export class ParenExpr implements Node {
   x: Node;
-  _lPos: SourceLoc;
-  _rPos: SourceLoc;
+  private lPos: SourceLoc;
+  private rPos: SourceLoc;
 
   constructor(lPos: SourceLoc, x: Node, rPos: SourceLoc) {
     this.x = x;
-    this._lPos = lPos;
-    this._rPos = rPos;
+    this.lPos = lPos;
+    this.rPos = rPos;
   }
 
-  get pos(): SourceLoc { return this._lPos; }
-  get end(): SourceLoc { return this._rPos.off(1); }
+  get pos(): SourceLoc {
+    return this.lPos;
+  }
+  get end(): SourceLoc {
+    return this.rPos.off(1);
+  }
 
   walk<T>(v: Visitor<T>): T {
     return v.paren(this);
@@ -86,18 +96,27 @@ export class CallExpr implements Node {
   fun: Node;
   args: Node[];
 
-  _lParenPos: SourceLoc;
-  _rParenPos: SourceLoc;
+  private lParenPos: SourceLoc;
+  private rParenPos: SourceLoc;
 
-  constructor(fun: Node, lParenPos: SourceLoc, args: Node[], rParenPos: SourceLoc) {
+  constructor(
+    fun: Node,
+    lParenPos: SourceLoc,
+    args: Node[],
+    rParenPos: SourceLoc,
+  ) {
     this.fun = fun;
     this.args = args;
-    this._lParenPos = lParenPos;
-    this._rParenPos = rParenPos;
+    this.lParenPos = lParenPos;
+    this.rParenPos = rParenPos;
   }
 
-  get pos(): SourceLoc { return this.fun.pos; }
-  get end(): SourceLoc { return this._rParenPos.off(1); }
+  get pos(): SourceLoc {
+    return this.fun.pos;
+  }
+  get end(): SourceLoc {
+    return this.rParenPos.off(1);
+  }
 
   walk<T>(v: Visitor<T>): T {
     return v.call(this);
@@ -107,16 +126,20 @@ export class CallExpr implements Node {
 export class UnaryExpr implements Node {
   op: string;
   x: Node;
-  _opPos: SourceLoc;
+  private opPos: SourceLoc;
 
   constructor(opPos: SourceLoc, op: string, x: Node) {
     this.op = op;
     this.x = x;
-    this._opPos = opPos;
+    this.opPos = opPos;
   }
 
-  get pos(): SourceLoc { return this._opPos; }
-  get end(): SourceLoc { return this.x.end; }
+  get pos(): SourceLoc {
+    return this.opPos;
+  }
+  get end(): SourceLoc {
+    return this.x.end;
+  }
 
   walk<T>(v: Visitor<T>): T {
     return v.unary(this);
@@ -127,17 +150,21 @@ export class BinaryExpr implements Node {
   op: string;
   l: Node;
   r: Node;
-  _opPos: SourceLoc;
+  private opPos: SourceLoc;
 
   constructor(l: Node, opPos: SourceLoc, op: string, r: Node) {
     this.l = l;
     this.op = op;
     this.r = r;
-    this._opPos = opPos;
+    this.opPos = opPos;
   }
 
-  get pos(): SourceLoc { return this.l.pos; }
-  get end(): SourceLoc { return this.r.end; }
+  get pos(): SourceLoc {
+    return this.l.pos;
+  }
+  get end(): SourceLoc {
+    return this.r.end;
+  }
 
   walk<T>(v: Visitor<T>): T {
     return v.binary(this);
@@ -148,21 +175,32 @@ export class IfExpr implements Node {
   cond: Node;
   t: Node;
   f: Node;
-  _ifPos: SourceLoc;
-  _thenPos: SourceLoc;
-  _elsePos: SourceLoc;
+  private ifPos: SourceLoc;
+  private thenPos: SourceLoc;
+  private elsePos: SourceLoc;
 
-  constructor(ifPos: SourceLoc, cond: Node, thenPos: SourceLoc, t: Node, elsePos: SourceLoc, f: Node) {
+  constructor(
+    ifPos: SourceLoc,
+    cond: Node,
+    thenPos: SourceLoc,
+    t: Node,
+    elsePos: SourceLoc,
+    f: Node,
+  ) {
     this.cond = cond;
     this.t = t;
     this.f = f;
-    this._ifPos = ifPos;
-    this._thenPos = thenPos;
-    this._elsePos = elsePos;
+    this.ifPos = ifPos;
+    this.thenPos = thenPos;
+    this.elsePos = elsePos;
   }
 
-  get pos(): SourceLoc { return this._ifPos; }
-  get end(): SourceLoc { return this.f.end; }
+  get pos(): SourceLoc {
+    return this.ifPos;
+  }
+  get end(): SourceLoc {
+    return this.f.end;
+  }
 
   walk<T>(v: Visitor<T>): T {
     return v.if(this);

@@ -5,14 +5,12 @@
 import * as type from './type';
 
 export function exists<T>(object: T | null): T {
-  if (object === null)
-    throw 'expected non-null object';
+  if (object === null) throw 'expected non-null object';
   return object;
 }
 
 export function defined<T>(object: T | undefined): T {
-  if (object === undefined)
-    throw 'expected non-undefined object';
+  if (object === undefined) throw 'expected non-undefined object';
   return object;
 }
 
@@ -38,7 +36,12 @@ function swap(array: any[], a: number, b: number): void {
 
 // partition used in quicksort, based off pseudocode
 // on wikipedia
-export function partition(array: any[], l: number, r: number, p: number): number {
+export function partition(
+  array: any[],
+  l: number,
+  r: number,
+  p: number,
+): number {
   let pValue = array[p];
   // move the pivot to the end
   swap(array, p, r);
@@ -77,11 +80,15 @@ export function partition(array: any[], l: number, r: number, p: number): number
 /**
  *  Quicksort implementation, sorts in place.
  */
-export function sort(array: any[], l = 0, r = array.length-1, part = partition): void {
-  if (l >= r)
-    return;
+export function sort(
+  array: any[],
+  l = 0,
+  r = array.length - 1,
+  part = partition,
+): void {
+  if (l >= r) return;
 
-  let pivot = Math.floor(l + (r - l)/2);
+  let pivot = Math.floor(l + (r - l) / 2);
   let newPivot = part(array, l, r, pivot);
   sort(array, l, newPivot - 1, part);
   sort(array, newPivot + 1, r, part);
@@ -98,8 +105,7 @@ export function sort(array: any[], l = 0, r = array.length-1, part = partition):
  */
 export function lookup(table: any, index: number): number {
   const size = table.x.length;
-  if (size === 0)
-    return NaN;
+  if (size === 0) return NaN;
 
   const x = table.x;
   const y = table.y;
@@ -115,7 +121,7 @@ export function lookup(table: any, index: number): number {
   let high = size;
   let mid: number;
   while (low < high) {
-    mid = Math.floor(low + (high - low)/2);
+    mid = Math.floor(low + (high - low) / 2);
     if (x[mid] < index) {
       low = mid + 1;
     } else {
@@ -128,9 +134,9 @@ export function lookup(table: any, index: number): number {
     return y[i];
   } else {
     // slope = deltaY/deltaX
-    const slope = (y[i] - y[i-1]) / (x[i] - x[i-1]);
+    const slope = (y[i] - y[i - 1]) / (x[i] - x[i - 1]);
     // y = m*x + b
-    return (index - x[i-1])*slope + y[i-1];
+    return (index - x[i - 1]) * slope + y[i - 1];
   }
 }
 
@@ -160,19 +166,16 @@ export function floatAttr(o: any, n: any): number {
 // wrapper/re-implementation of querySelector that works under
 // Node with xmldom.
 export function qs(e: any, s: any): any {
-  if (e.querySelector)
-    return e.querySelector(s);
+  if (e.querySelector) return e.querySelector(s);
 
   let selectors = s.split('>');
   let curr = e;
   let n: any;
 
-  outer:
-  for (let i = 0; curr && i < selectors.length; i++) {
+  outer: for (let i = 0; curr && i < selectors.length; i++) {
     for (let j = 0; j < curr.childNodes.length; j++) {
       n = curr.childNodes[j];
-      if (!n.tagName)
-        continue;
+      if (!n.tagName) continue;
       if (n.tagName.toLowerCase() === selectors[i].toLowerCase()) {
         curr = n;
         continue outer;
@@ -203,8 +206,7 @@ export function querySelectorInner(e: any, selectors: any): any {
 // wrapper/re-implementation of querySelectorAll that works under
 // Node with xmldom
 export function qsa(e: any, s: any): any {
-  if (e.querySelectorAll)
-    return e.querySelectorAll(s);
+  if (e.querySelectorAll) return e.querySelectorAll(s);
   let selectors = s.split('>').map(function(sel: string): string {
     return sel.toLowerCase();
   });

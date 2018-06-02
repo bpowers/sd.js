@@ -4,64 +4,67 @@
 
 'use strict';
 
-import {TokenType, Token, SourceLoc} from './type';
-import {Node, BinaryExpr, UnaryExpr, ParenExpr, IfExpr, CallExpr,
-        Ident, Constant} from './ast';
-import {Lexer} from './lex';
+import { TokenType, Token, SourceLoc } from './type';
+import {
+  Node,
+  BinaryExpr,
+  UnaryExpr,
+  ParenExpr,
+  IfExpr,
+  CallExpr,
+  Ident,
+  Constant,
+} from './ast';
+import { Lexer } from './lex';
 
-
-const RESERVED = [
-  "if",
-  "then",
-  "else"
-];
+const RESERVED = ['if', 'then', 'else'];
 
 const WORD_OPS = {
-  "not": "!",
-  "and": "&",
-  "or": "|",
-  "mod": "%"
+  not: '!',
+  and: '&',
+  or: '|',
+  mod: '%',
 };
 
-const UNARY = "+-!";
+const UNARY = '+-!';
 
 const BINARY = [
-  "^",
-  "!", // FIXME(bp) right-associativity
-  "*/%",
-  "+-",
-  "><≥≤",
-  "=≠",
-  "&",
-  "|",
+  '^',
+  '!', // FIXME(bp) right-associativity
+  '*/%',
+  '+-',
+  '><≥≤',
+  '=≠',
+  '&',
+  '|',
 ];
 
 export function eqn(eqn: string): [Node | null, string[] | null] {
   'use strict';
   let p = new Parser(eqn);
   let ast = p.expr();
-  if (p.errs && p.errs.length)
-    return [null, p.errs];
+  if (p.errs && p.errs.length) return [null, p.errs];
   return [ast, null];
 }
 
-function binaryLevel(n: number, p: Parser, ops: string): (maxLevel: number)=>(Node|null) {
+function binaryLevel(
+  n: number,
+  p: Parser,
+  ops: string,
+): (maxLevel: number) => Node | null {
   'use strict';
   return function(maxLevel: number): Node | null {
     let t = p.lexer.peek();
     // Ensure that we don't inadvertently mess up operator
     // precedence when recursively calling back into
     // binaryLevel.
-    if (n >= maxLevel)
-      return p.factor();
+    if (n >= maxLevel) return p.factor();
 
-    if (!t)
-      return null;
+    if (!t) return null;
 
-    let next = p.levels[n+1];
+    let next = p.levels[n + 1];
     let lhs = next(maxLevel);
-    if (!lhs)
-      return null;
+    if (!lhs) return null;
     // its ok if we didn't have a binary operator
     for (let op = p.consumeAnyOf(ops); op; op = p.consumeAnyOf(ops)) {
       // must call the next precedence level to
@@ -85,7 +88,7 @@ function binaryLevel(n: number, p: Parser, ops: string): (maxLevel: number)=>(No
 class Parser {
   lexer: Lexer;
   errs: string[] = [];
-  levels: Array<(maxLevel: number)=>Node> = [];
+  levels: Array<(maxLevel: number) => Node> = [];
 
   constructor(eqn: string) {
     this.lexer = new Lexer(eqn);
@@ -95,9 +98,11 @@ class Parser {
 
     // after all of the binary operator precedence levels,
     // look for lower precedence factors (if,call,etc)
-    this.levels.push((maxLevel: number): (Node | null) => {
-      return this.factor();
-    });
+    this.levels.push(
+      (maxLevel: number): Node | null => {
+        return this.factor();
+      },
+    );
   }
   get errors(): string[] {
     return this.errs;
@@ -133,8 +138,7 @@ class Parser {
       return new UnaryExpr(op.startLoc, op.tok, lhs);
     }
 
-    if ((lhs = this.num()))
-      return lhs;
+    if ((lhs = this.num())) return lhs;
 
     let ifLoc: SourceLoc;
     if ((ifLoc = this.consumeReserved('if'))) {
@@ -169,12 +173,10 @@ class Parser {
     if ((lhs = this.ident())) {
       // check if this is a function call
       let lParenLoc: SourceLoc;
-      if ((lParenLoc = this.consumeTok('(')))
-        return this.call(lhs, lParenLoc);
+      if ((lParenLoc = this.consumeTok('('))) return this.call(lhs, lParenLoc);
       else if ((<Ident>lhs).ident === 'nan')
         return new Constant(lhs.pos, (<Ident>lhs).ident);
-      else
-        return lhs;
+      else return lhs;
     }
 
     // an empty expression isn't necessarily an error
@@ -183,19 +185,22 @@ class Parser {
 
   consumeAnyOf(ops: string): Token {
     let peek = this.lexer.peek();
-    if (!peek || peek.type !== TokenType.TOKEN)
+    if (!peek || peek.type !== TokenType.TOKEN) {
       return null;
+    }
     for (let i = 0; i < ops.length; i++) {
-      if (peek.tok === ops[i])
+      if (peek.tok === ops[i]) {
         return this.lexer.nextTok();
+      }
     }
     return null;
   }
 
   consumeTok(s: string): SourceLoc {
     let t = this.lexer.peek();
-    if (!t || t.type !== TokenType.TOKEN || t.tok !== s)
+    if (!t || t.type !== TokenType.TOKEN || t.tok !== s) {
       return null;
+    }
     // consume match
     this.lexer.nextTok();
     return t.startLoc;
@@ -203,8 +208,9 @@ class Parser {
 
   consumeReserved(s: string): SourceLoc {
     let t = this.lexer.peek();
-    if (!t || t.type !== TokenType.RESERVED || t.tok !== s)
+    if (!t || t.type !== TokenType.RESERVED || t.tok !== s) {
       return null;
+    }
     // consume match
     this.lexer.nextTok();
     return t.startLoc;
@@ -212,8 +218,9 @@ class Parser {
 
   num(): Node {
     let t = this.lexer.peek();
-    if (!t || t.type !== TokenType.NUMBER)
+    if (!t || t.type !== TokenType.NUMBER) {
       return null;
+    }
     // consume number
     this.lexer.nextTok();
     return new Constant(t.startLoc, t.tok);
@@ -221,8 +228,9 @@ class Parser {
 
   ident(): Node {
     let t = this.lexer.peek();
-    if (!t || t.type !== TokenType.IDENT)
+    if (!t || t.type !== TokenType.IDENT) {
       return null;
+    }
     // consume ident
     this.lexer.nextTok();
     return new Ident(t.startLoc, t.tok);
@@ -233,8 +241,9 @@ class Parser {
 
     // no-arg call - simplifies logic to special case this.
     let rParenLoc: SourceLoc;
-    if ((rParenLoc = this.consumeTok(')')))
+    if ((rParenLoc = this.consumeTok(')'))) {
       return new CallExpr(fn, lParenLoc, args, rParenLoc);
+    }
 
     while (true) {
       let arg = this.expr();
@@ -243,10 +252,8 @@ class Parser {
         return null;
       }
       args.push(arg);
-      if (this.consumeTok(','))
-        continue;
-      if ((rParenLoc = this.consumeTok(')')))
-        break;
+      if (this.consumeTok(',')) continue;
+      if ((rParenLoc = this.consumeTok(')'))) break;
       this.errs.push('call: expected "," or ")"');
       return null;
     }

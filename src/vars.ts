@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // FIXME: this seems to fix a bug in Typescript 1.5
-declare function isFinite(n: string|number): boolean;
+declare function isFinite(n: string | number): boolean;
 
 import { Map, Set } from 'immutable';
 
@@ -42,16 +42,13 @@ export class CodegenVisitor implements ast.Visitor<boolean> {
   }
 
   ident(n: ast.Ident): boolean {
-    if (n.ident === 'time')
-      this.refTime();
-    else if (n.ident in this.offsets)
-      this.refDirect(n.ident);
-    else
-      this.refIndirect(n.ident);
+    if (n.ident === 'time') this.refTime();
+    else if (n.ident in this.offsets) this.refDirect(n.ident);
+    else this.refIndirect(n.ident);
     return true;
   }
   constant(n: ast.Constant): boolean {
-    this.code += (''+n.value);
+    this.code += '' + n.value;
     return true;
   }
   call(n: ast.CallExpr): boolean {
@@ -71,14 +68,12 @@ export class CodegenVisitor implements ast.Visitor<boolean> {
     if (builtin.usesTime) {
       this.code += 'dt, ';
       this.refTime();
-      if (n.args.length)
-        this.code += ', ';
+      if (n.args.length) this.code += ', ';
     }
 
     for (let i = 0; i < n.args.length; i++) {
       n.args[i].walk(this);
-      if (i !== n.args.length-1)
-        this.code += ', ';
+      if (i !== n.args.length - 1) this.code += ', ';
     }
     this.code += ')';
     return true;
@@ -118,22 +113,29 @@ export class CodegenVisitor implements ast.Visitor<boolean> {
       n.r.walk(this);
       this.code += ')';
       return true;
-    } else if (n.op === '=' && n.l instanceof ast.Constant && isNaN(n.l.value)) {
-      this.code += 'isNaN('
-      n.r.walk(this)
-      this.code += ')'
+    } else if (
+      n.op === '=' &&
+      n.l instanceof ast.Constant &&
+      isNaN(n.l.value)
+    ) {
+      this.code += 'isNaN(';
+      n.r.walk(this);
+      this.code += ')';
       return true;
-    } else if (n.op === '=' && n.r instanceof ast.Constant && isNaN(n.r.value)) {
-      this.code += 'isNaN('
-      n.l.walk(this)
-      this.code += ')'
+    } else if (
+      n.op === '=' &&
+      n.r instanceof ast.Constant &&
+      isNaN(n.r.value)
+    ) {
+      this.code += 'isNaN(';
+      n.l.walk(this);
+      this.code += ')';
       return true;
     }
 
     let op = n.op;
     // only need to convert some of them
-    if (JsOps.has(n.op))
-      op = JsOps.get(n.op);
+    if (JsOps.has(n.op)) op = JsOps.get(n.op);
     this.code += '(';
     n.l.walk(this);
     this.code += op;
@@ -179,8 +181,7 @@ export class Variable implements type.Variable {
   _allDeps: Set<string>;
 
   constructor(model?: type.Model, v?: xmile.Variable) {
-    if (!arguments.length)
-      return;
+    if (!arguments.length) return;
     this.model = model;
     this.xmile = v;
 
@@ -208,8 +209,7 @@ export class Variable implements type.Variable {
   }
 
   code(offsets: type.Offsets): string {
-    if (this.isConst())
-      return "this.initials['" + this.ident + "']";
+    if (this.isConst()) return "this.initials['" + this.ident + "']";
     let visitor = new CodegenVisitor(offsets, this.model.ident === 'main');
 
     let ok = this.ast.walk(visitor);
@@ -222,16 +222,13 @@ export class Variable implements type.Variable {
   }
 
   getDeps(): Set<string> {
-    if (this._allDeps)
-      return this._allDeps;
+    if (this._allDeps) return this._allDeps;
     let allDeps = Set<string>();
     for (const n of this._deps) {
-      if (allDeps.has(n))
-        continue;
+      if (allDeps.has(n)) continue;
       allDeps = allDeps.add(n);
       let v = this.model.vars.get(n);
-      if (!v)
-        continue;
+      if (!v) continue;
       let otherDeps = v.getDeps();
       for (const nn of otherDeps) {
         allDeps = allDeps.add(nn);
@@ -270,11 +267,12 @@ export class Stock extends Variable {
   }
 
   code(v: type.Offsets): string {
-    let eqn = "curr[" + v[this.ident] + "] + (";
+    let eqn = 'curr[' + v[this.ident] + '] + (';
     if (this.inflows.length > 0)
-      eqn += this.inflows.map((s)=> "curr[" + v[s] + "]").join('+');
+      eqn += this.inflows.map(s => 'curr[' + v[s] + ']').join('+');
     if (this.outflows.length > 0)
-      eqn += '- (' + this.outflows.map((s)=> "curr[" + v[s] + "]").join('+') + ')';
+      eqn +=
+        '- (' + this.outflows.map(s => 'curr[' + v[s] + ']').join('+') + ')';
     // stocks can have no inflows or outflows and still be valid
     if (this.inflows.length === 0 && this.outflows.length === 0) {
       eqn += '0';
@@ -308,7 +306,7 @@ export class Table extends Variable {
       if (xpts) {
         x = xpts[i];
       } else {
-        x = (i/(ypts.length-1))*(xmax-xmin) + xmin;
+        x = (i / (ypts.length - 1)) * (xmax - xmin) + xmin;
       }
       this.x.push(x);
       this.y.push(ypts[i]);
@@ -316,10 +314,9 @@ export class Table extends Variable {
   }
 
   code(v: type.Offsets): string {
-    if (!this.eqn)
-      return null;
+    if (!this.eqn) return null;
     let index = super.code(v);
-    return "lookup(this.tables['" + this.ident + "'], " + index + ")";
+    return "lookup(this.tables['" + this.ident + "'], " + index + ')';
   }
 }
 
@@ -338,10 +335,8 @@ export class Module extends Variable implements type.Module {
     // only thing that makes sense -- having a 1 to 1
     // relationship between model name and module name
     // would be insane.
-    if (v.model)
-      this.modelName = v.model;
-    else
-      this.modelName = this.ident;
+    if (v.model) this.modelName = v.model;
+    else this.modelName = this.ident;
     this.refs = Map();
     this._deps = Set<string>();
     for (let i = 0; v.connections && i < v.connections.length; i++) {
@@ -352,12 +347,10 @@ export class Module extends Variable implements type.Module {
   }
 
   getDeps(): Set<string> {
-    if (this._allDeps)
-      return this._allDeps;
+    if (this._allDeps) return this._allDeps;
     let allDeps = Set<string>();
     for (let n of this._deps) {
-      if (allDeps.has(n))
-        continue;
+      if (allDeps.has(n)) continue;
 
       let context: type.Model;
       if (n[0] === '.') {
@@ -387,15 +380,13 @@ export class Module extends Variable implements type.Module {
   updateRefs(model: type.Model) {
     for (const [name, v] of model.vars) {
       // skip modules
-      if (model.modules.has(v.ident))
-        continue;
+      if (model.modules.has(v.ident)) continue;
 
       // account for references into a child module
       let deps = v._deps;
       for (const depName of deps) {
         console.log(`/* ${this.modelName} -- ${v.ident} look ${name} */`);
-        if (!name.includes('.'))
-          continue;
+        if (!name.includes('.')) continue;
         console.log(`/* got ${name} */`);
         const conn = new xmile.Connection();
         conn.from = name;
@@ -406,19 +397,26 @@ export class Module extends Variable implements type.Module {
     }
   }
 
-  referencedModels(all?: Map<string, type.ModelDef>): Map<string, type.ModelDef> {
-    if (!all)
-      all = Map();
+  referencedModels(
+    all?: Map<string, type.ModelDef>,
+  ): Map<string, type.ModelDef> {
+    if (!all) all = Map();
     const mdl = this.project.model(this.modelName);
     const name = mdl.name;
     if (all.has(name)) {
-      const def = defined(all.get(name)).update("modules", (modules: Set<type.Module>) => modules.add(this));
+      const def = defined(all.get(name)).update(
+        'modules',
+        (modules: Set<type.Module>) => modules.add(this),
+      );
       all = all.set(name, def);
     } else {
-      all = all.set(name, new type.ModelDef({
-        model:   mdl,
-        modules: Set<type.Module>([this]),
-      }));
+      all = all.set(
+        name,
+        new type.ModelDef({
+          model: mdl,
+          modules: Set<type.Module>([this]),
+        }),
+      );
     }
     for (const [name, module] of mdl.modules) {
       all = module.referencedModels(all);
@@ -501,8 +499,7 @@ export class IdentifierSetVisitor implements ast.Visitor<Set<string>> {
  * @return A set of all identifiers.
  */
 export const identifierSet = (root: ast.Node | undefined): Set<string> => {
-  if (!root)
-    return Set<string>();
+  if (!root) return Set<string>();
 
   return root.walk(new IdentifierSetVisitor());
 };

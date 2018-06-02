@@ -4,14 +4,18 @@
     "interface-name": {
         "options": ["never-prefix"]
     },
+    "arrow-parens": [true, "ban-single-arg-parens"],
     "quotemark": false,
+    "max-classes-per-file": false,
     "member-access": [true, "no-public"],
     "member-ordering": false,
     "no-bitwise": false,
+    "no-conditional-assignment": false,
     "no-console": false,
     "no-debugger": false,
     "no-empty": false,
     "no-empty-interface": false,
+    "no-shadowed-variable": false,
     "no-unused-variable": false,
     "object-literal-key-quotes": false,
     "object-literal-sort-keys": false,
