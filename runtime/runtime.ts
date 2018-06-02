@@ -388,25 +388,29 @@ function lookup(table: any, index: number): number {
   }
 }
 
-function max(a: number, b: number): number {
-  'use strict';
-
-  a = +a;
-  b = +b;
-  return a > b ? a : b;
-}
-
-function min(a: number, b: number): number {
-  'use strict';
-
-  a = +a;
-  b = +b;
-  return a < b ? a : b;
-}
-
 function abs(a: number): number {
   a = +a;
   return Math.abs(a);
+}
+
+function arccos(a: number): number {
+  a = +a;
+  return Math.acos(a);
+}
+
+function arcsin(a: number): number {
+  a = +a;
+  return Math.asin(a);
+}
+
+function arctan(a: number): number {
+  a = +a;
+  return Math.atan(a);
+}
+
+function cos(a: number): number {
+  a = +a;
+  return Math.cos(a);
 }
 
 function exp(a: number): number {
@@ -414,22 +418,42 @@ function exp(a: number): number {
   return Math.exp(a);
 }
 
-function safediv(a: number, b: number, alternative?: number): number {
-  'use strict';
+function inf(): number {
+  return Infinity;
+}
 
+function int(a: number): number {
+  a = +a;
+  return a|0;
+}
+
+function ln(a: number): number {
+  a = +a;
+  return Math.log(a);
+}
+
+function log10(a: number): number {
+  a = +a;
+  return Math.log10(a);
+}
+
+function max(a: number, b: number): number {
   a = +a;
   b = +b;
+  return a > b ? a : b;
+}
 
-  if (b !== 0) {
-    return a / b;
-  }
+function min(a: number, b: number): number {
+  a = +a;
+  b = +b;
+  return a < b ? a : b;
+}
 
-  return alternative ? alternative : 0;
+function pi(): number {
+  return Math.PI;
 }
 
 function pulse(dt: number, time: number, volume: number, firstPulse: number, interval: number): number {
-  'use strict';
-
   if (time < firstPulse)
     return 0;
   let nextPulse = firstPulse;
@@ -443,4 +467,30 @@ function pulse(dt: number, time: number, volume: number, firstPulse: number, int
     }
   }
   return 0;
+}
+
+function safediv(a: number, b: number, alternative?: number): number {
+  a = +a;
+  b = +b;
+
+  if (b !== 0) {
+    return a / b;
+  }
+
+  return alternative ? alternative : 0;
+}
+
+function sin(a: number): number {
+  a = +a;
+  return Math.sin(a);
+}
+
+function sqrt(a: number): number {
+  a = +a;
+  return Math.sqrt(a);
+}
+
+function tan(a: number): number {
+  a = +a;
+  return Math.tan(a);
 }
