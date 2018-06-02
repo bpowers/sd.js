@@ -20,6 +20,8 @@ CONFIG     = Makefile $(TSC) $(TSLINT)
 RTEST_DIR  = test/test-models
 RTEST_CMD  = $(RTEST_DIR)/regression-test.py
 
+RTEST_EXCLUDES = -x '(subscript|macro|initial_function|lookups|stocks_with_expressions|active_initial|smooth_and_stock|euler_step_vs_saveper|special_characters)'
+
 # quiet output, but allow us to look at what commands are being
 # executed by passing 'V=1' to make, without requiring temporarily
 # editing the Makefile.
@@ -61,7 +63,7 @@ test check: $(LIB)
 	yarn test
 
 rtest: $(LIB) $(RTEST_CMD)
-	./$(RTEST_CMD) ./bin/mdl.js $(RTEST_DIR)
+	./$(RTEST_CMD) $(RTEST_EXCLUDES) ./bin/mdl.js $(RTEST_DIR)
 
 clean:
 	rm -rf build build-rt lib
