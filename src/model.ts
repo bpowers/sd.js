@@ -241,6 +241,11 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
     xMod.name = modName;
     xMod.model = 'stdlib·' + fn;
     xMod.connections = [];
+
+    if (!(fn in stdlibArgs)) {
+      throw `unknown function or builtin ${fn}`;
+    }
+
     for (let i = 0; i < identArgs.length; i++) {
       let conn = new xmile.Connection();
       conn.to = stdlibArgs[fn][i];

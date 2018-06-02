@@ -212,8 +212,8 @@ export class Lexer {
           this.nextRune();
           break;
         }
-        if (isWhitespace(r))
-          continue;
+        // any utf-8 chars are valid inside quotes
+        continue;
       }
       break;
     }
