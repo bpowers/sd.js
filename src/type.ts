@@ -84,8 +84,8 @@ export interface Variable {
   parent: Model;
   model: Model;
 
-  _deps: Set<string>;
-  _allDeps: Set<string>;
+  deps: Set<string>;
+  allDeps: Set<string>;
 
   isConst(): boolean;
   getDeps(): Set<string>;

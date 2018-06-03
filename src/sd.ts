@@ -4,6 +4,9 @@
 
 import * as common from './common';
 
+import { Model } from './model';
+import { Project } from './project';
+
 export { Model } from './model';
 export { Project } from './project';
 

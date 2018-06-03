@@ -150,7 +150,7 @@ class Parser {
         this.errs.push('expected an expr to follow "IF"');
         return null;
       }
-      const thenLoc: SourceLoc;
+      let thenLoc: SourceLoc;
       if (!(thenLoc = this.consumeReserved('then'))) {
         this.errs.push('expected "THEN"');
         return null;
@@ -160,7 +160,7 @@ class Parser {
         this.errs.push('expected an expr to follow "THEN"');
         return null;
       }
-      const elseLoc: SourceLoc;
+      let elseLoc: SourceLoc;
       if (!(elseLoc = this.consumeReserved('else'))) {
         this.errs.push('expected "ELSE"');
         return null;

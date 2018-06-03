@@ -231,7 +231,8 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
     }
 
     const identArgs: string[] = [];
-    for (const arg of args) {
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
       if (isIdent(arg)) {
         identArgs.push((arg as ast.Ident).ident);
       } else {

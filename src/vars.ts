@@ -187,8 +187,8 @@ export class Variable implements type.Variable {
   // only for modules
   model: type.Model;
 
-  private deps: Set<string>;
-  private allDeps: Set<string>;
+  deps: Set<string>;
+  allDeps: Set<string>;
 
   constructor(model?: type.Model, v?: xmile.Variable) {
     if (!arguments.length) {
@@ -365,10 +365,12 @@ export class Module extends Variable implements type.Module {
     }
     this.refs = Map();
     this.deps = Set<string>();
-    for (let i = 0; v.connections && i < v.connections.length; i++) {
-      const ref = new Reference(v.connections[i]);
-      this.refs = this.refs.set(ref.ident, ref);
-      this.deps = this.deps.add(ref.ptr);
+    if (v.connections) {
+      for (const conn of v.connections) {
+        const ref = new Reference(conn);
+        this.refs = this.refs.set(ref.ident, ref);
+        this.deps = this.deps.add(ref.ptr);
+      }
     }
   }
 
