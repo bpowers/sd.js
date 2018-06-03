@@ -73,7 +73,7 @@ const content = (el: Element): string => {
   return text;
 };
 
-const num = (v: any): [number, undefined] | [NaN, Error] => {
+const num = (v: any): [number, undefined] | [number, Error] => {
   if (typeof v === 'undefined' || v === null) {
     return [0, undefined];
   }
@@ -197,10 +197,11 @@ export class File implements XNode {
 
     for (let i = 0; i < el.childNodes.length; i++) {
       let model: Model;
-      let child = <Element>el.childNodes.item(i);
-      if (child.nodeType !== 1)
+      const child = el.childNodes.item(i) as Element;
+      if (child.nodeType !== 1) {
         // Element
         continue;
+      }
       switch (child.nodeName.toLowerCase()) {
         case 'header':
           [file.header, err] = Header.Build(child);
@@ -1036,38 +1037,54 @@ export class View implements XNode {
           break;
         case 'order':
           [view.order, err] = num(attr.value);
-          if (err) return [null, new Error('order: ' + err.error)];
+          if (err) {
+            return [null, new Error('order: ' + err.error)];
+          }
           break;
         case 'width':
           [view.width, err] = num(attr.value);
-          if (err) return [null, new Error('width: ' + err.error)];
+          if (err) {
+            return [null, new Error('width: ' + err.error)];
+          }
           break;
         case 'height':
           [view.height, err] = num(attr.value);
-          if (err) return [null, new Error('height: ' + err.error)];
+          if (err) {
+            return [null, new Error('height: ' + err.error)];
+          }
           break;
         case 'zoom':
           [view.zoom, err] = num(attr.value);
-          if (err) return [null, new Error('zoom: ' + err.error)];
+          if (err) {
+            return [null, new Error('zoom: ' + err.error)];
+          }
           break;
         case 'scroll_x':
           [view.scrollX, err] = num(attr.value);
-          if (err) return [null, new Error('scroll_x: ' + err.error)];
+          if (err) {
+            return [null, new Error('scroll_x: ' + err.error)];
+          }
           break;
         case 'scroll_y':
           [view.scrollY, err] = num(attr.value);
-          if (err) return [null, new Error('scroll_y: ' + err.error)];
+          if (err) {
+            return [null, new Error('scroll_y: ' + err.error)];
+          }
           break;
         case 'background':
           view.background = attr.value.toLowerCase();
           break;
         case 'page_width':
           [view.pageWidth, err] = num(attr.value);
-          if (err) return [null, new Error('page_width: ' + err.error)];
+          if (err) {
+            return [null, new Error('page_width: ' + err.error)];
+          }
           break;
         case 'page_height':
           [view.pageHeight, err] = num(attr.value);
-          if (err) return [null, new Error('page_height: ' + err.error)];
+          if (err) {
+            return [null, new Error('page_height: ' + err.error)];
+          }
           break;
         case 'page_sequence':
           view.pageSequence = attr.value.toLowerCase();
@@ -1077,28 +1094,37 @@ export class View implements XNode {
           break;
         case 'show_pages':
           [view.showPages, err] = bool(attr.value);
-          if (err) return [null, new Error('show_pages: ' + err.error)];
+          if (err) {
+            return [null, new Error('show_pages: ' + err.error)];
+          }
           break;
         case 'home_page':
           [view.homePage, err] = num(attr.value);
-          if (err) return [null, new Error('home_page: ' + err.error)];
+          if (err) {
+            return [null, new Error('home_page: ' + err.error)];
+          }
           break;
         case 'home_view':
           [view.homeView, err] = bool(attr.value);
-          if (err) return [null, new Error('home_view: ' + err.error)];
+          if (err) {
+            return [null, new Error('home_view: ' + err.error)];
+          }
           break;
       }
     }
 
     for (let i = 0; i < el.childNodes.length; i++) {
       let child = <Element>el.childNodes.item(i);
-      if (child.nodeType !== 1)
+      if (child.nodeType !== 1) {
         // Element
         continue;
+      }
 
       let viewEl: ViewElement;
       [viewEl, err] = ViewElement.Build(child);
-      if (err) return [null, new Error('viewEl: ' + err.error)];
+      if (err) {
+        return [null, new Error('viewEl: ' + err.error)];
+      }
       view.elements.push(viewEl);
     }
 
@@ -1129,25 +1155,31 @@ export class GF implements XNode {
       switch (attr.name.toLowerCase()) {
         case 'type':
           table.type = attr.value.toLowerCase();
-          if (!(table.type in GF.Types))
+          if (!(table.type in GF.Types)) {
             return [null, new Error('bad type: ' + table.type)];
+          }
           break;
       }
     }
 
     for (let i = 0; i < el.childNodes.length; i++) {
       let child = <Element>el.childNodes.item(i);
-      if (child.nodeType !== 1)
+      if (child.nodeType !== 1) {
         // Element
         continue;
+      }
       switch (child.nodeName.toLowerCase()) {
         case 'xscale':
           [table.xScale, err] = Scale.Build(child);
-          if (err) return [null, new Error('xscale: ' + err.error)];
+          if (err) {
+            return [null, new Error('xscale: ' + err.error)];
+          }
           break;
         case 'yscale':
           [table.yScale, err] = Scale.Build(child);
-          if (err) return [null, new Error('yscale: ' + err.error)];
+          if (err) {
+            return [null, new Error('yscale: ' + err.error)];
+          }
           break;
         case 'xpts':
           table.xPoints = numberize(splitOnComma(content(child)));
@@ -1185,11 +1217,15 @@ export class Scale implements XNode {
       switch (attr.name.toLowerCase()) {
         case 'min':
           [scale.min, err] = num(attr.value);
-          if (err) return [null, new Error('bad min: ' + attr.value)];
+          if (err) {
+            return [null, new Error('bad min: ' + attr.value)];
+          }
           break;
         case 'max':
           [scale.max, err] = num(attr.value);
-          if (err) return [null, new Error('bad max: ' + attr.value)];
+          if (err) {
+            return [null, new Error('bad max: ' + attr.value)];
+          }
           break;
       }
     }
@@ -1211,11 +1247,10 @@ export class Connection implements XNode {
   from: string;
 
   static Build(el: Element): [Connection, Error] {
-    let conn = new Connection();
-    let err: Error;
+    const conn = new Connection();
 
     for (let i = 0; i < el.attributes.length; i++) {
-      let attr = el.attributes.item(i);
+      const attr = el.attributes.item(i);
       switch (attr.name.toLowerCase()) {
         case 'to':
           conn.to = canonicalize(attr.value);
@@ -1238,12 +1273,11 @@ export class Connection implements XNode {
   }
 }
 
-export function canonicalize(id: string): string {
-  'use strict';
+export const canonicalize = (id: string): string => {
   let quoted = false;
   if (id.length > 1) {
-    let f = id.slice(0, 1);
-    let l = id.slice(id.length - 1);
+    const f = id.slice(0, 1);
+    const l = id.slice(id.length - 1);
     quoted = f === '"' && l === '"';
   }
   id = id.toLowerCase();
@@ -1251,6 +1285,8 @@ export function canonicalize(id: string): string {
   id = id.replace(/\\\\/g, '\\');
   id = id.replace(/\\"/g, '\\');
   id = id.replace(/[_\r\n\t \xa0]+/g, '_');
-  if (quoted) return id.slice(1, -1);
+  if (quoted) {
+    return id.slice(1, -1);
+  }
   return id;
-}
+};

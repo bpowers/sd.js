@@ -27,7 +27,7 @@ export interface Visitor<T> {
 export class Ident implements Node {
   ident: string;
   pos: SourceLoc;
-  private len: number;
+  len: number;
 
   constructor(pos: SourceLoc, name: string) {
     this.ident = canonicalize(name);
@@ -48,8 +48,8 @@ export class Ident implements Node {
 
 export class Constant implements Node {
   value: number;
-  private pos: SourceLoc;
-  private len: number;
+  len: number;
+  pos: SourceLoc;
 
   constructor(pos: SourceLoc, value: string) {
     this.value = parseFloat(value);
@@ -57,11 +57,8 @@ export class Constant implements Node {
     this.len = value.length;
   }
 
-  get pos(): SourceLoc {
-    return this.pos;
-  }
   get end(): SourceLoc {
-    return this.pos.off(this._len);
+    return this.pos.off(this.len);
   }
 
   walk<T>(v: Visitor<T>): T {
@@ -71,8 +68,8 @@ export class Constant implements Node {
 
 export class ParenExpr implements Node {
   x: Node;
-  private lPos: SourceLoc;
-  private rPos: SourceLoc;
+  lPos: SourceLoc;
+  rPos: SourceLoc;
 
   constructor(lPos: SourceLoc, x: Node, rPos: SourceLoc) {
     this.x = x;
@@ -96,8 +93,8 @@ export class CallExpr implements Node {
   fun: Node;
   args: Node[];
 
-  private lParenPos: SourceLoc;
-  private rParenPos: SourceLoc;
+  lParenPos: SourceLoc;
+  rParenPos: SourceLoc;
 
   constructor(
     fun: Node,
@@ -126,7 +123,7 @@ export class CallExpr implements Node {
 export class UnaryExpr implements Node {
   op: string;
   x: Node;
-  private opPos: SourceLoc;
+  opPos: SourceLoc;
 
   constructor(opPos: SourceLoc, op: string, x: Node) {
     this.op = op;
@@ -150,7 +147,7 @@ export class BinaryExpr implements Node {
   op: string;
   l: Node;
   r: Node;
-  private opPos: SourceLoc;
+  opPos: SourceLoc;
 
   constructor(l: Node, opPos: SourceLoc, op: string, r: Node) {
     this.l = l;
@@ -175,9 +172,9 @@ export class IfExpr implements Node {
   cond: Node;
   t: Node;
   f: Node;
-  private ifPos: SourceLoc;
-  private thenPos: SourceLoc;
-  private elsePos: SourceLoc;
+  ifPos: SourceLoc;
+  thenPos: SourceLoc;
+  elsePos: SourceLoc;
 
   constructor(
     ifPos: SourceLoc,

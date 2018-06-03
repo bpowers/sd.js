@@ -216,7 +216,7 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
 
     let fn = (<ast.Ident>n.fun).ident;
     if (common.builtins.has(fn))
-      return new ast.CallExpr(n.fun, n._lParenPos, args, n._rParenPos);
+      return new ast.CallExpr(n.fun, n.lParenPos, args, n.rParenPos);
 
     let model = <Model | null>this.project.model('stdlib·' + fn);
     if (model === null) {
@@ -269,20 +269,20 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
     let cond = n.cond.walk(this);
     let t = n.t.walk(this);
     let f = n.f.walk(this);
-    return new ast.IfExpr(n._ifPos, cond, n._thenPos, t, n._elsePos, f);
+    return new ast.IfExpr(n.ifPos, cond, n.thenPos, t, n.elsePos, f);
   }
   paren(n: ast.ParenExpr): ast.Node {
     let x = n.x.walk(this);
-    return new ast.ParenExpr(n._lPos, x, n._rPos);
+    return new ast.ParenExpr(n.lPos, x, n.rPos);
   }
   unary(n: ast.UnaryExpr): ast.Node {
     let x = n.x.walk(this);
-    return new ast.UnaryExpr(n._opPos, n.op, x);
+    return new ast.UnaryExpr(n.opPos, n.op, x);
   }
   binary(n: ast.BinaryExpr): ast.Node {
     let l = n.l.walk(this);
     let r = n.r.walk(this);
-    return new ast.BinaryExpr(l, n._opPos, n.op, r);
+    return new ast.BinaryExpr(l, n.opPos, n.op, r);
   }
 }
 

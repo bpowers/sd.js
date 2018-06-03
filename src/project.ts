@@ -9,7 +9,6 @@ import * as xmldom from 'xmldom';
 import * as common from './common';
 import * as type from './type';
 import * as xmile from './xmile';
-import * as compat from './compat';
 import * as stdlib from './stdlib';
 
 import { Error } from './common';
