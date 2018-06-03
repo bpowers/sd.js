@@ -5,19 +5,26 @@
 import * as type from './type';
 
 export function exists<T>(object: T | null): T {
-  if (object === null) throw 'expected non-null object';
+  if (object === null) {
+    throw new Error('expected non-null object');
+  }
   return object;
 }
 
 export function defined<T>(object: T | undefined): T {
-  if (object === undefined) throw 'expected non-undefined object';
+  if (object === undefined) {
+    throw new Error('expected non-undefined object');
+  }
   return object;
 }
 
 export function titleCase(str: string): string {
-  return str.replace(/(?:^|\s)\w/g, function(match: string): string {
-    return match.toUpperCase();
-  });
+  return str.replace(
+    /(?:^|\s)\w/g,
+    (match: string): string => {
+      return match.toUpperCase();
+    },
+  );
 }
 
 /// dName converts a string into the format the user
@@ -29,7 +36,7 @@ export function dName(s: string): string {
 // swap the values at 2 indexes in the specified array, used for
 // quicksort.
 function swap(array: any[], a: number, b: number): void {
-  let tmp = array[a];
+  const tmp = array[a];
   array[a] = array[b];
   array[b] = tmp;
 }
@@ -42,7 +49,7 @@ export function partition(
   r: number,
   p: number,
 ): number {
-  let pValue = array[p];
+  const pValue = array[p];
   // move the pivot to the end
   swap(array, p, r);
   let store = l;
@@ -86,10 +93,12 @@ export function sort(
   r = array.length - 1,
   part = partition,
 ): void {
-  if (l >= r) return;
+  if (l >= r) {
+    return;
+  }
 
-  let pivot = Math.floor(l + (r - l) / 2);
-  let newPivot = part(array, l, r, pivot);
+  const pivot = Math.floor(l + (r - l) / 2);
+  const newPivot = part(array, l, r, pivot);
   sort(array, l, newPivot - 1, part);
   sort(array, newPivot + 1, r, part);
 }
@@ -105,7 +114,9 @@ export function sort(
  */
 export function lookup(table: any, index: number): number {
   const size = table.x.length;
-  if (size === 0) return NaN;
+  if (size === 0) {
+    return NaN;
+  }
 
   const x = table.x;
   const y = table.y;

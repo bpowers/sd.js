@@ -180,11 +180,11 @@ export class File implements XNode {
   models: Model[] = [];
 
   static Build(el: Element): [File, Error] {
-    let file = new File();
+    const file = new File();
     let err: Error = null;
 
     for (let i = 0; i < el.attributes.length; i++) {
-      let attr = el.attributes.item(i);
+      const attr = el.attributes.item(i);
       switch (attr.name.toLowerCase()) {
         case 'version':
           file.version = attr.value;
@@ -205,15 +205,21 @@ export class File implements XNode {
       switch (child.nodeName.toLowerCase()) {
         case 'header':
           [file.header, err] = Header.Build(child);
-          if (err) return [null, new Error('Header: ' + err.error)];
+          if (err) {
+            return [null, new Error('Header: ' + err.error)];
+          }
           break;
         case 'sim_specs':
           [file.simSpec, err] = SimSpec.Build(child);
-          if (err) return [null, new Error('SimSpec: ' + err.error)];
+          if (err) {
+            return [null, new Error('SimSpec: ' + err.error)];
+          }
           break;
         case 'model':
           [model, err] = Model.Build(child);
-          if (err) return [null, new Error('SimSpec: ' + err.error)];
+          if (err) {
+            return [null, new Error('SimSpec: ' + err.error)];
+          }
           file.models.push(model);
           break;
       }
@@ -239,23 +245,30 @@ export class SimSpec implements XNode {
   [indexName: string]: any;
 
   static Build(el: Element): [SimSpec, Error] {
-    let simSpec = new SimSpec();
+    const simSpec = new SimSpec();
     let err: Error;
     for (let i = 0; i < el.childNodes.length; i++) {
-      let child = <Element>el.childNodes.item(i);
-      if (child.nodeType !== 1)
+      const child = el.childNodes.item(i) as Element;
+      if (child.nodeType !== 1) {
         // Element
         continue;
+      }
       let name = camelCase(child.nodeName.toLowerCase());
       // XXX: hack for compat with some old models of mine
-      if (name === 'savestep') name = 'saveStep';
-      if (!simSpec.hasOwnProperty(name)) continue;
+      if (name === 'savestep') {
+        name = 'saveStep';
+      }
+      if (!simSpec.hasOwnProperty(name)) {
+        continue;
+      }
 
       if (name === 'method' || name === 'timeUnits') {
         simSpec[name] = content(child).toLowerCase();
       } else {
         [simSpec[name], err] = num(content(child));
-        if (err) return [null, new Error(child.nodeName + ': ' + err.error)];
+        if (err) {
+          return [null, new Error(child.nodeName + ': ' + err.error)];
+        }
         if (name === 'dt') {
           if (attr(child, 'reciprocal') === 'true') {
             simSpec.dtReciprocal = simSpec.dt;
@@ -265,7 +278,9 @@ export class SimSpec implements XNode {
       }
     }
 
-    if (!simSpec.saveStep) simSpec.saveStep = simSpec.dt;
+    if (!simSpec.saveStep) {
+      simSpec.saveStep = simSpec.dt;
+    }
 
     switch (simSpec.method) {
       // supported
@@ -318,10 +333,10 @@ export class Product implements XNode {
   version: string = '';
 
   static Build(el: Element): [Product, Error] {
-    let product = new Product();
+    const product = new Product();
     product.name = content(el);
     for (let i = 0; i < el.attributes.length; i++) {
-      let attr = el.attributes.item(i);
+      const attr = el.attributes.item(i);
       switch (attr.name.toLowerCase()) {
         case 'version':
           product.version = attr.value;
@@ -358,24 +373,29 @@ export class Header implements XNode {
   // includes: Include[];
 
   static Build(el: Element): [Header, Error] {
-    let header = new Header();
+    const header = new Header();
     let err: Error;
     for (let i = 0; i < el.childNodes.length; i++) {
-      let child = <Element>el.childNodes.item(i);
-      if (child.nodeType !== 1)
+      const child = el.childNodes.item(i) as Element;
+      if (child.nodeType !== 1) {
         // Element
         continue;
+      }
       switch (child.nodeName.toLowerCase()) {
         case 'vendor':
           header.vendor = content(child);
           break;
         case 'product':
           [header.product, err] = Product.Build(child);
-          if (err) return [null, new Error('Product: ' + err.error)];
+          if (err) {
+            return [null, new Error('Product: ' + err.error)];
+          }
           break;
         case 'options':
           [header.options, err] = Options.Build(child);
-          if (err) return [null, new Error('Options: ' + err.error)];
+          if (err) {
+            return [null, new Error('Options: ' + err.error)];
+          }
           break;
         case 'name':
           header.name = content(child);
@@ -422,7 +442,7 @@ export class Dimension implements XNode {
   size: string = '';
 
   static Build(el: Element): [Dimension, Error] {
-    let dim = new Dimension();
+    const dim = new Dimension();
     // TODO: implement
     return [dim, null];
   }
@@ -473,11 +493,11 @@ export class Options implements XNode {
   [indexName: string]: any;
 
   static Build(el: Element): [Options, Error] {
-    let options = new Options();
+    const options = new Options();
     let err: Error;
 
     for (let i = 0; i < el.attributes.length; i++) {
-      let attr = el.attributes.item(i);
+      const attr = el.attributes.item(i);
       switch (attr.name.toLowerCase()) {
         case 'namespace':
           options.namespaces = splitOnComma(attr.value);
@@ -486,20 +506,28 @@ export class Options implements XNode {
     }
 
     for (let i = 0; i < el.childNodes.length; i++) {
-      let child = <Element>el.childNodes.item(i);
-      if (child.nodeType !== 1)
+      const child = el.childNodes.item(i) as Element;
+      if (child.nodeType !== 1) {
         // Element
         continue;
+      }
       let name = child.nodeName.toLowerCase();
       let plen: number;
-      if (name.slice(0, 5) === 'uses_') plen = 4;
-      else if (name.substring(0, 4) !== 'has_') plen = 3;
-      if (!plen) continue;
+      if (name.slice(0, 5) === 'uses_') {
+        plen = 4;
+      } else if (name.substring(0, 4) !== 'has_') {
+        plen = 3;
+      }
+      if (!plen) {
+        continue;
+      }
       // use slice here even for the single char we
       // are camel-casing to avoid having to check
       // the length of the string
       name = camelCase(name);
-      if (!options.hasOwnProperty(name)) continue;
+      if (!options.hasOwnProperty(name)) {
+        continue;
+      }
 
       options[name] = true;
 
@@ -520,7 +548,9 @@ export class Options implements XNode {
           options.maximumDimensions = i32(n);
         }
         val = attr(child, 'invalid_index_value');
-        if (val === 'NaN') options.invalidIndexValue = NaN;
+        if (val === 'NaN') {
+          options.invalidIndexValue = NaN;
+        }
       }
     }
     return [options, err];
@@ -537,7 +567,7 @@ export class Behavior implements XNode {
   flowNonNegative: boolean = false;
 
   static Build(el: Element): [Behavior, Error] {
-    let behavior = new Behavior();
+    const behavior = new Behavior();
     // TODO
     return [behavior, null];
   }
@@ -576,11 +606,11 @@ export class Model implements XNode {
   views: View[] = [];
 
   static Build(el: Element): [Model, Error] {
-    let model = new Model();
+    const model = new Model();
     let err: Error;
 
     for (let i = 0; i < el.attributes.length; i++) {
-      let attr = el.attributes.item(i);
+      const attr = el.attributes.item(i);
       switch (attr.name.toLowerCase()) {
         case 'name':
           model.name = attr.value;
@@ -589,43 +619,52 @@ export class Model implements XNode {
     }
 
     for (let i = 0; i < el.childNodes.length; i++) {
-      let child = <Element>el.childNodes.item(i);
-      if (child.nodeType !== 1)
+      const child = el.childNodes.item(i) as Element;
+      if (child.nodeType !== 1) {
         // Element
         continue;
+      }
       switch (child.nodeName.toLowerCase()) {
         case 'variables':
           for (let j = 0; j < child.childNodes.length; j++) {
-            let vchild = <Node>child.childNodes.item(j);
-            if (vchild.nodeType !== 1)
+            const vchild = child.childNodes.item(j) as Element;
+            if (vchild.nodeType !== 1) {
               // Element
               continue;
+            }
             if (
-              typeof (<Attr>vchild).prefix !== 'undefined' &&
-              (<Attr>vchild).prefix === 'isee'
-            )
+              typeof vchild.prefix !== 'undefined' &&
+              vchild.prefix === 'isee'
+            ) {
               // isee specific info
               continue;
+            }
             let v: Variable;
-            [v, err] = Variable.Build(<Element>vchild);
+            [v, err] = Variable.Build(vchild);
             // FIXME: real logging
-            if (err)
+            if (err) {
               return [null, new Error(child.nodeName + ' var: ' + err.error)];
+            }
             model.variables.push(v);
           }
           break;
         case 'views':
           for (let j = 0; j < child.childNodes.length; j++) {
-            let vchild = <Element>child.childNodes.item(j);
-            if (vchild.nodeType !== 1)
+            const vchild = child.childNodes.item(j) as Element;
+            if (vchild.nodeType !== 1) {
               // Element
               continue;
+            }
             // TODO: style parsing
-            if (vchild.nodeName.toLowerCase() !== 'view') continue;
+            if (vchild.nodeName.toLowerCase() !== 'view') {
+              continue;
+            }
             let view: View;
             [view, err] = View.Build(vchild);
             // FIXME: real logging
-            if (err) return [null, new Error('view: ' + err.error)];
+            if (err) {
+              return [null, new Error('view: ' + err.error)];
+            }
             model.views.push(view);
           }
           break;
@@ -651,7 +690,7 @@ export class ArrayElement implements XNode {
   gf: GF;
 
   static Build(el: Element): [ArrayElement, Error] {
-    let arrayEl = new ArrayElement();
+    const arrayEl = new ArrayElement();
     console.log('TODO: array element');
     return [arrayEl, null];
   }
@@ -669,7 +708,7 @@ export class Range implements XNode {
   group: number; // 'unique number identifier'
 
   static Build(el: Element): [Range, Error] {
-    let range = new Range();
+    const range = new Range();
     console.log('TODO: range element');
     return [range, null];
   }
@@ -686,7 +725,7 @@ export class Format implements XNode {
   delimit000s: boolean = false; // include thousands separator
 
   static Build(el: Element): [Format, Error] {
-    let fmt = new Format();
+    const fmt = new Format();
     console.log('TODO: format element');
     return [fmt, null];
   }
@@ -733,13 +772,13 @@ export class Variable implements XNode {
   flowConcept: boolean; // :(
 
   static Build(el: Element): [Variable, Error] {
-    let v = new Variable();
+    const v = new Variable();
     let err: Error;
 
     v.type = el.nodeName.toLowerCase();
 
     for (let i = 0; i < el.attributes.length; i++) {
-      let attr = el.attributes.item(i);
+      const attr = el.attributes.item(i);
       switch (attr.name.toLowerCase()) {
         case 'name':
           v.name = attr.value;
@@ -751,31 +790,42 @@ export class Variable implements XNode {
     }
 
     for (let i = 0; i < el.childNodes.length; i++) {
-      let child = <Element>el.childNodes.item(i);
-      if (child.nodeType !== 1)
+      const child = el.childNodes.item(i) as Element;
+      if (child.nodeType !== 1) {
         // Element
         continue;
+      }
       switch (child.nodeName.toLowerCase()) {
         case 'eqn':
           v.eqn = content(child);
           break;
         case 'inflow':
-          if (!v.inflows) v.inflows = [];
+          if (!v.inflows) {
+            v.inflows = [];
+          }
           v.inflows.push(canonicalize(content(child)));
           break;
         case 'outflow':
-          if (!v.outflows) v.outflows = [];
+          if (!v.outflows) {
+            v.outflows = [];
+          }
           v.outflows.push(canonicalize(content(child)));
           break;
         case 'gf':
           [v.gf, err] = GF.Build(child);
-          if (err) return [null, new Error(v.name + ' GF: ' + err.error)];
+          if (err) {
+            return [null, new Error(v.name + ' GF: ' + err.error)];
+          }
           break;
         case 'connect':
           let conn: Connection;
           [conn, err] = Connection.Build(child);
-          if (err) return [null, new Error(v.name + ' conn: ' + err.error)];
-          if (!v.connections) v.connections = [];
+          if (err) {
+            return [null, new Error(v.name + ' conn: ' + err.error)];
+          }
+          if (!v.connections) {
+            v.connections = [];
+          }
           v.connections.push(conn);
           break;
       }
@@ -802,28 +852,35 @@ export class Shape implements XNode {
   radius: number;
 
   static Build(el: Element): [Shape, Error] {
-    let shape = new Shape();
+    const shape = new Shape();
     let err: Error;
 
     for (let i = 0; i < el.attributes.length; i++) {
-      let attr = el.attributes.item(i);
+      const attr = el.attributes.item(i);
       switch (attr.name.toLowerCase()) {
         case 'type':
           shape.type = attr.value.toLowerCase();
-          if (!(shape.type in Shape.Types))
+          if (!(shape.type in Shape.Types)) {
             return [null, new Error('bad type: ' + shape.type)];
+          }
           break;
         case 'width':
           [shape.width, err] = num(attr.value);
-          if (err) return [null, new Error('bad width: ' + err.error)];
+          if (err) {
+            return [null, new Error('bad width: ' + err.error)];
+          }
           break;
         case 'height':
           [shape.height, err] = num(attr.value);
-          if (err) return [null, new Error('bad height: ' + err.error)];
+          if (err) {
+            return [null, new Error('bad height: ' + err.error)];
+          }
           break;
         case 'radius':
           [shape.radius, err] = num(attr.value);
-          if (err) return [null, new Error('bad radius: ' + err.error)];
+          if (err) {
+            return [null, new Error('bad radius: ' + err.error)];
+          }
           break;
       }
     }
@@ -873,13 +930,13 @@ export class ViewElement implements XNode {
   of: string;
 
   static Build(el: Element): [ViewElement, Error] {
-    let viewEl = new ViewElement();
+    const viewEl = new ViewElement();
     let err: Error;
 
     viewEl.type = el.nodeName.toLowerCase();
 
     for (let i = 0; i < el.attributes.length; i++) {
-      let attr = el.attributes.item(i);
+      const attr = el.attributes.item(i);
       switch (attr.name.toLowerCase()) {
         case 'name':
           // display-name, not canonicalized
@@ -887,46 +944,61 @@ export class ViewElement implements XNode {
           break;
         case 'uid':
           [viewEl.uid, err] = num(attr.value);
-          if (err) return [null, new Error('uid: ' + err.error)];
+          if (err) {
+            return [null, new Error('uid: ' + err.error)];
+          }
           break;
         case 'x':
           [viewEl.x, err] = num(attr.value);
-          if (err) return [null, new Error('x: ' + err.error)];
+          if (err) {
+            return [null, new Error('x: ' + err.error)];
+          }
           break;
         case 'y':
           [viewEl.y, err] = num(attr.value);
-          if (err) return [null, new Error('y: ' + err.error)];
+          if (err) {
+            return [null, new Error('y: ' + err.error)];
+          }
           break;
         case 'width':
           [viewEl.width, err] = num(attr.value);
-          if (err) return [null, new Error('width: ' + err.error)];
+          if (err) {
+            return [null, new Error('width: ' + err.error)];
+          }
           break;
         case 'height':
           [viewEl.height, err] = num(attr.value);
-          if (err) return [null, new Error('height: ' + err.error)];
+          if (err) {
+            return [null, new Error('height: ' + err.error)];
+          }
           break;
         case 'label_side':
           viewEl.labelSide = attr.value.toLowerCase();
           break;
         case 'label_angle':
           [viewEl.labelAngle, err] = num(attr.value);
-          if (err) return [null, new Error('label_angle: ' + err.error)];
+          if (err) {
+            return [null, new Error('label_angle: ' + err.error)];
+          }
           break;
         case 'color':
           viewEl.color = attr.value.toLowerCase();
           break;
         case 'angle':
           [viewEl.angle, err] = num(attr.value);
-          if (err) return [null, new Error('angle: ' + err.error)];
+          if (err) {
+            return [null, new Error('angle: ' + err.error)];
+          }
           break;
       }
     }
 
     for (let i = 0; i < el.childNodes.length; i++) {
-      let child = <Element>el.childNodes.item(i);
-      if (child.nodeType !== 1)
+      const child = el.childNodes.item(i) as Element;
+      if (child.nodeType !== 1) {
         // Element
         continue;
+      }
 
       switch (child.nodeName.toLowerCase()) {
         case 'to':
@@ -940,22 +1012,31 @@ export class ViewElement implements XNode {
           break;
         case 'pts':
           for (let j = 0; j < child.childNodes.length; j++) {
-            let vchild = <Element>child.childNodes.item(j);
-            if (vchild.nodeType !== 1)
+            const vchild = child.childNodes.item(j) as Element;
+            if (vchild.nodeType !== 1) {
               // Element
               continue;
-            if (vchild.nodeName.toLowerCase() !== 'pt') continue;
+            }
+            if (vchild.nodeName.toLowerCase() !== 'pt') {
+              continue;
+            }
             let pt: Point;
             [pt, err] = Point.Build(vchild);
             // FIXME: real logging
-            if (err) return [null, new Error('pt: ' + err.error)];
-            if (typeof viewEl.pts === 'undefined') viewEl.pts = [];
+            if (err) {
+              return [null, new Error('pt: ' + err.error)];
+            }
+            if (typeof viewEl.pts === 'undefined') {
+              viewEl.pts = [];
+            }
             viewEl.pts.push(pt);
           }
           break;
         case 'shape':
           [viewEl.shape, err] = Shape.Build(child);
-          if (err) return [null, new Error('shape: ' + err.error)];
+          if (err) {
+            return [null, new Error('shape: ' + err.error)];
+          }
           break;
       }
     }
@@ -964,7 +1045,7 @@ export class ViewElement implements XNode {
   }
 
   get hasName(): boolean {
-    return this.name != undefined;
+    return this.name !== undefined;
   }
 
   get ident(): string {
@@ -980,8 +1061,11 @@ export class ViewElement implements XNode {
       case 'module':
         return this.x;
       case 'stock':
-        if (this.width) return this.x + 0.5 * this.width;
-        else return this.x;
+        if (this.width) {
+          return this.x + 0.5 * this.width;
+        } else {
+          return this.x;
+        }
     }
     return NaN;
   }
@@ -995,8 +1079,11 @@ export class ViewElement implements XNode {
       case 'module':
         return this.y;
       case 'stock':
-        if (this.width) return this.y + 0.5 * this.height;
-        else return this.y;
+        if (this.width) {
+          return this.y + 0.5 * this.height;
+        } else {
+          return this.y;
+        }
     }
     return NaN;
   }
@@ -1026,11 +1113,11 @@ export class View implements XNode {
   elements: ViewElement[] = [];
 
   static Build(el: Element): [View, Error] {
-    let view = new View();
+    const view = new View();
     let err: Error;
 
     for (let i = 0; i < el.attributes.length; i++) {
-      let attr = el.attributes.item(i);
+      const attr = el.attributes.item(i);
       switch (attr.name.toLowerCase()) {
         case 'type':
           view.type = attr.value.toLowerCase();
@@ -1114,7 +1201,7 @@ export class View implements XNode {
     }
 
     for (let i = 0; i < el.childNodes.length; i++) {
-      let child = <Element>el.childNodes.item(i);
+      const child = el.childNodes.item(i) as Element;
       if (child.nodeType !== 1) {
         // Element
         continue;
@@ -1147,11 +1234,11 @@ export class GF implements XNode {
   yScale: Scale; // only affects the scale of the graph in the UI
 
   static Build(el: Element): [GF, Error] {
-    let table = new GF();
+    const table = new GF();
     let err: Error;
 
     for (let i = 0; i < el.attributes.length; i++) {
-      let attr = el.attributes.item(i);
+      const attr = el.attributes.item(i);
       switch (attr.name.toLowerCase()) {
         case 'type':
           table.type = attr.value.toLowerCase();
@@ -1163,7 +1250,7 @@ export class GF implements XNode {
     }
 
     for (let i = 0; i < el.childNodes.length; i++) {
-      let child = <Element>el.childNodes.item(i);
+      const child = el.childNodes.item(i) as Element;
       if (child.nodeType !== 1) {
         // Element
         continue;
@@ -1190,11 +1277,14 @@ export class GF implements XNode {
       }
     }
 
-    if (!table.yPoints) return [null, new Error('table missing ypts')];
+    if (!table.yPoints) {
+      return [null, new Error('table missing ypts')];
+    }
 
     // FIXME: handle
-    if (table.type !== 'continuous')
+    if (table.type !== 'continuous') {
       console.log('WARN: unimplemented table type: ' + table.type);
+    }
 
     return [table, err];
   }
@@ -1209,11 +1299,11 @@ export class Scale implements XNode {
   max: number;
 
   static Build(el: Element): [Scale, Error] {
-    let scale = new Scale();
+    const scale = new Scale();
     let err: Error;
 
     for (let i = 0; i < el.attributes.length; i++) {
-      let attr = el.attributes.item(i);
+      const attr = el.attributes.item(i);
       switch (attr.name.toLowerCase()) {
         case 'min':
           [scale.min, err] = num(attr.value);

@@ -4,11 +4,8 @@
 
 import * as common from './common';
 
-import { Project } from './project';
-import { Model } from './model';
-
-export { Project } from './project';
 export { Model } from './model';
+export { Project } from './project';
 
 export { Stock } from './vars';
 
@@ -27,8 +24,10 @@ export const Error = common.Error;
  * @return A valid Model object on success, or null on error.
  */
 export function newModel(xmlDoc: XMLDocument): Model | undefined {
-  let p = new Project(xmlDoc);
-  if (!p.valid) return undefined;
+  const p = new Project(xmlDoc);
+  if (!p.valid) {
+    return undefined;
+  }
 
   return p.model() as Model;
 }
@@ -37,18 +36,21 @@ export async function load(
   url: string,
 ): Promise<[Model, undefined] | [undefined, common.Error]> {
   const response = await fetch(url);
-  if (response.status >= 400)
+  if (response.status >= 400) {
     return [
       undefined,
       new common.Error(`fetch(${url}): status ${response.status}`),
     ];
+  }
 
   const body = await response.text();
   const parser = new DOMParser();
   const xml: XMLDocument = parser.parseFromString(body, 'application/xml');
 
   const mdl = newModel(xml);
-  if (!mdl) return [undefined, new common.Error('newModel failed')];
+  if (!mdl) {
+    return [undefined, new common.Error('newModel failed')];
+  }
 
   return [mdl, undefined];
 }

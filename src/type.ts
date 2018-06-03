@@ -130,8 +130,9 @@ export class Token {
   ) {}
 
   get value(): number {
-    if (this.type !== TokenType.NUMBER)
-      throw 'Token.value called for non-number: ' + this.type;
+    if (this.type !== TokenType.NUMBER) {
+      throw new Error(`Token.value called for non-number: ${this.type}`);
+    }
 
     return parseFloat(this.tok);
   }
