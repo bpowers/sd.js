@@ -7,12 +7,12 @@ declare function isFinite(n: string | number): boolean;
 
 import { Map, Set } from 'immutable';
 
+import * as ast from './ast';
 import * as common from './common';
-import * as util from './util';
 import * as parse from './parse';
 import * as type from './type';
+import * as util from './util';
 import * as xmile from './xmile';
-import * as ast from './ast';
 
 const JsOps: Map<string, string> = Map({
   '&': '&&',
@@ -42,9 +42,13 @@ export class CodegenVisitor implements ast.Visitor<boolean> {
   }
 
   ident(n: ast.Ident): boolean {
-    if (n.ident === 'time') this.refTime();
-    else if (n.ident in this.offsets) this.refDirect(n.ident);
-    else this.refIndirect(n.ident);
+    if (n.ident === 'time') {
+      this.refTime();
+    } else if (n.ident in this.offsets) {
+      this.refDirect(n.ident);
+    } else {
+      this.refIndirect(n.ident);
+    }
     return true;
   }
   constant(n: ast.Constant): boolean {
@@ -57,7 +61,7 @@ export class CodegenVisitor implements ast.Visitor<boolean> {
       console.log(n);
       return false;
     }
-    let fn = (<ast.Ident>n.fun).ident;
+    const fn = (n.fun as ast.Ident).ident;
     if (!common.builtins.has(fn)) {
       console.log('// unknown builtin: ' + fn);
       return false;
@@ -68,12 +72,16 @@ export class CodegenVisitor implements ast.Visitor<boolean> {
     if (builtin.usesTime) {
       this.code += 'dt, ';
       this.refTime();
-      if (n.args.length) this.code += ', ';
+      if (n.args.length) {
+        this.code += ', ';
+      }
     }
 
     for (let i = 0; i < n.args.length; i++) {
       n.args[i].walk(this);
-      if (i !== n.args.length - 1) this.code += ', ';
+      if (i !== n.args.length - 1) {
+        this.code += ', ';
+      }
     }
     this.code += ')';
     return true;
@@ -98,7 +106,7 @@ export class CodegenVisitor implements ast.Visitor<boolean> {
   unary(n: ast.UnaryExpr): boolean {
     // if we're doing 'not', explicitly convert the result
     // back to a number.
-    let op = n.op === '!' ? '+!' : n.op;
+    const op = n.op === '!' ? '+!' : n.op;
     this.code += op;
     n.x.walk(this);
     return true;
@@ -135,7 +143,9 @@ export class CodegenVisitor implements ast.Visitor<boolean> {
 
     let op = n.op;
     // only need to convert some of them
-    if (JsOps.has(n.op)) op = JsOps.get(n.op);
+    if (JsOps.has(n.op)) {
+      op = JsOps.get(n.op);
+    }
     this.code += '(';
     n.l.walk(this);
     this.code += op;
@@ -177,11 +187,13 @@ export class Variable implements type.Variable {
   // only for modules
   model: type.Model;
 
-  _deps: Set<string>;
-  _allDeps: Set<string>;
+  private deps: Set<string>;
+  private allDeps: Set<string>;
 
   constructor(model?: type.Model, v?: xmile.Variable) {
-    if (!arguments.length) return;
+    if (!arguments.length) {
+      return;
+    }
     this.model = model;
     this.xmile = v;
 
@@ -199,7 +211,7 @@ export class Variable implements type.Variable {
 
     // for a flow or aux, we depend on variables that aren't built
     // in functions in the equation.
-    this._deps = identifierSet(this.ast);
+    this.deps = identifierSet(this.ast);
   }
 
   // returns a string of this variables initial equation. suitable for
@@ -209,10 +221,12 @@ export class Variable implements type.Variable {
   }
 
   code(offsets: type.Offsets): string {
-    if (this.isConst()) return "this.initials['" + this.ident + "']";
-    let visitor = new CodegenVisitor(offsets, this.model.ident === 'main');
+    if (this.isConst()) {
+      return "this.initials['" + this.ident + "']";
+    }
+    const visitor = new CodegenVisitor(offsets, this.model.ident === 'main');
 
-    let ok = this.ast.walk(visitor);
+    const ok = this.ast.walk(visitor);
     if (!ok) {
       console.log('// codegen failed for ' + this.ident);
       return '';
@@ -222,19 +236,24 @@ export class Variable implements type.Variable {
   }
 
   getDeps(): Set<string> {
-    if (this._allDeps) return this._allDeps;
+    if (this.allDeps) {
+      return this.allDeps;
+    }
     let allDeps = Set<string>();
-    for (const n of this._deps) {
-      if (allDeps.has(n)) continue;
+    for (const n of this.deps) {
+      if (allDeps.has(n)) {
+        continue;
+      }
       allDeps = allDeps.add(n);
-      let v = this.model.vars.get(n);
-      if (!v) continue;
-      let otherDeps = v.getDeps();
-      for (const nn of otherDeps) {
+      const v = this.model.vars.get(n);
+      if (!v) {
+        continue;
+      }
+      for (const nn of v.getDeps()) {
         allDeps = allDeps.add(nn);
       }
     }
-    this._allDeps = allDeps;
+    this.allDeps = allDeps;
     return allDeps;
   }
 
@@ -268,11 +287,13 @@ export class Stock extends Variable {
 
   code(v: type.Offsets): string {
     let eqn = 'curr[' + v[this.ident] + '] + (';
-    if (this.inflows.length > 0)
+    if (this.inflows.length > 0) {
       eqn += this.inflows.map(s => 'curr[' + v[s] + ']').join('+');
-    if (this.outflows.length > 0)
+    }
+    if (this.outflows.length > 0) {
       eqn +=
         '- (' + this.outflows.map(s => 'curr[' + v[s] + ']').join('+') + ')';
+    }
     // stocks can have no inflows or outflows and still be valid
     if (this.inflows.length === 0 && this.outflows.length === 0) {
       eqn += '0';
@@ -290,13 +311,13 @@ export class Table extends Variable {
   constructor(model: type.Model, v: xmile.Variable) {
     super(model, v);
 
-    let ypts = v.gf.yPoints;
+    const ypts = v.gf.yPoints;
 
     // FIXME(bp) unit test
-    let xpts = v.gf.xPoints;
-    let xscale = v.gf.xScale;
-    let xmin = xscale ? xscale.min : 0;
-    let xmax = xscale ? xscale.max : 0;
+    const xpts = v.gf.xPoints;
+    const xscale = v.gf.xScale;
+    const xmin = xscale ? xscale.min : 0;
+    const xmax = xscale ? xscale.max : 0;
 
     for (let i = 0; i < ypts.length; i++) {
       let x: number;
@@ -314,8 +335,10 @@ export class Table extends Variable {
   }
 
   code(v: type.Offsets): string {
-    if (!this.eqn) return null;
-    let index = super.code(v);
+    if (!this.eqn) {
+      return null;
+    }
+    const index = super.code(v);
     return "lookup(this.tables['" + this.ident + "'], " + index + ')';
   }
 }
@@ -335,22 +358,29 @@ export class Module extends Variable implements type.Module {
     // only thing that makes sense -- having a 1 to 1
     // relationship between model name and module name
     // would be insane.
-    if (v.model) this.modelName = v.model;
-    else this.modelName = this.ident;
+    if (v.model) {
+      this.modelName = v.model;
+    } else {
+      this.modelName = this.ident;
+    }
     this.refs = Map();
-    this._deps = Set<string>();
+    this.deps = Set<string>();
     for (let i = 0; v.connections && i < v.connections.length; i++) {
-      let ref = new Reference(v.connections[i]);
+      const ref = new Reference(v.connections[i]);
       this.refs = this.refs.set(ref.ident, ref);
-      this._deps = this._deps.add(ref.ptr);
+      this.deps = this.deps.add(ref.ptr);
     }
   }
 
   getDeps(): Set<string> {
-    if (this._allDeps) return this._allDeps;
+    if (this.allDeps) {
+      return this.allDeps;
+    }
     let allDeps = Set<string>();
-    for (let n of this._deps) {
-      if (allDeps.has(n)) continue;
+    for (let n of this.deps) {
+      if (allDeps.has(n)) {
+        continue;
+      }
 
       let context: type.Model;
       if (n[0] === '.') {
@@ -359,8 +389,8 @@ export class Module extends Variable implements type.Module {
       } else {
         context = this.parent;
       }
-      let parts = n.split('.');
-      let v = context.lookup(n);
+      const parts = n.split('.');
+      const v = context.lookup(n);
       if (!v) {
         console.log('couldnt find ' + n);
         continue;
@@ -368,25 +398,28 @@ export class Module extends Variable implements type.Module {
       if (!(v instanceof Stock)) {
         allDeps = allDeps.add(parts[0]);
       }
-      let otherDeps = v.getDeps();
-      for (const nn of otherDeps) {
+      for (const nn of v.getDeps()) {
         allDeps = allDeps.add(nn);
       }
     }
-    this._allDeps = allDeps;
+    this.allDeps = allDeps;
     return allDeps;
   }
 
   updateRefs(model: type.Model) {
     for (const [name, v] of model.vars) {
       // skip modules
-      if (model.modules.has(v.ident)) continue;
+      if (model.modules.has(v.ident)) {
+        continue;
+      }
 
       // account for references into a child module
-      let deps = v._deps;
+      const deps = v.deps;
       for (const depName of deps) {
         console.log(`/* ${this.modelName} -- ${v.ident} look ${name} */`);
-        if (!name.includes('.')) continue;
+        if (!name.includes('.')) {
+          continue;
+        }
         console.log(`/* got ${name} */`);
         const conn = new xmile.Connection();
         conn.from = name;
@@ -400,7 +433,9 @@ export class Module extends Variable implements type.Module {
   referencedModels(
     all?: Map<string, type.ModelDef>,
   ): Map<string, type.ModelDef> {
-    if (!all) all = Map();
+    if (!all) {
+      all = Map();
+    }
     const mdl = this.project.model(this.modelName);
     const name = mdl.name;
     if (all.has(name)) {
@@ -465,8 +500,8 @@ export class IdentifierSetVisitor implements ast.Visitor<Set<string>> {
   }
   call(n: ast.CallExpr): Set<string> {
     let set = Set<string>();
-    for (let i = 0; i < n.args.length; i++) {
-      set = set.union(n.args[i].walk(this));
+    for (const arg of n.args) {
+      set = set.union(arg.walk(this));
     }
 
     return set;
@@ -499,7 +534,9 @@ export class IdentifierSetVisitor implements ast.Visitor<Set<string>> {
  * @return A set of all identifiers.
  */
 export const identifierSet = (root: ast.Node | undefined): Set<string> => {
-  if (!root) return Set<string>();
+  if (!root) {
+    return Set<string>();
+  }
 
   return root.walk(new IdentifierSetVisitor());
 };

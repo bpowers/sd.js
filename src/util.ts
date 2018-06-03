@@ -140,7 +140,7 @@ export function lookup(table: any, index: number): number {
     }
   }
 
-  let i = low;
+  const i = low;
   if (x[i] === index) {
     return y[i];
   } else {
@@ -163,11 +163,7 @@ export function min(a: number, b: number): number {
  * parseFloat on every item in arr.
  */
 export function numArr(arr: any[]): number[] {
-  let result: number[] = [];
-  for (let i = 0; i < arr.length; i++) {
-    result.push(parseFloat(arr[i]));
-  }
-  return result;
+  return arr.map(parseFloat);
 }
 
 export function floatAttr(o: any, n: any): number {
@@ -177,16 +173,18 @@ export function floatAttr(o: any, n: any): number {
 // wrapper/re-implementation of querySelector that works under
 // Node with xmldom.
 export function qs(e: any, s: any): any {
-  if (e.querySelector) return e.querySelector(s);
+  if (e.querySelector) {
+    return e.querySelector(s);
+  }
 
-  let selectors = s.split('>');
+  const selectors = s.split('>');
   let curr = e;
-  let n: any;
 
   outer: for (let i = 0; curr && i < selectors.length; i++) {
-    for (let j = 0; j < curr.childNodes.length; j++) {
-      n = curr.childNodes[j];
-      if (!n.tagName) continue;
+    for (const n of curr.childnodes) {
+      if (!n.tagName) {
+        continue;
+      }
       if (n.tagName.toLowerCase() === selectors[i].toLowerCase()) {
         curr = n;
         continue outer;
@@ -198,10 +196,9 @@ export function qs(e: any, s: any): any {
 }
 
 export function querySelectorInner(e: any, selectors: any): any {
-  let sel = selectors[0];
-  let rest = selectors.slice(1);
+  const sel = selectors[0];
+  const rest = selectors.slice(1);
   let result: any[] = [];
-  let child: any;
   for (const child of e.childNodes) {
     if (child.tagName && child.tagName.toLowerCase() === sel) {
       if (rest.length) {
@@ -217,10 +214,14 @@ export function querySelectorInner(e: any, selectors: any): any {
 // wrapper/re-implementation of querySelectorAll that works under
 // Node with xmldom
 export function qsa(e: any, s: any): any {
-  if (e.querySelectorAll) return e.querySelectorAll(s);
-  let selectors = s.split('>').map(function(sel: string): string {
-    return sel.toLowerCase();
-  });
+  if (e.querySelectorAll) {
+    return e.querySelectorAll(s);
+  }
+  const selectors = s.split('>').map(
+    (sel: string): string => {
+      return sel.toLowerCase();
+    },
+  );
 
   return querySelectorInner(e, selectors);
 }

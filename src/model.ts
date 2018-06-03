@@ -6,13 +6,13 @@
 
 import { Map, Set } from 'immutable';
 
+import * as ast from './ast';
 import * as common from './common';
+import * as sim from './sim';
 import * as type from './type';
 import * as util from './util';
 import * as vars from './vars';
-import * as sim from './sim';
 import * as xmile from './xmile';
-import * as ast from './ast';
 
 const identifierSet = vars.identifierSet;
 
@@ -62,7 +62,7 @@ export class Model implements type.Model {
       return this.vars.get(id);
     }
     const parts = id.split('.');
-    let module = this.modules.get(parts[0]);
+    const module = this.modules.get(parts[0]);
     if (!module) {
       return undefined;
     }
@@ -73,7 +73,7 @@ export class Model implements type.Model {
   sim(isStandalone: boolean): sim.Sim {
     if (this.name !== 'main') {
       // mod = new vars.Module(this.project, null, 'main', this.name);
-      throw 'FIXME: sim of non-main model';
+      throw new Error('FIXME: sim of non-main model');
     }
     const mod = this.project.main;
     return new sim.Sim(mod, isStandalone);
@@ -87,27 +87,28 @@ export class Model implements type.Model {
       // IMPORTANT: we need to use the canonicalized
       // identifier, not the 'xmile name', which is
       // what I like to think of as the display name.
-      let ident = v.ident;
+      const ident = v.ident;
 
       // FIXME: is this too simplistic?
-      if (this.vars.has(ident))
+      if (this.vars.has(ident)) {
         return new xmile.Error('duplicate var ' + ident);
+      }
 
       switch (v.type) {
         case 'module':
-          let module = new vars.Module(this.project, this, v);
+          const module = new vars.Module(this.project, this, v);
           this.modules = this.modules.set(ident, module);
           this.vars = this.vars.set(ident, module);
           break;
         case 'stock':
-          let stock = new vars.Stock(this, v);
+          const stock = new vars.Stock(this, v);
           this.vars = this.vars.set(ident, stock);
           break;
         case 'aux':
           // FIXME: fix Variable/GF/Table nonsense
           let aux: type.Variable | null = null;
           if (v.gf) {
-            let table = new vars.Table(this, v);
+            const table = new vars.Table(this, v);
             if (table.ok) {
               this.tables = this.tables.set(ident, table);
               aux = table;
@@ -121,7 +122,7 @@ export class Model implements type.Model {
         case 'flow':
           let flow: type.Variable | null = null;
           if (v.gf) {
-            let table = new vars.Table(this, v);
+            const table = new vars.Table(this, v);
             if (table.ok) {
               this.tables = this.tables.set(ident, table);
               flow = table;
@@ -133,7 +134,7 @@ export class Model implements type.Model {
           this.vars = this.vars.set(ident, flow);
           break;
         default:
-          throw 'unreachable: unknown type "' + v.type + '"';
+          throw new Error('unreachable: unknown type "' + v.type + '"');
       }
     }
 
@@ -142,24 +143,29 @@ export class Model implements type.Model {
 
   private instantiateImplicitModules(): xmile.Error | null {
     for (const [name, v] of this.vars) {
-      let visitor = new BuiltinVisitor(this.project, this, v);
+      const visitor = new BuiltinVisitor(this.project, this, v);
 
       // check for builtins that require module instantiations
-      if (v.ast) v.ast = v.ast.walk(visitor);
+      if (v.ast) {
+        v.ast = v.ast.walk(visitor);
+      }
 
       for (const [name, v] of visitor.vars) {
-        if (this.vars.has(name)) throw 'builtin walk error, duplicate ' + name;
+        if (this.vars.has(name)) {
+          throw new Error('builtin walk error, duplicate ' + name);
+        }
         this.vars = this.vars.set(name, v);
       }
       for (const [name, mod] of visitor.modules) {
-        if (this.modules.has(name))
-          throw 'builtin walk error, duplicate ' + name;
+        if (this.modules.has(name)) {
+          throw new Error('builtin walk error, duplicate ' + name);
+        }
         this.modules = this.modules.set(name, mod);
       }
 
       // if we rewrote the AST, make sure to update our dependencies
-      v._deps = identifierSet(v.ast);
-      v._allDeps = undefined;
+      v.deps = identifierSet(v.ast);
+      v.allDeps = undefined;
     }
 
     for (const [name, mod] of this.modules) {
@@ -205,59 +211,59 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
     return n;
   }
   call(n: ast.CallExpr): ast.Node {
-    let args = [];
-    for (let i = 0; i < n.args.length; i++) {
-      args.push(n.args[i].walk(this));
+    const args = [];
+    for (const arg of n.args) {
+      args.push(arg.walk(this));
     }
 
     if (!isIdent(n.fun)) {
-      throw '// for now, only idents can be used as fns.';
+      throw new Error('// for now, only idents can be used as fns.');
     }
 
-    let fn = (<ast.Ident>n.fun).ident;
-    if (common.builtins.has(fn))
+    const fn = (n.fun as ast.Ident).ident;
+    if (common.builtins.has(fn)) {
       return new ast.CallExpr(n.fun, n.lParenPos, args, n.rParenPos);
-
-    let model = <Model | null>this.project.model('stdlib·' + fn);
-    if (model === null) {
-      throw 'unknown builtin: ' + fn;
     }
 
-    let identArgs: string[] = [];
-    for (let i = 0; i < args.length; i++) {
-      let arg = args[i];
+    const model = this.project.model('stdlib·' + fn);
+    if (!model) {
+      throw new Error('unknown builtin: ' + fn);
+    }
+
+    const identArgs: string[] = [];
+    for (const arg of args) {
       if (isIdent(arg)) {
-        identArgs.push((<ast.Ident>arg).ident);
+        identArgs.push((arg as ast.Ident).ident);
       } else {
-        let xVar = new xmile.Variable();
+        const xVar = new xmile.Variable();
         xVar.type = 'aux';
         xVar.name = '$·' + this.variable.ident + '·' + this.n + '·arg' + i;
         xVar.eqn = arg.walk(new PrintVisitor());
-        let proxyVar = new vars.Variable(this.model, xVar);
+        const proxyVar = new vars.Variable(this.model, xVar);
         this.vars = this.vars.set(proxyVar.ident, proxyVar);
         identArgs.push(proxyVar.ident);
       }
     }
 
-    let modName = '$·' + this.variable.ident + '·' + this.n + '·' + fn;
-    let xMod = new xmile.Variable();
+    const modName = '$·' + this.variable.ident + '·' + this.n + '·' + fn;
+    const xMod = new xmile.Variable();
     xMod.type = 'module';
     xMod.name = modName;
     xMod.model = 'stdlib·' + fn;
     xMod.connections = [];
 
     if (!(fn in stdlibArgs)) {
-      throw `unknown function or builtin ${fn}`;
+      throw new Error(`unknown function or builtin ${fn}`);
     }
 
     for (let i = 0; i < identArgs.length; i++) {
-      let conn = new xmile.Connection();
+      const conn = new xmile.Connection();
       conn.to = stdlibArgs[fn][i];
       conn.from = '.' + identArgs[i];
       xMod.connections.push(conn);
     }
 
-    let module = new vars.Module(this.project, this.model, xMod);
+    const module = new vars.Module(this.project, this.model, xMod);
     this.modules = this.modules.set(modName, module);
     this.vars = this.vars.set(modName, module);
 
@@ -266,22 +272,22 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
     return new ast.Ident(n.fun.pos, modName + '.output');
   }
   if(n: ast.IfExpr): ast.Node {
-    let cond = n.cond.walk(this);
-    let t = n.t.walk(this);
-    let f = n.f.walk(this);
+    const cond = n.cond.walk(this);
+    const t = n.t.walk(this);
+    const f = n.f.walk(this);
     return new ast.IfExpr(n.ifPos, cond, n.thenPos, t, n.elsePos, f);
   }
   paren(n: ast.ParenExpr): ast.Node {
-    let x = n.x.walk(this);
+    const x = n.x.walk(this);
     return new ast.ParenExpr(n.lPos, x, n.rPos);
   }
   unary(n: ast.UnaryExpr): ast.Node {
-    let x = n.x.walk(this);
+    const x = n.x.walk(this);
     return new ast.UnaryExpr(n.opPos, n.op, x);
   }
   binary(n: ast.BinaryExpr): ast.Node {
-    let l = n.l.walk(this);
-    let r = n.r.walk(this);
+    const l = n.l.walk(this);
+    const r = n.r.walk(this);
     return new ast.BinaryExpr(l, n.opPos, n.op, r);
   }
 }
@@ -300,7 +306,9 @@ class PrintVisitor implements ast.Visitor<string> {
     s += '(';
     for (let i = 0; i < n.args.length; i++) {
       s += n.args[i].walk(this);
-      if (i != n.args.length - 1) s += ',';
+      if (i !== n.args.length - 1) {
+        s += ',';
+      }
     }
     s += ')';
 

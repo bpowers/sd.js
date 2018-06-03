@@ -7,40 +7,45 @@ import { Map } from 'immutable';
 import * as xmldom from 'xmldom';
 
 import * as common from './common';
+import * as stdlib from './stdlib';
 import * as type from './type';
 import * as xmile from './xmile';
-import * as stdlib from './stdlib';
 
 import { Error } from './common';
 import { Model } from './model';
-import { Module } from './vars';
 import { defined } from './util';
+import { Module } from './vars';
 
 const getXmileElement = (xmileDoc: XMLDocument): Element | undefined => {
   // in Chrome/Firefox, item 0 is xmile.  Under node's XML DOM
   // item 0 is the <xml> prefix.  And I guess there could be
   // text nodes in there, so just explictly look for xmile
   for (let i = 0; i < xmileDoc.childNodes.length; i++) {
-    let node = <Element>xmileDoc.childNodes.item(i);
-    if (node.tagName === 'xmile') return node;
+    const node = xmileDoc.childNodes.item(i) as Element;
+    if (node.tagName === 'xmile') {
+      return node;
+    }
   }
   return undefined;
 };
 
-let stdModels: Map<string, type.Model> | undefined = undefined;
+let stdModels: Map<string, type.Model> | undefined;
 
 function parseStdModels() {
   stdModels = Map();
   for (const name in stdlib.xmileModels) {
+    if (!stdlib.xmileModels.hasOwnProperty(name)) {
+      continue;
+    }
     const modelStr = stdlib.xmileModels[name];
-    let xml = new xmldom.DOMParser().parseFromString(
+    const xml = new xmldom.DOMParser().parseFromString(
       modelStr,
       'application/xml',
     );
-    let ctx = new Project(xml, true);
-    let mdl = ctx.model(name);
+    const ctx = new Project(xml, true);
+    const mdl = ctx.model(name);
     mdl.name = 'stdlib·' + mdl.name;
-    let ident = mdl.ident;
+    const ident = mdl.ident;
     stdModels = stdModels.set('stdlib·' + ident, mdl);
   }
 }
@@ -68,8 +73,12 @@ export class Project implements type.Project {
   }
 
   model(name?: string): type.Model | undefined {
-    if (!name) name = 'main';
-    if (this.models.has(name)) return this.models.get(name);
+    if (!name) {
+      name = 'main';
+    }
+    if (this.models.has(name)) {
+      return this.models.get(name);
+    }
 
     return this.models.get('stdlib·' + name);
   }
@@ -87,7 +96,7 @@ export class Project implements type.Project {
       this.valid = false;
       return Error.Version;
     }
-    let xmileElement = getXmileElement(xmileDoc);
+    const xmileElement = getXmileElement(xmileDoc);
     if (!xmileElement) {
       this.valid = false;
       return new Error('no XMILE root element');
@@ -98,7 +107,7 @@ export class Project implements type.Project {
     // finished with XMLDocument at this point, we now
     // have a tree of native JS objects with a 1:1
     // correspondence to the XMILE doc
-    let [file, err] = xmile.File.Build(xmileElement);
+    const [file, err] = xmile.File.Build(xmileElement);
     if (err) {
       console.log('File.Build: ' + err.error);
       this.valid = false;
@@ -119,7 +128,9 @@ export class Project implements type.Project {
     }
 
     if (!skipStdlib) {
-      if (stdModels === undefined) parseStdModels();
+      if (stdModels === undefined) {
+        parseStdModels();
+      }
 
       // add standard models, like 'delay1' and 'smth3'.
       for (const [name, stdModel] of stdModels) {
@@ -131,12 +142,16 @@ export class Project implements type.Project {
     // project
     for (const xModel of file.models) {
       let ident = xModel.ident;
-      if (ident === '' && !('main' in this.models)) ident = 'main';
+      if (ident === '' && !('main' in this.models)) {
+        ident = 'main';
+      }
       this.models = this.models.set(ident, new Model(this, ident, xModel));
     }
     this.valid = true;
 
-    if (!this.models.has('main')) return undefined;
+    if (!this.models.has('main')) {
+      return undefined;
+    }
 
     const mainModel = defined(this.models.get('main'));
 

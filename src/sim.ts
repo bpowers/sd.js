@@ -6,10 +6,10 @@
 
 import { Map, Set } from 'immutable';
 
-import * as util from './util';
-import * as type from './type';
-import * as vars from './vars';
 import * as runtime from './runtime';
+import * as type from './type';
+import * as util from './util';
+import * as vars from './vars';
 
 import * as Mustache from 'mustache';
 
@@ -18,7 +18,7 @@ import { exists } from './util';
 // whether we map names -> offsets in a Float64Array, or use names
 // as object property lookups.  With DEBUG = true, equations are
 // easier to debug but run slower.
-let DEBUG = true;
+const DEBUG = true;
 
 const SP = DEBUG ? '  ' : '';
 const NLSP = DEBUG ? '\n  ' : '';
@@ -162,7 +162,7 @@ export class Sim {
     for (const [ref, ptr] of root.refs) {
       mainRefs.push({
         name: ref,
-        ptr: ptr,
+        ptr,
       });
     }
     console.log('// mainRefs: ' + JSON.stringify(root.refs));
@@ -172,7 +172,7 @@ export class Sim {
       epilogue: isStandalone ? runtime.epilogue : 'onmessage = handleMessage;',
       mainClassName: util.titleCase(root.modelName),
       models: compiledModels,
-      mainRefs: mainRefs,
+      mainRefs,
     });
     if (isStandalone) {
       console.log(source);
@@ -186,11 +186,13 @@ export class Sim {
     this.worker.addEventListener(
       'message',
       (e: any): void => {
-        let id = e.data[0];
-        let result = e.data[1];
-        let cb = this.promised[id];
+        const id = e.data[0];
+        const result = e.data[1];
+        const cb = this.promised[id];
         delete this.promised[id];
-        if (cb) cb(result[0], result[1]);
+        if (cb) {
+          cb(result[0], result[1]);
+        }
       },
     );
   }
@@ -206,13 +208,15 @@ export class Sim {
 
     const isRef = (n: string): boolean => {
       for (const module of modules) {
-        if (module.refs.has(n)) return true;
+        if (module.refs.has(n)) {
+          return true;
+        }
       }
       return false;
     };
 
-    let offsets: type.Offsets = {};
-    let runtimeOffsets: type.Offsets = {};
+    const offsets: type.Offsets = {};
+    const runtimeOffsets: type.Offsets = {};
 
     // decide which run lists each variable has to be, based on
     // its type and const-ness
@@ -224,7 +228,9 @@ export class Sim {
       } else if (v instanceof vars.Stock) {
         // add any referenced vars to initials
         for (const d of v.getDeps()) {
-          if (d === 'time' || initialsIncludes(d)) continue;
+          if (d === 'time' || initialsIncludes(d)) {
+            continue;
+          }
           runInitials.push(model.lookup(d));
         }
         runInitials.push(v);
@@ -239,7 +245,7 @@ export class Sim {
       }
 
       if (!(v instanceof vars.Module) && !isRef(n)) {
-        let off = this.nextID(model.name);
+        const off = this.nextID(model.name);
         runtimeOffsets[n] = off;
         if (DEBUG) {
           offsets[n] = `${off}/*${n}*/`;
@@ -254,44 +260,38 @@ export class Sim {
     util.sort(runInitials);
     util.sort(runFlows);
 
-    let initials: { [name: string]: number } = {};
-    let tables: { [name: string]: type.Table } = {};
+    const initials: { [name: string]: number } = {};
+    const tables: { [name: string]: type.Table } = {};
 
-    let ci: string[] = [],
-      cf: string[] = [],
-      cs: string[] = [];
+    const ci: string[] = [];
+    const cf: string[] = [];
+    const cs: string[] = [];
     // FIXME(bp) some auxiliaries are referred to in stock intial
     // equations, they need to be promoted into initials.
-    for (let i = 0; i < runInitials.length; i++) {
+    for (const v of runInitials) {
       let eqn: string;
-      let v = runInitials[i];
       if (v instanceof vars.Module) {
         eqn = `this.modules["${v.ident}"].calcInitial(dt, curr);`;
       } else {
-        if (isRef(v.ident)) continue;
-        if (v.isConst()) initials[v.ident] = parseFloat(v.eqn);
-        eqn = `curr[${offsets[v.ident]}] = ${vars.Variable.prototype.code.apply(
-          v,
-          [offsets],
-        )};`;
+        if (isRef(v.ident)) {
+          continue;
+        }
+        if (v.isConst()) {
+          initials[v.ident] = parseFloat(v.eqn);
+        }
+        const result = vars.Variable.prototype.code.apply(v, [offsets]);
+        eqn = `curr[${offsets[v.ident]}] = ${result};`;
       }
       ci.push(eqn);
     }
-    for (let i = 0; i < runFlows.length; i++) {
-      let eqn: string;
-      let v = runFlows[i];
-      eqn = null;
+    for (const v of runFlows) {
       if (v instanceof vars.Module) {
-        eqn = `this.modules["${v.ident}"].calcFlows(dt, curr);`;
+        cf.push(`this.modules["${v.ident}"].calcFlows(dt, curr);`);
       } else if (!isRef(v.ident)) {
-        eqn = `curr[${offsets[v.ident]}] = ${v.code(offsets)};`;
+        cf.push(`curr[${offsets[v.ident]}] = ${v.code(offsets)};`);
       }
-      if (!eqn) continue;
-      cf.push(eqn);
     }
-    for (let i = 0; i < runStocks.length; i++) {
-      let eqn: string;
-      let v = runStocks[i];
+    for (const v of runStocks) {
       if (v instanceof vars.Module) {
         cs.push('this.modules["' + v.ident + '"].calcStocks(dt, curr, next);');
       } else if (!v.hasOwnProperty('initial')) {
@@ -309,19 +309,21 @@ export class Sim {
       };
     }
     let additional = '';
-    let init: string[] = [];
+    const init: string[] = [];
     if (model.modules.size > 0) {
       // +1 for implicit time
-      if (model.ident === 'main') additional = ' + 1';
+      if (model.ident === 'main') {
+        additional = ' + 1';
+      }
       init.push(
         'let off = Object.keys(this.offsets).length' + additional + ';',
       );
     }
-    let mods: string[] = [];
+    const mods: string[] = [];
     mods.push('{');
     for (const [n, module] of model.modules) {
       init.push('const ' + n + 'Refs = {');
-      for (let [refName, ref] of module.refs) {
+      for (const [refName, ref] of module.refs) {
         init.push('    "' + refName + '": "' + ref.ptr + '",');
       }
       init.push('};');
@@ -360,12 +362,15 @@ export class Sim {
 
   // FIXME: any?
   _post(...args: any[]): Promise<any> {
-    let id = this.seq++;
+    const id = this.seq++;
 
     return new Promise<any>((resolve, reject) => {
       this.promised[id] = (result: any, err: any) => {
-        if (err !== undefined && err !== null) reject(err);
-        else resolve(result);
+        if (err !== undefined && err !== null) {
+          reject(err);
+        } else {
+          resolve(result);
+        }
       };
       this.worker.postMessage([id].concat(args));
     });
@@ -385,12 +390,12 @@ export class Sim {
   }
 
   value(...names: string[]): Promise<any> {
-    let args = ['get_val'].concat(names);
+    const args = ['get_val'].concat(names);
     return this._post.apply(this, args);
   }
 
   series(...names: string[]): Promise<any> {
-    let args = ['get_series'].concat(names);
+    const args = ['get_series'].concat(names);
     return this._post.apply(this, args);
   }
 
@@ -439,13 +444,12 @@ export class Sim {
     delim: string,
   ): string {
     let file = '';
-    let series: { [name: string]: type.Series } = {};
+    const series: { [name: string]: type.Series } = {};
     let time: type.Series;
     let header = 'time' + delim;
 
     // create the CSV header
-    for (let i = 0; i < vars.length; i++) {
-      let v = vars[i];
+    for (const v of vars) {
       if (v === 'time') {
         time = data[v];
         continue;
@@ -458,12 +462,16 @@ export class Sim {
     file += '\n';
 
     // now go timestep-by-timestep to generate each line
-    let nSteps = time.values.length;
+    const nSteps = time.values.length;
     for (let i = 0; i < nSteps; i++) {
       let msg = '';
       for (const v in series) {
-        if (!series.hasOwnProperty(v)) continue;
-        if (msg === '') msg += series[v].time[i] + delim;
+        if (!series.hasOwnProperty(v)) {
+          continue;
+        }
+        if (msg === '') {
+          msg += series[v].time[i] + delim;
+        }
         msg += series[v].values[i] + delim;
       }
       file += msg.substr(0, msg.length - 1);
