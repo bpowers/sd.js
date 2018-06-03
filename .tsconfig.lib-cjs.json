@@ -2,7 +2,6 @@
   "files": [
     "src/ast.ts",
     "src/common.ts",
-    "src/compat.ts",
     "src/lex.ts",
     "src/model.ts",
     "src/parse.ts",

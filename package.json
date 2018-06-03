@@ -23,7 +23,7 @@
     "mdl.js": "./bin/mdl.js"
   },
   "dependencies": {
-    "immutable": "^4.0.0-rc.9",
+    "immutable": "git://github.com/bpowers/immutable-js.git#ts2.9-keyof-fix",
     "mustache": "^2.3.0",
     "xmldom": "^0.1.27"
   },
@@ -44,7 +44,7 @@
     "rollup-plugin-sourcemaps": "^0.4.2",
     "tslint": "^5.10.0",
     "tslint-react": "^3.6.0",
-    "typescript": "^2.9.0-rc",
+    "typescript": "^2.9.1",
     "watch": "^1.0.2"
   },
   "scripts": {
