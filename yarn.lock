@@ -852,9 +852,9 @@ immutable@3.8.2, immutable@^3.7.6:
   version "3.8.2"
   resolved "https://registry.yarnpkg.com/immutable/-/immutable-3.8.2.tgz#c2439951455bb39913daf281376f1530e104adf3"
 
-"immutable@git://github.com/bpowers/immutable-js.git#ts2.9-keyof-fix":
+"immutable@git://github.com/bpowers/immutable-js.git#ts2.9-keyof-fix-w-dist":
   version "4.0.0-rc.9"
-  resolved "git://github.com/bpowers/immutable-js.git#76c9b375907e1dbc402db4e194c9df4046fc6622"
+  resolved "git://github.com/bpowers/immutable-js.git#89cd1e53870030b265bac677de61f4690b0633c0"
 
 indexof@0.0.1:
   version "0.0.1"

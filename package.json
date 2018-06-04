@@ -23,7 +23,7 @@
     "mdl.js": "./bin/mdl.js"
   },
   "dependencies": {
-    "immutable": "git://github.com/bpowers/immutable-js.git#ts2.9-keyof-fix",
+    "immutable": "git://github.com/bpowers/immutable-js.git#ts2.9-keyof-fix-w-dist",
     "mustache": "^2.3.0",
     "xmldom": "^0.1.27"
   },
