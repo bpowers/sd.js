@@ -183,7 +183,7 @@ export class Variable implements type.Variable {
   ast: ast.Node;
 
   project: type.Project;
-  parent: type.Model;
+  parent: type.Model | null;
   // only for modules
   model: type.Model;
 
@@ -347,7 +347,7 @@ export class Module extends Variable implements type.Module {
   modelName: string;
   refs: Map<string, Reference>;
 
-  constructor(project: type.Project, parent: type.Model, v: xmile.Variable) {
+  constructor(project: type.Project, parent: type.Model | null, v: xmile.Variable) {
     super();
 
     this.project = project;

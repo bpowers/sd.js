@@ -44,6 +44,10 @@ function parseStdModels() {
     );
     const ctx = new Project(xml, true);
     const mdl = ctx.model(name);
+    if (!mdl) {
+      console.log('FIXME: invariant broken');
+      continue;
+    }
     mdl.name = 'stdlib·' + mdl.name;
     const ident = mdl.ident;
     stdModels = stdModels.set('stdlib·' + ident, mdl);
@@ -130,6 +134,9 @@ export class Project implements type.Project {
     if (!skipStdlib) {
       if (stdModels === undefined) {
         parseStdModels();
+      }
+      if (stdModels === undefined) {
+        return new Error("couldn't parse std models");
       }
 
       // add standard models, like 'delay1' and 'smth3'.

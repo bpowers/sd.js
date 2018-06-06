@@ -81,7 +81,7 @@ export interface Variable {
   ast: any; // FIXME: this is any to fix circular deps
 
   project: Project;
-  parent: Model;
+  parent: Model | null;
   model: Model;
 
   deps: Set<string>;
