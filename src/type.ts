@@ -85,7 +85,7 @@ export interface Variable {
   model: Model;
 
   deps: Set<string>;
-  allDeps: Set<string>;
+  allDeps?: Set<string>;
 
   isConst(): boolean;
   getDeps(): Set<string>;
@@ -125,8 +125,8 @@ export class Token {
   constructor(
     public tok: string,
     public type: TokenType,
-    public startLoc?: SourceLoc,
-    public endLoc?: SourceLoc,
+    public startLoc: SourceLoc,
+    public endLoc: SourceLoc,
   ) {}
 
   get value(): number {

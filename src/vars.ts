@@ -188,7 +188,7 @@ export class Variable implements type.Variable {
   model: type.Model;
 
   deps: Set<string>;
-  allDeps: Set<string>;
+  allDeps?: Set<string>;
 
   constructor(model?: type.Model, v?: xmile.Variable) {
     if (!arguments.length) {

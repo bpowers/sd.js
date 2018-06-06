@@ -67,6 +67,9 @@ export class Model implements type.Model {
       return undefined;
     }
     const nextModel = this.project.model(module.modelName);
+    if (!nextModel) {
+      return undefined;
+    }
     return nextModel.lookup(parts.slice(1).join('.'));
   }
 

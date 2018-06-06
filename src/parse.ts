@@ -49,7 +49,7 @@ function binaryLevel(
   p: Parser,
   ops: string,
 ): (maxLevel: number) => Node | null {
-  return (maxLevel: number): Node | undefined => {
+  return (maxLevel: number): Node | null => {
     const t = p.lexer.peek();
     // Ensure that we don't inadvertently mess up operator
     // precedence when recursively calling back into
@@ -59,13 +59,13 @@ function binaryLevel(
     }
 
     if (!t) {
-      return undefined;
+      return null;
     }
 
     const next = p.levels[n + 1];
     let lhs = next(maxLevel);
     if (!lhs) {
-      return undefined;
+      return null;
     }
     // its ok if we didn't have a binary operator
     for (let op = p.consumeAnyOf(ops); op; op = p.consumeAnyOf(ops)) {
@@ -77,7 +77,7 @@ function binaryLevel(
       const rhs = p.levels[0](n);
       if (!rhs) {
         p.errs.push('expected rhs of expr after "' + op.tok + '"');
-        return undefined;
+        return null;
       }
 
       lhs = new BinaryExpr(lhs, op.startLoc, op.tok, rhs);
@@ -89,7 +89,7 @@ function binaryLevel(
 class Parser {
   lexer: Lexer;
   errs: string[] = [];
-  levels: Array<(maxLevel: number) => Node> = [];
+  levels: Array<(maxLevel: number) => Node | null> = [];
 
   constructor(eqn: string) {
     this.lexer = new Lexer(eqn);
@@ -109,19 +109,19 @@ class Parser {
     return this.errs;
   }
 
-  expr(): Node {
+  expr(): Node | null {
     return this.levels[0](BINARY.length);
   }
-  factor(): Node {
-    let lhs: Node;
-    let pos: SourceLoc;
+  factor(): Node | null {
+    let lhs: Node | null;
+    let pos: SourceLoc | null;
     if ((pos = this.consumeTok('('))) {
       lhs = this.expr();
       if (!lhs) {
         this.errs.push('expected an expression after an opening paren');
         return null;
       }
-      let closing: SourceLoc;
+      let closing: SourceLoc | null;
       if (!(closing = this.consumeTok(')'))) {
         this.errs.push('expected ")", not end-of-equation');
         return null;
@@ -129,7 +129,7 @@ class Parser {
       return new ParenExpr(pos, lhs, closing);
     }
 
-    let op: Token;
+    let op: Token | null;
     if ((op = this.consumeAnyOf(UNARY))) {
       lhs = this.expr();
       if (!lhs) {
@@ -143,14 +143,14 @@ class Parser {
       return lhs;
     }
 
-    let ifLoc: SourceLoc;
+    let ifLoc: SourceLoc | null;
     if ((ifLoc = this.consumeReserved('if'))) {
       const cond = this.expr();
       if (!cond) {
         this.errs.push('expected an expr to follow "IF"');
         return null;
       }
-      let thenLoc: SourceLoc;
+      let thenLoc: SourceLoc | null;
       if (!(thenLoc = this.consumeReserved('then'))) {
         this.errs.push('expected "THEN"');
         return null;
@@ -160,7 +160,7 @@ class Parser {
         this.errs.push('expected an expr to follow "THEN"');
         return null;
       }
-      let elseLoc: SourceLoc;
+      let elseLoc: SourceLoc | null;
       if (!(elseLoc = this.consumeReserved('else'))) {
         this.errs.push('expected "ELSE"');
         return null;
@@ -175,7 +175,7 @@ class Parser {
 
     if ((lhs = this.ident())) {
       // check if this is a function call
-      let lParenLoc: SourceLoc;
+      let lParenLoc: SourceLoc | null;
       if ((lParenLoc = this.consumeTok('('))) {
         return this.call(lhs, lParenLoc);
       } else if ((lhs as Ident).ident === 'nan') {
@@ -189,7 +189,7 @@ class Parser {
     return null;
   }
 
-  consumeAnyOf(ops: string): Token {
+  consumeAnyOf(ops: string): Token | null {
     const peek = this.lexer.peek();
     if (!peek || peek.type !== TokenType.TOKEN) {
       return null;
@@ -202,7 +202,7 @@ class Parser {
     return null;
   }
 
-  consumeTok(s: string): SourceLoc {
+  consumeTok(s: string): SourceLoc | null {
     const t = this.lexer.peek();
     if (!t || t.type !== TokenType.TOKEN || t.tok !== s) {
       return null;
@@ -212,7 +212,7 @@ class Parser {
     return t.startLoc;
   }
 
-  consumeReserved(s: string): SourceLoc {
+  consumeReserved(s: string): SourceLoc | null {
     const t = this.lexer.peek();
     if (!t || t.type !== TokenType.RESERVED || t.tok !== s) {
       return null;
@@ -222,7 +222,7 @@ class Parser {
     return t.startLoc;
   }
 
-  num(): Node {
+  num(): Node | null {
     const t = this.lexer.peek();
     if (!t || t.type !== TokenType.NUMBER) {
       return null;
@@ -232,7 +232,7 @@ class Parser {
     return new Constant(t.startLoc, t.tok);
   }
 
-  ident(): Node {
+  ident(): Node | null {
     const t = this.lexer.peek();
     if (!t || t.type !== TokenType.IDENT) {
       return null;
@@ -242,11 +242,11 @@ class Parser {
     return new Ident(t.startLoc, t.tok);
   }
 
-  call(fn: Node, lParenLoc: SourceLoc): Node {
+  call(fn: Node, lParenLoc: SourceLoc): Node | null {
     const args: Node[] = [];
 
     // no-arg call - simplifies logic to special case this.
-    let rParenLoc: SourceLoc;
+    let rParenLoc: SourceLoc | null;
     if ((rParenLoc = this.consumeTok(')'))) {
       return new CallExpr(fn, lParenLoc, args, rParenLoc);
     }
