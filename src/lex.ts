@@ -6,7 +6,7 @@ import { Map, Set } from 'immutable';
 
 import { builtins, reserved } from './common';
 import { SourceLoc, Token, TokenType } from './type';
-import { exists } from './util';
+import { defined, exists } from './util';
 
 const OP: Map<string, string> = Map({
   not: '!',
@@ -243,7 +243,7 @@ export class Lexer {
       type = TokenType.RESERVED;
     } else if (OP.has(ident)) {
       type = TokenType.TOKEN;
-      ident = exists(OP.get(ident));
+      ident = defined(OP.get(ident));
     }
 
     return new Token(ident, type, startPos, startPos.off(len));
