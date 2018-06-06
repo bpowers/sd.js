@@ -117,9 +117,23 @@ export interface XNode {
   // constructor(el: Element): XNode;
 }
 
-class Point extends Record({x: -1, y: -1}) implements XNode {
+export class Point extends Record({x: -1, y: -1}) implements XNode {
   constructor(point: IPoint) {
     super(point);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'Point',
+      data: this.toJS(),
+    };
+  }
+
+  static FromJSON(obj: any): Point {
+    if (obj['@class'] !== 'Point' || !obj.data) {
+      throw new Error('bad object');
+    }
+    return new Point(obj.data);
   }
 
   static FromXML(el: Element): [Point, undefined] | [undefined, Error] {
