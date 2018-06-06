@@ -4,6 +4,29 @@
 
 import { Map, Set } from 'immutable';
 
+export function exists<T>(object: T | null): T {
+  if (object === null) {
+    throw new Error('expected non-null object');
+  }
+  return object;
+}
+
+export function defined<T>(object: T | undefined): T {
+  if (object === undefined) {
+    throw new Error('expected non-undefined object');
+  }
+  return object;
+}
+
+export function titleCase(str: string): string {
+  return str.replace(
+    /(?:^|\s)\w/g,
+    (match: string): string => {
+      return match.toUpperCase();
+    },
+  );
+}
+
 export class Error {
   static Version: Error = new Error('bad xml or unknown smile version');
   static BadTime: Error = new Error('bad time (control) data');

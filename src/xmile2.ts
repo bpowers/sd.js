@@ -4,6 +4,8 @@
 
 import { Record } from 'immutable';
 
+import { defined, exists } from './common';
+
 export const camelCase = (s: string): string => {
   let i = 0;
   while ((i = s.indexOf('_')) >= 0 && i < s.length - 1) {
@@ -29,6 +31,9 @@ declare function isFinite(n: string | number): boolean;
 const attr = (el: Element, name: string): string | undefined => {
   for (let i = 0; i < el.attributes.length; i++) {
     const attr = el.attributes.item(i);
+    if (!attr) {
+      continue;
+    }
     if (attr.name.toLowerCase() === name) {
       return attr.value;
     }
@@ -54,10 +59,13 @@ const content = (el: Element): string => {
   let text = '';
   if (el.hasChildNodes()) {
     for (let i = 0; i < el.childNodes.length; i++) {
-      const child = (el as Element).childNodes.item(i);
+      const child = el.childNodes.item(i);
+      if (!child) {
+        continue;
+      }
       switch (child.nodeType) {
         case 3: // Text
-          text += child.nodeValue.trim();
+          text += exists(child.nodeValue).trim();
           break;
         case 4: // CData
           text += child.nodeValue;
@@ -107,30 +115,33 @@ interface IPoint {
 
 export interface XNode {
   // constructor(el: Element): XNode;
-  FromXML(doc: XMLDocument, parent: Element): [this.constructor, undefined] | [undefined, Error];
 }
 
-class Point extends Record({x: -1, y: -1}) {
+class Point extends Record({x: -1, y: -1}) implements XNode {
   constructor(point: IPoint) {
     super(point);
   }
 
   static FromXML(el: Element): [Point, undefined] | [undefined, Error] {
     const pt: IPoint = {};
-    let err: Error;
+    let err: Error | undefined;
 
-    for (const attr of el.attributes) {
+    for (let i = 0; i < el.attributes.length; i++) {
+      const attr = el.attributes.item(i);
+      if (!attr) {
+        continue;
+      }
       switch (attr.name.toLowerCase()) {
         case 'x':
           [pt.x, err] = num(attr.value);
           if (err) {
-            return [undefined, new Error(`x not num: ${err.error}`)];
+            return [undefined, new Error(`x not num: ${err}`)];
           }
           break;
         case 'y':
           [pt.y, err] = num(attr.value);
           if (err) {
-            return [undefined, new Error(`y not num: ${err.error}`)];
+            return [undefined, new Error(`y not num: ${err}`)];
           }
           break;
       }
@@ -139,6 +150,6 @@ class Point extends Record({x: -1, y: -1}) {
       return [undefined, new Error(`expected both x and y on a Point`)];
     }
 
-    return [pt, undefined];
+    return [new Point(pt), undefined];
   }
 }

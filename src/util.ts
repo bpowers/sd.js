@@ -4,28 +4,7 @@
 
 import * as type from './type';
 
-export function exists<T>(object: T | null): T {
-  if (object === null) {
-    throw new Error('expected non-null object');
-  }
-  return object;
-}
-
-export function defined<T>(object: T | undefined): T {
-  if (object === undefined) {
-    throw new Error('expected non-undefined object');
-  }
-  return object;
-}
-
-export function titleCase(str: string): string {
-  return str.replace(
-    /(?:^|\s)\w/g,
-    (match: string): string => {
-      return match.toUpperCase();
-    },
-  );
-}
+export { defined, exists, titleCase } from './common';
 
 /// dName converts a string into the format the user
 /// expects to see on a diagram.
