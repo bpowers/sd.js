@@ -2,9 +2,9 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-import { Record } from 'immutable';
+import { List, Record } from 'immutable';
 
-import { defined, exists } from './common';
+import { canonicalize, defined, exists } from './common';
 
 export const camelCase = (s: string): string => {
   let i = 0;
@@ -108,16 +108,21 @@ const bool = (v: any): [boolean, undefined] | [false, Error] => {
   return [false, new Error('not boolean: ' + v)];
 };
 
+export interface XNode {
+  // constructor(el: Element): XNode;
+}
+
 interface IPoint {
   x?: number;
   y?: number;
 };
 
-export interface XNode {
-  // constructor(el: Element): XNode;
-}
+const PointDefaults = {
+  x: -1,
+  y: -1,
+};
 
-export class Point extends Record({x: -1, y: -1}) implements XNode {
+export class Point extends Record(PointDefaults) implements XNode {
   constructor(point: IPoint) {
     super(point);
   }
@@ -165,5 +170,199 @@ export class Point extends Record({x: -1, y: -1}) implements XNode {
     }
 
     return [new Point(pt), undefined];
+  }
+}
+
+interface IFile {
+  version: string;
+  namespace: string;
+  //header: Header;
+  //simSpec: SimSpec;
+  //dimensions: Dimension[] = [];
+  //units: Unit[] = [];
+  //behavior: Behavior;
+  //style: Style;
+  models: List<Model>;
+}
+
+const FileDefaults = {
+  version: '1.0',
+  namespace: 'https://docs.oasis-open.org/xmile/ns/XMILE/v1.0',
+  models: List(),
+};
+
+export class File extends Record(FileDefaults) implements XNode {
+  constructor(file: IFile) {
+    super(file);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'File',
+      data: this.toJS(),
+    };
+  }
+
+  static FromJSON(obj: any): File {
+    if (obj['@class'] !== 'File' || !obj.data) {
+      throw new Error('bad object');
+    }
+    return new File(obj.data);
+  }
+
+  static FromXML(el: Element): [File, undefined] | [undefined, Error] {
+    return [undefined, new Error('TODO')];
+  }
+}
+
+interface IModel {
+}
+
+const ModelDefaults = {
+
+};
+
+class Model extends Record(ModelDefaults) implements XNode {
+  constructor(file: IModel) {
+    super(file);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'Model',
+      data: this.toJS(),
+    };
+  }
+
+  static FromJSON(obj: any): Model {
+    if (obj['@class'] !== 'Model' || !obj.data) {
+      throw new Error('bad object');
+    }
+    return new Model(obj.data);
+  }
+
+  static FromXML(el: Element): [Model, undefined] | [undefined, Error] {
+    return [undefined, new Error('TODO')];
+  }
+}
+
+interface IScale {
+  min?: number;
+  max?: number;
+}
+
+const ScaleDefaults = {
+  min: -1,
+  max: -1,
+};
+
+export class Scale extends Record(ScaleDefaults) implements XNode {
+  constructor(scale: IScale) {
+    super(scale);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'Scale',
+      data: this.toJS(),
+    };
+  }
+
+  static FromJSON(obj: any): Model {
+    if (obj['@class'] !== 'Scale' || !obj.data) {
+      throw new Error('bad object');
+    }
+    return new Model(obj.data);
+  }
+
+  static FromXML(el: Element): [Scale, undefined] | [undefined, Error] {
+    const scale: IScale = {};
+    let err: Error | undefined;
+
+    for (let i = 0; i < el.attributes.length; i++) {
+      const attr = el.attributes.item(i);
+      if (!attr) {
+        continue;
+      }
+      switch (attr.name.toLowerCase()) {
+        case 'min':
+          [scale.min, err] = num(attr.value);
+          if (err) {
+            return [undefined, new Error(`bad min: ${attr.value}`)];
+          }
+          break;
+        case 'max':
+          [scale.max, err] = num(attr.value);
+          if (err) {
+            return [undefined, new Error(`bad max: ${attr.value}`)];
+          }
+          break;
+      }
+    }
+
+    if (scale.min === undefined || scale.max === undefined) {
+      return [undefined, new Error('scale requires both min and max')];
+    }
+
+    return [new Scale(scale), undefined];
+  }
+}
+
+interface IConnection {
+  from?: string;
+  to?: string;
+}
+
+const ConnectionDefaults = {
+  from: '',
+  to: '',
+};
+
+class Connection extends Record(ConnectionDefaults) implements XNode {
+  constructor(conn: IConnection) {
+    super(conn);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'Connection',
+      data: this.toJS(),
+    };
+  }
+
+  static FromJSON(obj: any): Model {
+    if (obj['@class'] !== 'Connection' || !obj.data) {
+      throw new Error('bad object');
+    }
+    return new Model(obj.data);
+  }
+
+  static FromXML(el: Element): [Connection, undefined] | [undefined, Error] {
+    const conn: IConnection = {};
+
+    for (let i = 0; i < el.attributes.length; i++) {
+      const attr = el.attributes.item(i);
+      if (!attr) {
+        continue;
+      }
+      switch (attr.name.toLowerCase()) {
+        case 'to':
+          conn.to = canonicalize(attr.value);
+          break;
+        case 'from':
+          conn.from = canonicalize(attr.value);
+          break;
+      }
+    }
+
+    if (conn.to === undefined || conn.from === undefined) {
+      return [undefined, new Error('connect requires both to and from')];
+    }
+
+    return [new Connection(conn), undefined];
+  }
+
+  toXml(doc: XMLDocument, parent: Element): boolean {
+    return true;
   }
 }
