@@ -24,10 +24,6 @@ export const i32 = (n: number): number => {
   return n | 0;
 };
 
-export class Error {
-  constructor(public error: string) {}
-}
-
 declare function isFinite(n: string | number): boolean;
 
 // expects name to be lowercase

@@ -144,7 +144,7 @@ export class CodegenVisitor implements ast.Visitor<boolean> {
     let op = n.op;
     // only need to convert some of them
     if (JsOps.has(n.op)) {
-      op = JsOps.get(n.op);
+      op = defined(JsOps.get(n.op));
     }
     this.code += '(';
     n.l.walk(this);
@@ -185,7 +185,7 @@ export class Variable implements type.Variable {
   project: type.Project;
   parent: type.Model | null;
   // only for modules
-  model: type.Model;
+  model?: type.Model;
 
   deps: Set<string>;
   allDeps?: Set<string>;
@@ -197,7 +197,7 @@ export class Variable implements type.Variable {
     this.model = model;
     this.xmile = v;
 
-    this.ident = v.ident;
+    this.ident = v ? v.ident : undefined;
     this.eqn = v.eqn || '';
 
     let errs: string[];
@@ -469,7 +469,7 @@ export class Reference extends Variable implements type.Reference {
   constructor(conn: xmile.Connection) {
     super();
     // FIXME: there is maybe something cleaner to do here?
-    this.xmile = null;
+    this.xmile = undefined;
     this.xmileConn = conn;
     this.ident = conn.to;
     this.ptr = conn.from;

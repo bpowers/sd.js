@@ -138,7 +138,7 @@ export class Sim {
   seq: number;
   promised: any;
   idSeq: any;
-  worker: Worker;
+  worker?: Worker;
 
   constructor(root: type.Module, isStandalone: boolean) {
     this.root = root;
@@ -155,6 +155,9 @@ export class Sim {
       } else {
         this.idSeq[n] = 0;
       }
+      if (!modelDef.model) {
+        throw new Error('expected a model');
+      }
       compiledModels.push(this._process(modelDef.model, modelDef.modules));
     }
 
@@ -167,21 +170,21 @@ export class Sim {
     }
     console.log('// mainRefs: ' + JSON.stringify(root.refs));
 
-    let source = Mustache.render(tmpl, {
-      preamble: runtime.preamble,
-      epilogue: isStandalone ? runtime.epilogue : 'onmessage = handleMessage;',
-      mainClassName: util.titleCase(root.modelName),
-      models: compiledModels,
-      mainRefs,
-    });
-    if (isStandalone) {
-      console.log(source);
-      return;
+    {
+      const source = Mustache.render(tmpl, {
+        preamble: runtime.preamble,
+        epilogue: isStandalone ? runtime.epilogue : 'onmessage = handleMessage;',
+        mainClassName: util.titleCase(root.modelName),
+        models: compiledModels,
+        mainRefs,
+      });
+      if (isStandalone) {
+        console.log(source);
+        return;
+      }
+      const blob = new Blob([source], { type: 'text/javascript' });
+      this.worker = new Worker(window.URL.createObjectURL(blob));
     }
-    let blob = new Blob([source], { type: 'text/javascript' });
-    this.worker = new Worker(window.URL.createObjectURL(blob));
-    blob = null;
-    source = null;
     // FIXME: find any
     this.worker.addEventListener(
       'message',
@@ -231,7 +234,10 @@ export class Sim {
           if (d === 'time' || initialsIncludes(d)) {
             continue;
           }
-          runInitials.push(model.lookup(d));
+          const dependentVar = model.lookup(d);
+          if (dependentVar) {
+            runInitials.push(dependentVar);
+          }
         }
         runInitials.push(v);
         runStocks.push(v);
@@ -365,6 +371,9 @@ export class Sim {
     const id = this.seq++;
 
     return new Promise<any>((resolve, reject) => {
+      if (!this.worker) {
+        return;
+      }
       this.promised[id] = (result: any, err: any) => {
         if (err !== undefined && err !== null) {
           reject(err);
@@ -377,8 +386,11 @@ export class Sim {
   }
 
   close(): void {
+    if (!this.worker) {
+      return;
+    }
     this.worker.terminate();
-    this.worker = null;
+    this.worker = undefined;
   }
 
   reset(): Promise<any> {
@@ -445,7 +457,7 @@ export class Sim {
   ): string {
     let file = '';
     const series: { [name: string]: type.Series } = {};
-    let time: type.Series;
+    let time: type.Series | undefined;
     let header = 'time' + delim;
 
     // create the CSV header
@@ -456,6 +468,10 @@ export class Sim {
       }
       header += v + delim;
       series[v] = data[v];
+    }
+
+    if (time === undefined) {
+      throw new Error('no time?');
     }
 
     file += header.substr(0, header.length - 1);

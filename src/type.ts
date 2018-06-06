@@ -73,7 +73,7 @@ export class ModelDef extends Record(modelDefDefaults) {
 }
 
 export interface Variable {
-  xmile: xmile.Variable;
+  xmile?: xmile.Variable;
 
   ident: string;
   eqn: string;
@@ -82,7 +82,7 @@ export interface Variable {
 
   project: Project;
   parent: Model | null;
-  model: Model;
+  model?: Model;
 
   deps: Set<string>;
   allDeps?: Set<string>;
