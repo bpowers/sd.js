@@ -25,6 +25,8 @@
       "es2018"
     ],
 
+    "strict": true,
+
     "strictPropertyInitialization": false,
 
     "noImplicitAny": true,

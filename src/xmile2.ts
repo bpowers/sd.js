@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-import { List, Record } from 'immutable';
+import { List, Record, Set } from 'immutable';
 
 import { canonicalize, defined, exists } from './common';
 
@@ -14,12 +14,12 @@ export const camelCase = (s: string): string => {
   return s;
 };
 
-export const splitOnComma = (str: string): string[] => {
-  return str.split(',').map(el => el.trim());
+export const splitOnComma = (str: string): List<string> => {
+  return List(str.split(',').map(el => el.trim()));
 };
 
-export const numberize = (arr: string[]): number[] => {
-  return arr.map(el => parseFloat(el));
+export const numberize = (arr: List<string>): List<number> => {
+  return List(arr.map(el => parseFloat(el)));
 };
 
 export const i32 = (n: number): number => {
@@ -246,6 +246,121 @@ class Model extends Record(ModelDefaults) implements XNode {
   }
 }
 
+type GFType = 'continuous' | 'extrapolate' | 'discrete';
+const GFTypes = Set(['continuous', 'extrapolate', 'discrete']);
+
+interface IGF {
+  name?: string;
+  type?: GFType;
+  xPoints?: List<number>;
+  yPoints?: List<number>;
+  xScale?: Scale;
+  yScale?: Scale; // only affects the scale of the graph in the UI
+}
+
+const GFDefaults = {
+  name: '',
+  type: 'continuous',
+  xPoints: List<number>(),
+  yPoints: List<number>(),
+  xScale: undefined as (Scale | undefined),
+  yScale: undefined as (Scale | undefined),
+}
+
+export class GF extends Record(GFDefaults) implements XNode {
+  constructor(gf: IGF) {
+    super(gf);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'GF',
+      data: this.toJS(),
+    };
+  }
+
+  static FromJSON(obj: any): GF {
+    if (obj['@class'] !== 'GF' || !obj.data) {
+      throw new Error('bad object');
+    }
+    const data = obj.data;
+    if (data.xPoints) {
+      data.xPoints = List(data.xPoints);
+    }
+    if (data.yPoints) {
+      data.yPoints = List(data.yPoints);
+    }
+    if (data.xScale) {
+      data.xScale = new Scale(data.xScale);
+    }
+    if (data.yScale) {
+      data.yScale = new Scale(data.yScale);
+    }
+    return new GF(data);
+  }
+
+  static FromXML(el: Element): [GF, undefined] | [undefined, Error] {
+    const table: IGF = {};
+    let err: Error | undefined;
+
+    for (let i = 0; i < el.attributes.length; i++) {
+      const attr = el.attributes.item(i);
+      if (!attr) {
+        continue;
+      }
+      switch (attr.name.toLowerCase()) {
+        case 'type':
+          const kind = attr.value.toLowerCase();
+          if (kind === 'discrete' || kind === 'continuous' || kind === 'extrapolate') {
+            table.type = kind;
+          } else {
+            return [undefined, new Error(`bad GF type: ${kind}`)];
+          }
+          break;
+      }
+    }
+
+    for (let i = 0; i < el.childNodes.length; i++) {
+      const child = el.childNodes.item(i) as Element;
+      if (child.nodeType !== 1) {
+        // Element
+        continue;
+      }
+      switch (child.nodeName.toLowerCase()) {
+        case 'xscale':
+          [table.xScale, err] = Scale.FromXML(child);
+          if (err) {
+            return [undefined, new Error(`xscale: ${err}`)];
+          }
+          break;
+        case 'yscale':
+          [table.yScale, err] = Scale.FromXML(child);
+          if (err) {
+            return [undefined, new Error(`yscale: ${err}`)];
+          }
+          break;
+        case 'xpts':
+          table.xPoints = numberize(splitOnComma(content(child)));
+          break;
+        case 'ypts':
+          table.yPoints = numberize(splitOnComma(content(child)));
+          break;
+      }
+    }
+
+    if (table.yPoints === undefined) {
+      return [undefined, new Error('table missing ypts')];
+    }
+
+    // FIXME: handle
+    if (table.type !== 'continuous') {
+      console.log('WARN: unimplemented table type: ' + table.type);
+    }
+
+    return [new GF(table), undefined];
+  }
+}
+
 interface IScale {
   min?: number;
   max?: number;
@@ -268,11 +383,11 @@ export class Scale extends Record(ScaleDefaults) implements XNode {
     };
   }
 
-  static FromJSON(obj: any): Model {
+  static FromJSON(obj: any): Scale {
     if (obj['@class'] !== 'Scale' || !obj.data) {
       throw new Error('bad object');
     }
-    return new Model(obj.data);
+    return new Scale(obj.data);
   }
 
   static FromXML(el: Element): [Scale, undefined] | [undefined, Error] {
@@ -330,11 +445,11 @@ class Connection extends Record(ConnectionDefaults) implements XNode {
     };
   }
 
-  static FromJSON(obj: any): Model {
+  static FromJSON(obj: any): Connection {
     if (obj['@class'] !== 'Connection' || !obj.data) {
       throw new Error('bad object');
     }
-    return new Model(obj.data);
+    return new Connection(obj.data);
   }
 
   static FromXML(el: Element): [Connection, undefined] | [undefined, Error] {
