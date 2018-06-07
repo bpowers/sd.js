@@ -2,7 +2,9 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-import { Record } from 'immutable';
+import { List, Record, Set } from 'immutable';
+
+import { canonicalize, defined, exists } from './common';
 
 export const camelCase = (s: string): string => {
   let i = 0;
@@ -12,12 +14,12 @@ export const camelCase = (s: string): string => {
   return s;
 };
 
-export const splitOnComma = (str: string): string[] => {
-  return str.split(',').map(el => el.trim());
+export const splitOnComma = (str: string): List<string> => {
+  return List(str.split(',').map(el => el.trim()));
 };
 
-export const numberize = (arr: string[]): number[] => {
-  return arr.map(el => parseFloat(el));
+export const numberize = (arr: List<string>): List<number> => {
+  return List(arr.map(el => parseFloat(el)));
 };
 
 export const i32 = (n: number): number => {
@@ -30,6 +32,9 @@ declare function isFinite(n: string | number): boolean;
 const attr = (el: Element, name: string): string | undefined => {
   for (let i = 0; i < el.attributes.length; i++) {
     const attr = el.attributes.item(i);
+    if (!attr) {
+      continue;
+    }
     if (attr.name.toLowerCase() === name) {
       return attr.value;
     }
@@ -55,10 +60,13 @@ const content = (el: Element): string => {
   let text = '';
   if (el.hasChildNodes()) {
     for (let i = 0; i < el.childNodes.length; i++) {
-      const child = (el as Element).childNodes.item(i);
+      const child = el.childNodes.item(i);
+      if (!child) {
+        continue;
+      }
       switch (child.nodeType) {
         case 3: // Text
-          text += child.nodeValue.trim();
+          text += exists(child.nodeValue).trim();
           break;
         case 4: // CData
           text += child.nodeValue;
@@ -103,125 +111,155 @@ const bool = (v: any): [boolean, undefined] | [false, Error] => {
 
 export interface XNode {
   // constructor(el: Element): XNode;
-  toXml(doc: XMLDocument, parent: Element): boolean;
 }
 
-export class Point implements XNode {
-  x: number;
-  y: number;
+interface IPoint {
+  x?: number;
+  y?: number;
+};
 
-  static Build(el: Element): [Point, Error] {
-    const pt = new Point();
-    let err: Error;
+const PointDefaults = {
+  x: -1,
+  y: -1,
+};
+
+export class Point extends Record(PointDefaults) implements XNode {
+  constructor(point: IPoint) {
+    super(point);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'Point',
+      data: this.toJS(),
+    };
+  }
+
+  static FromJSON(obj: any): Point {
+    if (obj['@class'] !== 'Point' || !obj.data) {
+      throw new Error('bad object');
+    }
+    return new Point(obj.data);
+  }
+
+  static FromXML(el: Element): [Point, undefined] | [undefined, Error] {
+    const pt: IPoint = {};
+    let err: Error | undefined;
 
     for (let i = 0; i < el.attributes.length; i++) {
       const attr = el.attributes.item(i);
+      if (!attr) {
+        continue;
+      }
       switch (attr.name.toLowerCase()) {
         case 'x':
           [pt.x, err] = num(attr.value);
           if (err) {
-            return [null, new Error('x not num: ' + err.error)];
+            return [undefined, new Error(`x not num: ${err}`)];
           }
           break;
         case 'y':
           [pt.y, err] = num(attr.value);
           if (err) {
-            return [null, new Error('y not num: ' + err.error)];
+            return [undefined, new Error(`y not num: ${err}`)];
           }
           break;
       }
     }
+    if (pt.x === undefined || pt.y === undefined) {
+      return [undefined, new Error(`expected both x and y on a Point`)];
+    }
 
-    return [pt, err];
-  }
-
-  toXml(doc: XMLDocument, parent: Element): boolean {
-    return true;
-  }
-}
-
-export class Size implements XNode {
-  width: number;
-  height: number;
-
-  constructor(el: Element) {}
-
-  toXml(doc: XMLDocument, parent: Element): boolean {
-    return true;
+    return [new Point(pt), undefined];
   }
 }
 
-export class Rect implements Point, Size, XNode {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-
-  constructor(el: Element) {}
-
-  toXml(doc: XMLDocument, parent: Element): boolean {
-    return true;
-  }
-}
-
-export class File implements XNode {
+interface IFile {
   version: string;
-  namespace: string = 'https://docs.oasis-open.org/xmile/ns/XMILE/v1.0';
-  header: Header;
-  simSpec: SimSpec;
-  dimensions: Dimension[] = [];
-  units: Unit[] = [];
-  behavior: Behavior;
-  style: Style;
-  models: Model[] = [];
+  namespace: string;
+  //header: Header;
+  //simSpec: SimSpec;
+  //dimensions: Dimension[] = [];
+  //units: Unit[] = [];
+  //behavior: Behavior;
+  //style: Style;
+  models: List<Model>;
+}
 
-  static Build(el: Element): [File, Error] {
-    const file = new File();
-    let err: Error = null;
+const FileDefaults = {
+  version: '1.0',
+  namespace: 'https://docs.oasis-open.org/xmile/ns/XMILE/v1.0',
+  models: List(),
+};
 
-    for (let i = 0; i < el.attributes.length; i++) {
-      const attr = el.attributes.item(i);
-      switch (attr.name.toLowerCase()) {
-        case 'version':
-          file.version = attr.value;
-          break;
-        case 'xmlns':
-          file.namespace = attr.value;
-          break;
-      }
+export class File extends Record(FileDefaults) implements XNode {
+  constructor(file: IFile) {
+    super(file);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'File',
+      data: this.toJS(),
+    };
+  }
+
+  static FromJSON(obj: any): File {
+    if (obj['@class'] !== 'File' || !obj.data) {
+      throw new Error('bad object');
     }
+    return new File(obj.data);
+  }
 
-    for (let i = 0; i < el.childNodes.length; i++) {
-      let model: Model;
-      const child = el.childNodes.item(i) as Element;
-      if (child.nodeType !== 1) {
-        // Element
-        continue;
-      }
-      switch (child.nodeName.toLowerCase()) {
-        case 'header':
-          [file.header, err] = Header.Build(child);
-          if (err) {
-            return [null, new Error('Header: ' + err.error)];
-          }
-          break;
-        case 'sim_specs':
-          [file.simSpec, err] = SimSpec.Build(child);
-          if (err) {
-            return [null, new Error('SimSpec: ' + err.error)];
-          }
-          break;
-        case 'model':
-          [model, err] = Model.Build(child);
-          if (err) {
-            return [null, new Error('SimSpec: ' + err.error)];
-          }
-          file.models.push(model);
-          break;
-      }
-    }
+  static FromXML(el: Element): [File, undefined] | [undefined, Error] {
+    return [undefined, new Error('TODO')];
 
-    return [file, err];
+    // const file = new File();
+    // let err: Error = null;
+
+    // for (let i = 0; i < el.attributes.length; i++) {
+    //   const attr = el.attributes.item(i);
+    //   switch (attr.name.toLowerCase()) {
+    //     case 'version':
+    //       file.version = attr.value;
+    //       break;
+    //     case 'xmlns':
+    //       file.namespace = attr.value;
+    //       break;
+    //   }
+    // }
+
+    // for (let i = 0; i < el.childNodes.length; i++) {
+    //   let model: Model;
+    //   const child = el.childNodes.item(i) as Element;
+    //   if (child.nodeType !== 1) {
+    //     // Element
+    //     continue;
+    //   }
+    //   switch (child.nodeName.toLowerCase()) {
+    //     case 'header':
+    //       [file.header, err] = Header.FromXML(child);
+    //       if (err) {
+    //         return [null, new Error('Header: ' + err.error)];
+    //       }
+    //       break;
+    //     case 'sim_specs':
+    //       [file.simSpec, err] = SimSpec.FromXML(child);
+    //       if (err) {
+    //         return [null, new Error('SimSpec: ' + err.error)];
+    //       }
+    //       break;
+    //     case 'model':
+    //       [model, err] = Model.FromXML(child);
+    //       if (err) {
+    //         return [null, new Error('SimSpec: ' + err.error)];
+    //       }
+    //       file.models.push(model);
+    //       break;
+    //   }
+    // }
+
+    // return [file, err];
   }
 
   toXml(doc: XMLDocument, parent: Element): boolean {
@@ -240,7 +278,7 @@ export class SimSpec implements XNode {
 
   [indexName: string]: any;
 
-  static Build(el: Element): [SimSpec, Error] {
+  static FromXML(el: Element): [SimSpec, Error] {
     const simSpec = new SimSpec();
     let err: Error;
     for (let i = 0; i < el.childNodes.length; i++) {
@@ -328,7 +366,7 @@ export class Product implements XNode {
   lang: string = 'English';
   version: string = '';
 
-  static Build(el: Element): [Product, Error] {
+  static FromXML(el: Element): [Product, Error] {
     const product = new Product();
     product.name = content(el);
     for (let i = 0; i < el.attributes.length; i++) {
@@ -368,7 +406,7 @@ export class Header implements XNode {
   uuid: string; // IETF RFC4122 format (84-4-4-12 hex digits with the dashes)
   // includes: Include[];
 
-  static Build(el: Element): [Header, Error] {
+  static FromXML(el: Element): [Header, Error] {
     const header = new Header();
     let err: Error;
     for (let i = 0; i < el.childNodes.length; i++) {
@@ -382,13 +420,13 @@ export class Header implements XNode {
           header.vendor = content(child);
           break;
         case 'product':
-          [header.product, err] = Product.Build(child);
+          [header.product, err] = Product.FromXML(child);
           if (err) {
             return [null, new Error('Product: ' + err.error)];
           }
           break;
         case 'options':
-          [header.options, err] = Options.Build(child);
+          [header.options, err] = Options.FromXML(child);
           if (err) {
             return [null, new Error('Options: ' + err.error)];
           }
@@ -437,7 +475,7 @@ export class Dimension implements XNode {
   name: string = '';
   size: string = '';
 
-  static Build(el: Element): [Dimension, Error] {
+  static FromXML(el: Element): [Dimension, Error] {
     const dim = new Dimension();
     // TODO: implement
     return [dim, null];
@@ -484,11 +522,11 @@ export class Options implements XNode {
   graphicalInput: boolean = false;
 
   // avoids an 'implicit any' error when setting options in
-  // Build below 'indexName' to avoid a spurious tslint
+  // FromXML below 'indexName' to avoid a spurious tslint
   // 'shadowed name' error.
   [indexName: string]: any;
 
-  static Build(el: Element): [Options, Error] {
+  static FromXML(el: Element): [Options, Error] {
     const options = new Options();
     let err: Error;
 
@@ -562,7 +600,7 @@ export class Behavior implements XNode {
   stockNonNegative: boolean = false;
   flowNonNegative: boolean = false;
 
-  static Build(el: Element): [Behavior, Error] {
+  static FromXML(el: Element): [Behavior, Error] {
     const behavior = new Behavior();
     // TODO
     return [behavior, null];
@@ -601,7 +639,7 @@ export class Model implements XNode {
   variables: Variable[] = [];
   views: View[] = [];
 
-  static Build(el: Element): [Model, Error] {
+  static FromXML(el: Element): [Model, Error] {
     const model = new Model();
     let err: Error;
 
@@ -636,7 +674,7 @@ export class Model implements XNode {
               continue;
             }
             let v: Variable;
-            [v, err] = Variable.Build(vchild);
+            [v, err] = Variable.FromXML(vchild);
             // FIXME: real logging
             if (err) {
               return [null, new Error(child.nodeName + ' var: ' + err.error)];
@@ -656,7 +694,7 @@ export class Model implements XNode {
               continue;
             }
             let view: View;
-            [view, err] = View.Build(vchild);
+            [view, err] = View.FromXML(vchild);
             // FIXME: real logging
             if (err) {
               return [null, new Error('view: ' + err.error)];
@@ -685,7 +723,7 @@ export class ArrayElement implements XNode {
   eqn: string;
   gf: GF;
 
-  static Build(el: Element): [ArrayElement, Error] {
+  static FromXML(el: Element): [ArrayElement, Error] {
     const arrayEl = new ArrayElement();
     console.log('TODO: array element');
     return [arrayEl, null];
@@ -703,7 +741,7 @@ export class Range implements XNode {
   auto: boolean;
   group: number; // 'unique number identifier'
 
-  static Build(el: Element): [Range, Error] {
+  static FromXML(el: Element): [Range, Error] {
     const range = new Range();
     console.log('TODO: range element');
     return [range, null];
@@ -720,7 +758,7 @@ export class Format implements XNode {
   displayAs: string = 'number'; // "number"|"currency"|"percent"
   delimit000s: boolean = false; // include thousands separator
 
-  static Build(el: Element): [Format, Error] {
+  static FromXML(el: Element): [Format, Error] {
     const fmt = new Format();
     console.log('TODO: format element');
     return [fmt, null];
@@ -767,7 +805,7 @@ export class Variable implements XNode {
   // auxiliaries
   flowConcept: boolean; // :(
 
-  static Build(el: Element): [Variable, Error] {
+  static FromXML(el: Element): [Variable, Error] {
     const v = new Variable();
     let err: Error;
 
@@ -808,14 +846,14 @@ export class Variable implements XNode {
           v.outflows.push(canonicalize(content(child)));
           break;
         case 'gf':
-          [v.gf, err] = GF.Build(child);
+          [v.gf, err] = GF.FromXML(child);
           if (err) {
             return [null, new Error(v.name + ' GF: ' + err.error)];
           }
           break;
         case 'connect':
           let conn: Connection;
-          [conn, err] = Connection.Build(child);
+          [conn, err] = Connection.FromXML(child);
           if (err) {
             return [null, new Error(v.name + ' conn: ' + err.error)];
           }
@@ -847,7 +885,7 @@ export class Shape implements XNode {
   height: number;
   radius: number;
 
-  static Build(el: Element): [Shape, Error] {
+  static FromXML(el: Element): [Shape, Error] {
     const shape = new Shape();
     let err: Error;
 
@@ -925,14 +963,17 @@ export class ViewElement implements XNode {
   // alias
   of: string;
 
-  static Build(el: Element): [ViewElement, Error] {
+  static FromXML(el: Element): [ViewElement, undefined] | [undefined, Error] {
     const viewEl = new ViewElement();
-    let err: Error;
+    let err: Error | undefined;
 
     viewEl.type = el.nodeName.toLowerCase();
 
     for (let i = 0; i < el.attributes.length; i++) {
       const attr = el.attributes.item(i);
+      if (!attr) {
+        continue;
+      }
       switch (attr.name.toLowerCase()) {
         case 'name':
           // display-name, not canonicalized
@@ -941,31 +982,31 @@ export class ViewElement implements XNode {
         case 'uid':
           [viewEl.uid, err] = num(attr.value);
           if (err) {
-            return [null, new Error('uid: ' + err.error)];
+            return [undefined, new Error('uid: ' + err)];
           }
           break;
         case 'x':
           [viewEl.x, err] = num(attr.value);
           if (err) {
-            return [null, new Error('x: ' + err.error)];
+            return [undefined, new Error('x: ' + err)];
           }
           break;
         case 'y':
           [viewEl.y, err] = num(attr.value);
           if (err) {
-            return [null, new Error('y: ' + err.error)];
+            return [undefined, new Error('y: ' + err)];
           }
           break;
         case 'width':
           [viewEl.width, err] = num(attr.value);
           if (err) {
-            return [null, new Error('width: ' + err.error)];
+            return [undefined, new Error('width: ' + err)];
           }
           break;
         case 'height':
           [viewEl.height, err] = num(attr.value);
           if (err) {
-            return [null, new Error('height: ' + err.error)];
+            return [undefined, new Error('height: ' + err)];
           }
           break;
         case 'label_side':
@@ -974,7 +1015,7 @@ export class ViewElement implements XNode {
         case 'label_angle':
           [viewEl.labelAngle, err] = num(attr.value);
           if (err) {
-            return [null, new Error('label_angle: ' + err.error)];
+            return [undefined, new Error('label_angle: ' + err)];
           }
           break;
         case 'color':
@@ -983,7 +1024,7 @@ export class ViewElement implements XNode {
         case 'angle':
           [viewEl.angle, err] = num(attr.value);
           if (err) {
-            return [null, new Error('angle: ' + err.error)];
+            return [undefined, new Error('angle: ' + err)];
           }
           break;
       }
@@ -1016,28 +1057,28 @@ export class ViewElement implements XNode {
             if (vchild.nodeName.toLowerCase() !== 'pt') {
               continue;
             }
-            let pt: Point;
-            [pt, err] = Point.Build(vchild);
+            let pt: Point | undefined;
+            [pt, err] = Point.FromXML(vchild);
             // FIXME: real logging
             if (err) {
-              return [null, new Error('pt: ' + err.error)];
+              return [undefined, new Error('pt: ' + err)];
             }
             if (typeof viewEl.pts === 'undefined') {
               viewEl.pts = [];
             }
-            viewEl.pts.push(pt);
+            viewEl.pts.push(defined(pt));
           }
           break;
         case 'shape':
-          [viewEl.shape, err] = Shape.Build(child);
+          [viewEl.shape, err] = Shape.FromXML(child);
           if (err) {
-            return [null, new Error('shape: ' + err.error)];
+            return [undefined, new Error('shape: ' + err)];
           }
           break;
       }
     }
 
-    return [viewEl, err];
+    return [viewEl, undefined];
   }
 
   get hasName(): boolean {
@@ -1108,12 +1149,15 @@ export class View implements XNode {
 
   elements: ViewElement[] = [];
 
-  static Build(el: Element): [View, Error] {
+  static FromXML(el: Element): [View, undefined] | [undefined, Error] {
     const view = new View();
-    let err: Error;
+    let err: Error | undefined;
 
     for (let i = 0; i < el.attributes.length; i++) {
       const attr = el.attributes.item(i);
+      if (!attr) {
+        continue;
+      }
       switch (attr.name.toLowerCase()) {
         case 'type':
           view.type = attr.value.toLowerCase();
@@ -1121,37 +1165,37 @@ export class View implements XNode {
         case 'order':
           [view.order, err] = num(attr.value);
           if (err) {
-            return [null, new Error('order: ' + err.error)];
+            return [undefined, new Error('order: ' + err)];
           }
           break;
         case 'width':
           [view.width, err] = num(attr.value);
           if (err) {
-            return [null, new Error('width: ' + err.error)];
+            return [undefined, new Error('width: ' + err)];
           }
           break;
         case 'height':
           [view.height, err] = num(attr.value);
           if (err) {
-            return [null, new Error('height: ' + err.error)];
+            return [undefined, new Error('height: ' + err)];
           }
           break;
         case 'zoom':
           [view.zoom, err] = num(attr.value);
           if (err) {
-            return [null, new Error('zoom: ' + err.error)];
+            return [undefined, new Error('zoom: ' + err)];
           }
           break;
         case 'scroll_x':
           [view.scrollX, err] = num(attr.value);
           if (err) {
-            return [null, new Error('scroll_x: ' + err.error)];
+            return [undefined, new Error('scroll_x: ' + err)];
           }
           break;
         case 'scroll_y':
           [view.scrollY, err] = num(attr.value);
           if (err) {
-            return [null, new Error('scroll_y: ' + err.error)];
+            return [undefined, new Error('scroll_y: ' + err)];
           }
           break;
         case 'background':
@@ -1160,13 +1204,13 @@ export class View implements XNode {
         case 'page_width':
           [view.pageWidth, err] = num(attr.value);
           if (err) {
-            return [null, new Error('page_width: ' + err.error)];
+            return [undefined, new Error('page_width: ' + err)];
           }
           break;
         case 'page_height':
           [view.pageHeight, err] = num(attr.value);
           if (err) {
-            return [null, new Error('page_height: ' + err.error)];
+            return [undefined, new Error('page_height: ' + err)];
           }
           break;
         case 'page_sequence':
@@ -1178,19 +1222,19 @@ export class View implements XNode {
         case 'show_pages':
           [view.showPages, err] = bool(attr.value);
           if (err) {
-            return [null, new Error('show_pages: ' + err.error)];
+            return [undefined, new Error('show_pages: ' + err)];
           }
           break;
         case 'home_page':
           [view.homePage, err] = num(attr.value);
           if (err) {
-            return [null, new Error('home_page: ' + err.error)];
+            return [undefined, new Error('home_page: ' + err)];
           }
           break;
         case 'home_view':
           [view.homeView, err] = bool(attr.value);
           if (err) {
-            return [null, new Error('home_view: ' + err.error)];
+            return [undefined, new Error('home_view: ' + err)];
           }
           break;
       }
@@ -1203,15 +1247,15 @@ export class View implements XNode {
         continue;
       }
 
-      let viewEl: ViewElement;
-      [viewEl, err] = ViewElement.Build(child);
+      let viewEl: ViewElement | undefined;
+      [viewEl, err] = ViewElement.FromXML(child);
       if (err) {
-        return [null, new Error('viewEl: ' + err.error)];
+        return [undefined, new Error('viewEl: ' + err)];
       }
-      view.elements.push(viewEl);
+      view.elements.push(defined(viewEl));
     }
 
-    return [view, err];
+    return [view, undefined];
   }
 
   toXml(doc: XMLDocument, parent: Element): boolean {
@@ -1219,27 +1263,74 @@ export class View implements XNode {
   }
 }
 
-export class GF implements XNode {
-  static Types: string[] = ['continuous', 'extrapolate', 'discrete'];
+type GFType = 'continuous' | 'extrapolate' | 'discrete';
 
-  name: string; // for when the
-  type: string = 'continuous';
-  xPoints: number[];
-  yPoints: number[];
-  xScale: Scale;
-  yScale: Scale; // only affects the scale of the graph in the UI
+interface IGF {
+  name?: string;
+  type?: GFType;
+  xPoints?: List<number>;
+  yPoints?: List<number>;
+  xScale?: Scale;
+  yScale?: Scale; // only affects the scale of the graph in the UI
+}
 
-  static Build(el: Element): [GF, Error] {
-    const table = new GF();
-    let err: Error;
+const GFDefaults = {
+  name: '',
+  type: 'continuous',
+  xPoints: List<number>(),
+  yPoints: List<number>(),
+  xScale: undefined as (Scale | undefined),
+  yScale: undefined as (Scale | undefined),
+}
+
+export class GF extends Record(GFDefaults) implements XNode {
+  constructor(gf: IGF) {
+    super(gf);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'GF',
+      data: this.toJS(),
+    };
+  }
+
+  static FromJSON(obj: any): GF {
+    if (obj['@class'] !== 'GF' || !obj.data) {
+      throw new Error('bad object');
+    }
+    const data = obj.data;
+    if (data.xPoints) {
+      data.xPoints = List(data.xPoints);
+    }
+    if (data.yPoints) {
+      data.yPoints = List(data.yPoints);
+    }
+    if (data.xScale) {
+      data.xScale = new Scale(data.xScale);
+    }
+    if (data.yScale) {
+      data.yScale = new Scale(data.yScale);
+    }
+    return new GF(data);
+  }
+
+  static FromXML(el: Element): [GF, undefined] | [undefined, Error] {
+    const table: IGF = {};
+    let err: Error | undefined;
 
     for (let i = 0; i < el.attributes.length; i++) {
       const attr = el.attributes.item(i);
+      if (!attr) {
+        continue;
+      }
       switch (attr.name.toLowerCase()) {
         case 'type':
-          table.type = attr.value.toLowerCase();
-          if (!(table.type in GF.Types)) {
-            return [null, new Error('bad type: ' + table.type)];
+          const kind = attr.value.toLowerCase();
+          if (kind === 'discrete' || kind === 'continuous' || kind === 'extrapolate') {
+            table.type = kind;
+          } else {
+            return [undefined, new Error(`bad GF type: ${kind}`)];
           }
           break;
       }
@@ -1253,15 +1344,15 @@ export class GF implements XNode {
       }
       switch (child.nodeName.toLowerCase()) {
         case 'xscale':
-          [table.xScale, err] = Scale.Build(child);
+          [table.xScale, err] = Scale.FromXML(child);
           if (err) {
-            return [null, new Error('xscale: ' + err.error)];
+            return [undefined, new Error(`xscale: ${err}`)];
           }
           break;
         case 'yscale':
-          [table.yScale, err] = Scale.Build(child);
+          [table.yScale, err] = Scale.FromXML(child);
           if (err) {
-            return [null, new Error('yscale: ' + err.error)];
+            return [undefined, new Error(`yscale: ${err}`)];
           }
           break;
         case 'xpts':
@@ -1273,8 +1364,8 @@ export class GF implements XNode {
       }
     }
 
-    if (!table.yPoints) {
-      return [null, new Error('table missing ypts')];
+    if (table.yPoints === undefined) {
+      return [undefined, new Error('table missing ypts')];
     }
 
     // FIXME: handle
@@ -1282,61 +1373,109 @@ export class GF implements XNode {
       console.log('WARN: unimplemented table type: ' + table.type);
     }
 
-    return [table, err];
-  }
-
-  toXml(doc: XMLDocument, parent: Element): boolean {
-    return true;
+    return [new GF(table), undefined];
   }
 }
 
-export class Scale implements XNode {
-  min: number;
-  max: number;
+interface IScale {
+  min?: number;
+  max?: number;
+}
 
-  static Build(el: Element): [Scale, Error] {
-    const scale = new Scale();
-    let err: Error;
+const ScaleDefaults = {
+  min: -1,
+  max: -1,
+};
+
+export class Scale extends Record(ScaleDefaults) implements XNode {
+  constructor(scale: IScale) {
+    super(scale);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'Scale',
+      data: this.toJS(),
+    };
+  }
+
+  static FromJSON(obj: any): Scale {
+    if (obj['@class'] !== 'Scale' || !obj.data) {
+      throw new Error('bad object');
+    }
+    return new Scale(obj.data);
+  }
+
+  static FromXML(el: Element): [Scale, undefined] | [undefined, Error] {
+    const scale: IScale = {};
+    let err: Error | undefined;
 
     for (let i = 0; i < el.attributes.length; i++) {
       const attr = el.attributes.item(i);
+      if (!attr) {
+        continue;
+      }
       switch (attr.name.toLowerCase()) {
         case 'min':
           [scale.min, err] = num(attr.value);
           if (err) {
-            return [null, new Error('bad min: ' + attr.value)];
+            return [undefined, new Error(`bad min: ${attr.value}`)];
           }
           break;
         case 'max':
           [scale.max, err] = num(attr.value);
           if (err) {
-            return [null, new Error('bad max: ' + attr.value)];
+            return [undefined, new Error(`bad max: ${attr.value}`)];
           }
           break;
       }
     }
 
-    if (!scale.hasOwnProperty('min') || !scale.hasOwnProperty('max')) {
-      return [null, new Error('scale requires both min and max')];
+    if (scale.min === undefined || scale.max === undefined) {
+      return [undefined, new Error('scale requires both min and max')];
     }
 
-    return [scale, null];
-  }
-
-  toXml(doc: XMLDocument, parent: Element): boolean {
-    return true;
+    return [new Scale(scale), undefined];
   }
 }
 
-export class Connection implements XNode {
-  to: string;
-  from: string;
+interface IConnection {
+  from?: string;
+  to?: string;
+}
 
-  static Build(el: Element): [Connection, Error] {
-    const conn = new Connection();
+const ConnectionDefaults = {
+  from: '',
+  to: '',
+};
+
+class Connection extends Record(ConnectionDefaults) implements XNode {
+  constructor(conn: IConnection) {
+    super(conn);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'Connection',
+      data: this.toJS(),
+    };
+  }
+
+  static FromJSON(obj: any): Connection {
+    if (obj['@class'] !== 'Connection' || !obj.data) {
+      throw new Error('bad object');
+    }
+    return new Connection(obj.data);
+  }
+
+  static FromXML(el: Element): [Connection, undefined] | [undefined, Error] {
+    const conn: IConnection = {};
 
     for (let i = 0; i < el.attributes.length; i++) {
       const attr = el.attributes.item(i);
+      if (!attr) {
+        continue;
+      }
       switch (attr.name.toLowerCase()) {
         case 'to':
           conn.to = canonicalize(attr.value);
@@ -1347,32 +1486,14 @@ export class Connection implements XNode {
       }
     }
 
-    if (!conn.hasOwnProperty('to') || !conn.hasOwnProperty('from')) {
-      return [null, new Error('connect requires both to and from')];
+    if (conn.to === undefined || conn.from === undefined) {
+      return [undefined, new Error('connect requires both to and from')];
     }
 
-    return [conn, null];
+    return [new Connection(conn), undefined];
   }
 
   toXml(doc: XMLDocument, parent: Element): boolean {
     return true;
   }
 }
-
-export const canonicalize = (id: string): string => {
-  let quoted = false;
-  if (id.length > 1) {
-    const f = id.slice(0, 1);
-    const l = id.slice(id.length - 1);
-    quoted = f === '"' && l === '"';
-  }
-  id = id.toLowerCase();
-  id = id.replace(/\\n/g, '_');
-  id = id.replace(/\\\\/g, '\\');
-  id = id.replace(/\\"/g, '\\');
-  id = id.replace(/[_\r\n\t \xa0]+/g, '_');
-  if (quoted) {
-    return id.slice(1, -1);
-  }
-  return id;
-};

@@ -25,6 +25,7 @@ export const numberize = (arr: List<string>): List<number> => {
 export const i32 = (n: number): number => {
   return n | 0;
 };
+
 declare function isFinite(n: string | number): boolean;
 
 // expects name to be lowercase
@@ -247,7 +248,6 @@ class Model extends Record(ModelDefaults) implements XNode {
 }
 
 type GFType = 'continuous' | 'extrapolate' | 'discrete';
-const GFTypes = Set(['continuous', 'extrapolate', 'discrete']);
 
 interface IGF {
   name?: string;
