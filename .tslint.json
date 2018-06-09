@@ -1,9 +1,7 @@
 {
   "extends": ["tslint:recommended", "tslint-react"],
   "rules": {
-    "interface-name": {
-        "options": ["never-prefix"]
-    },
+    "interface-name": false,
     "arrow-parens": [true, "ban-single-arg-parens"],
     "quotemark": false,
     "max-classes-per-file": false,

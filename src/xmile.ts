@@ -293,7 +293,7 @@ export class SimSpec implements XNode {
 
   static FromXML(el: Element): [SimSpec, undefined] | [undefined, Error] {
     const simSpec = new SimSpec();
-    let err: Error;
+
     for (let i = 0; i < el.childNodes.length; i++) {
       const child = el.childNodes.item(i) as Element;
       if (child.nodeType !== 1) {
@@ -545,7 +545,6 @@ export class Options implements XNode {
 
   static FromXML(el: Element): [Options, undefined] | [undefined, Error] {
     const options = new Options();
-    let err: Error;
 
     for (let i = 0; i < el.attributes.length; i++) {
       const attr = el.attributes.item(i);
@@ -589,16 +588,17 @@ export class Options implements XNode {
         let val: string | undefined;
         val = attr(child, 'maximum_dimensions');
         if (val) {
-          let [n, err] = num(val);
+          const [n, err] = num(val);
           if (err || !n) {
             // FIXME: real logging
             console.log('bad max_dimensions( ' + val + '): ' + err);
-            n = 1;
+            options.maximumDimensions = 1;
+          } else {
+            if (n !== i32(n)) {
+              console.log('non-int max_dimensions: ' + val);
+            }
+            options.maximumDimensions = i32(n);
           }
-          if (n !== i32(n)) {
-            console.log('non-int max_dimensions: ' + val);
-          }
-          options.maximumDimensions = i32(n);
         }
         val = attr(child, 'invalid_index_value');
         if (val === 'NaN') {
@@ -660,7 +660,6 @@ export class Model implements XNode {
 
   static FromXML(el: Element): [Model, undefined] | [undefined, Error] {
     const model = new Model();
-    let err: Error;
 
     for (let i = 0; i < el.attributes.length; i++) {
       const attr = el.attributes.item(i);
@@ -1088,7 +1087,7 @@ export class ViewElement implements XNode {
             if (vchild.nodeName.toLowerCase() !== 'pt') {
               continue;
             }
-            let [pt, err] = Point.FromXML(vchild);
+            const [pt, err] = Point.FromXML(vchild);
             // FIXME: real logging
             if (err || !pt) {
               return [undefined, new Error('pt: ' + err)];

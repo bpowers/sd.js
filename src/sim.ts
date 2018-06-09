@@ -6,15 +6,14 @@
 
 import { Map, Set } from 'immutable';
 
+import * as Mustache from 'mustache';
+
+import { defined, exists } from './common';
+
 import * as runtime from './runtime';
 import * as type from './type';
 import * as util from './util';
 import * as vars from './vars';
-
-import * as Mustache from 'mustache';
-
-import { exists } from './util';
-import { defined } from './common';
 
 // whether we map names -> offsets in a Float64Array, or use names
 // as object property lookups.  With DEBUG = true, equations are

@@ -10,7 +10,6 @@ import * as common from './common';
 import * as stdlib from './stdlib';
 import * as type from './type';
 import * as xmile from './xmile';
-import * as xmile2 from './xmile2';
 
 import { Error } from './common';
 import { Model } from './model';
