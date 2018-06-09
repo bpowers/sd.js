@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eEuo pipefail
+
+# Redirect output to stderr.
+exec 1>&2
+
+make pre-commit

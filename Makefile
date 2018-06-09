@@ -74,8 +74,16 @@ clean:
 distclean: clean
 	rm -rf node_modules
 
+pre-commit: test rtest
+	yarn format
+	yarn lint
+
+install-git-hooks:
+	rm -f .git/hooks/pre-commit
+	ln -s ../../support/pre-commit.hook .git/hooks/pre-commit
+
 bump-tests: $(RTEST_CMD)
 	cd $(RTEST_DIR) && git pull origin master
 	git commit $(RTEST_DIR) -m 'test: bump test-models'
 
-.PHONY: all clean distclean test rtest check bump-tests
+.PHONY: all clean distclean test rtest check pre-commit install-git-hooks bump-tests
