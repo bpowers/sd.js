@@ -203,7 +203,7 @@ export class Variable implements type.Variable {
     if (errs) {
       console.log('// parse failed for ' + this.ident + ': ' + errs[0]);
       return;
-    } else if (!this.ast) {
+    } else if (!ast) {
       console.log('// parse failed for ' + this.ident + ': no ast');
       return;
     } else {

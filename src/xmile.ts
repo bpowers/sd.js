@@ -1404,7 +1404,7 @@ export class GF extends Record(GFDefaults) implements XNode {
     }
 
     // FIXME: handle
-    if (table.type !== 'continuous') {
+    if (table.type && table.type !== 'continuous') {
       console.log('WARN: unimplemented table type: ' + table.type);
     }
 
