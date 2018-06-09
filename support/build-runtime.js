@@ -5,13 +5,6 @@ let fs = require('fs');
 let _ = require('lodash');
 let util = require('util');
 
-const DRAW_WRAP =
-      '<defs><style>\n' +
-      '/* <![CDATA[ */\n' +
-      '%s\n' +
-      '/* ]]> */\n' +
-      '</style></defs>\n';
-
 const WRAPPER =
       "// Copyright 2017 Bobby Powers. All rights reserved.\n" +
       "// Use of this source code is governed by the MIT\n" +
@@ -26,7 +19,6 @@ const WRAPPER =
 let requiredInputs = {
   'preamble': 'build-rt/runtime.js',
   'epilogue': 'build-rt/epilogue.js',
-  'drawCSS': 'runtime/draw.css',
 };
 
 function buildBundle() {
@@ -42,12 +34,9 @@ function buildBundle() {
   for (let variable in content) {
     off += bundle.write('\nexport const ', off);
     off += bundle.write(variable, off);
-    off += bundle.write(' = ', off);
-    let value = content[variable];
-    if (variable === 'drawCSS')
-      value = util.format(DRAW_WRAP, content[variable]);
+    off += bundle.write(' =\n  ', off);
 
-    value = JSON.stringify(value);
+    const value = JSON.stringify(content[variable]);
     off += bundle.write(value, off);
     off += bundle.write(';\n', off);
   }
