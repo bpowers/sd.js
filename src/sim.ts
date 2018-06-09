@@ -307,9 +307,7 @@ export class Sim {
       if (v instanceof vars.Module) {
         cs.push('this.modules["' + ident + '"].calcStocks(dt, curr, next);');
       } else if (!v.hasOwnProperty('initial')) {
-        cs.push(
-          'next[' + offsets[ident] + '] = curr[' + offsets[ident] + '];',
-        );
+        cs.push('next[' + offsets[ident] + '] = curr[' + offsets[ident] + '];');
       } else {
         cs.push('next[' + offsets[ident] + '] = ' + v.code(offsets) + ';');
       }

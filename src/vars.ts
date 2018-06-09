@@ -197,7 +197,7 @@ export class Variable implements type.Variable {
     this.xmile = v;
 
     this.ident = v ? v.ident : undefined;
-    this.eqn = v ? (v.eqn || '') : '';
+    this.eqn = v ? v.eqn || '' : '';
 
     const [ast, errs] = parse.eqn(this.eqn);
     if (errs) {
@@ -226,7 +226,10 @@ export class Variable implements type.Variable {
     if (this.isConst()) {
       return "this.initials['" + this.ident + "']";
     }
-    const visitor = new CodegenVisitor(offsets, defined(this.model).ident === 'main');
+    const visitor = new CodegenVisitor(
+      offsets,
+      defined(this.model).ident === 'main',
+    );
 
     const ok = defined(this.ast).walk(visitor);
     if (!ok) {

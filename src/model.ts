@@ -6,6 +6,8 @@
 
 import { List, Map, Set } from 'immutable';
 
+import { defined } from './common';
+
 import * as ast from './ast';
 import * as common from './common';
 import * as sim from './sim';
@@ -42,8 +44,8 @@ export class Model implements type.Model {
     return;
   }
 
-  view(index: number): xmile.View {
-    return this.xModel.views[index];
+  view(index: number): xmile.View | undefined {
+    return this.xModel.views.get(index);
   }
 
   get ident(): string {
@@ -85,7 +87,7 @@ export class Model implements type.Model {
   /**
    * Validates & figures out all necessary variable information.
    */
-  private parseVars(variables: xmile.Variable[]): Error | null {
+  private parseVars(variables: List<xmile.Variable>): Error | null {
     for (const v of variables) {
       // IMPORTANT: we need to use the canonicalized
       // identifier, not the 'xmile name', which is
@@ -245,7 +247,7 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
         xVar.eqn = arg.walk(new PrintVisitor());
         const proxyVar = new vars.Variable(this.model, xVar);
         this.vars = this.vars.set(defined(proxyVar.ident), proxyVar);
-        identArgs.push(proxyVar.ident);
+        identArgs.push(defined(proxyVar.ident));
       }
     }
 

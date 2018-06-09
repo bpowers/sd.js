@@ -124,8 +124,8 @@ export class Project implements type.Project {
     this.files.push(file);
 
     if (isMain) {
-      this.name = file.header.name || 'sd project';
-      this.simSpec = file.simSpec;
+      this.name = (file.header && file.header.name) || 'sd project';
+      this.simSpec = defined(file.simSpec);
       if (!file.simSpec) {
         this.valid = false;
         return new Error('isMain, but no sim spec');

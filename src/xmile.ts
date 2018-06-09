@@ -189,7 +189,13 @@ interface IFile {
 const FileDefaults = {
   version: '1.0',
   namespace: 'https://docs.oasis-open.org/xmile/ns/XMILE/v1.0',
-  models: List(),
+  header: undefined as Header | undefined,
+  simSpec: undefined as SimSpec | undefined,
+  dimensions: List<Dimension>(),
+  units: List<Unit>(),
+  behavior: undefined as Behavior | undefined,
+  style: undefined as Style | undefined,
+  models: List<Model>(),
 };
 
 export class File extends Record(FileDefaults) implements XNode {
@@ -212,9 +218,7 @@ export class File extends Record(FileDefaults) implements XNode {
   }
 
   static FromXML(el: Element): [File, undefined] | [undefined, Error] {
-    return [undefined, new Error('TODO')];
-    const file: IFile = {
-    };
+    const file: IFile = {};
 
     for (let i = 0; i < el.attributes.length; i++) {
       const attr = el.attributes.item(i);
@@ -238,36 +242,33 @@ export class File extends Record(FileDefaults) implements XNode {
         continue;
       }
       switch (child.nodeName.toLowerCase()) {
-        case 'header':
-          {
-            const [header, err] = Header.FromXML(child);
-            if (err || !header) {
-              return [undefined, new Error('Header: ' + err)];
-            }
-            file.header = header;
-            break;
+        case 'header': {
+          const [header, err] = Header.FromXML(child);
+          if (err || !header) {
+            return [undefined, new Error('Header: ' + err)];
           }
-        case 'sim_specs':
-          {
-            const [simSpec, err] = SimSpec.FromXML(child);
-            if (err || !simSpec) {
-              return [undefined, new Error('SimSpec: ' + err)];
-            }
-            file.simSpec = simSpec;
-            break;
+          file.header = header;
+          break;
+        }
+        case 'sim_specs': {
+          const [simSpec, err] = SimSpec.FromXML(child);
+          if (err || !simSpec) {
+            return [undefined, new Error('SimSpec: ' + err)];
           }
-        case 'model':
-          {
-            const [model, err] = Model.FromXML(child);
-            if (err || !model) {
-              return [undefined, new Error('SimSpec: ' + err)];
-            }
-            if (!file.models) {
-              file.models = List();
-            }
-            file.models = file.models.push(defined(model));
-            break;
+          file.simSpec = simSpec;
+          break;
+        }
+        case 'model': {
+          const [model, err] = Model.FromXML(child);
+          if (err || !model) {
+            return [undefined, new Error('SimSpec: ' + err)];
           }
+          if (!file.models) {
+            file.models = List();
+          }
+          file.models = defined(file.models).push(defined(model));
+          break;
+        }
       }
     }
 
@@ -866,27 +867,25 @@ export class Variable implements XNode {
           }
           v.outflows = v.outflows.push(canonicalize(content(child)));
           break;
-        case 'gf':
-          {
-            const [gf, err] = GF.FromXML(child);
-            if (err || !gf) {
-              return [undefined, new Error(v.name + ' GF: ' + err)];
-            }
-            v.gf = gf;
-            break;
+        case 'gf': {
+          const [gf, err] = GF.FromXML(child);
+          if (err || !gf) {
+            return [undefined, new Error(v.name + ' GF: ' + err)];
           }
-        case 'connect':
-          {
-            const [conn, err] = Connection.FromXML(child);
-            if (err || !conn) {
-              return [undefined, new Error(v.name + ' conn: ' + err)];
-            }
-            if (!v.connections) {
-              v.connections = List<Connection>();
-            }
-            v.connections = v.connections.push(conn);
-            break;
+          v.gf = gf;
+          break;
+        }
+        case 'connect': {
+          const [conn, err] = Connection.FromXML(child);
+          if (err || !conn) {
+            return [undefined, new Error(v.name + ' conn: ' + err)];
           }
+          if (!v.connections) {
+            v.connections = List<Connection>();
+          }
+          v.connections = v.connections.push(conn);
+          break;
+        }
       }
     }
 
