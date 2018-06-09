@@ -6,7 +6,7 @@ let _ = require('lodash');
 let util = require('util');
 
 const WRAPPER =
-      "// Copyright 2017 Bobby Powers. All rights reserved.\n" +
+      "// Copyright 2018 Bobby Powers. All rights reserved.\n" +
       "// Use of this source code is governed by the MIT\n" +
       "// license that can be found in the LICENSE file.\n" +
       "\n" +
