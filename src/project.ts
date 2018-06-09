@@ -112,11 +112,11 @@ export class Project implements type.Project {
     // finished with XMLDocument at this point, we now
     // have a tree of native JS objects with a 1:1
     // correspondence to the XMILE doc
-    const [file, err] = xmile.File.Build(xmileElement);
-    if (err) {
-      console.log('File.Build: ' + err.error);
+    const [file, err] = xmile.File.FromXML(xmileElement);
+    if (err || !file) {
+      console.log('File.Build: ' + err);
       this.valid = false;
-      return new Error('File.Build: ' + err.error);
+      return new Error('File.Build: ' + err);
     }
 
     // FIXME: compat translation of equations

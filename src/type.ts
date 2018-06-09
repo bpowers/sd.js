@@ -75,10 +75,10 @@ export class ModelDef extends Record(modelDefDefaults) {
 export interface Variable {
   xmile?: xmile.Variable;
 
-  ident: string;
-  eqn: string;
+  ident?: string;
+  eqn?: string;
 
-  ast: any; // FIXME: this is any to fix circular deps
+  ast?: any; // FIXME: this is any to fix circular deps
 
   project: Project;
   parent: Model | null;
@@ -89,7 +89,7 @@ export interface Variable {
 
   isConst(): boolean;
   getDeps(): Set<string>;
-  code(v: Offsets): string;
+  code(v: Offsets): string | undefined;
 }
 
 export interface Module extends Variable {

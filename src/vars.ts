@@ -5,10 +5,11 @@
 // FIXME: this seems to fix a bug in Typescript 1.5
 declare function isFinite(n: string | number): boolean;
 
-import { Map, Set } from 'immutable';
+import { List, Map, Set } from 'immutable';
+
+import { builtins, defined, exists } from './common';
 
 import * as ast from './ast';
-import * as common from './common';
 import * as parse from './parse';
 import * as type from './type';
 import * as util from './util';
@@ -22,8 +23,6 @@ const JsOps: Map<string, string> = Map({
   '≠': '!==',
   '=': '===',
 });
-
-const defined = util.defined;
 
 // An AST visitor. after calling walk() on the root of an equation's
 // AST with an instance of this class, the visitor.code member will
@@ -62,13 +61,13 @@ export class CodegenVisitor implements ast.Visitor<boolean> {
       return false;
     }
     const fn = (n.fun as ast.Ident).ident;
-    if (!common.builtins.has(fn)) {
+    if (!builtins.has(fn)) {
       console.log('// unknown builtin: ' + fn);
       return false;
     }
     this.code += fn;
     this.code += '(';
-    const builtin = defined(common.builtins.get(fn));
+    const builtin = defined(builtins.get(fn));
     if (builtin.usesTime) {
       this.code += 'dt, ';
       this.refTime();
@@ -176,11 +175,11 @@ export class CodegenVisitor implements ast.Visitor<boolean> {
 }
 
 export class Variable implements type.Variable {
-  xmile: xmile.Variable;
-  valid: boolean;
-  ident: string;
-  eqn: string;
-  ast: ast.Node;
+  xmile?: xmile.Variable;
+  valid: boolean = false;
+  ident?: string;
+  eqn?: string;
+  ast?: ast.Node;
 
   project: type.Project;
   parent: type.Model | null;
@@ -198,14 +197,17 @@ export class Variable implements type.Variable {
     this.xmile = v;
 
     this.ident = v ? v.ident : undefined;
-    this.eqn = v.eqn || '';
+    this.eqn = v ? (v.eqn || '') : '';
 
-    let errs: string[];
-    [this.ast, errs] = parse.eqn(this.eqn);
+    const [ast, errs] = parse.eqn(this.eqn);
     if (errs) {
       console.log('// parse failed for ' + this.ident + ': ' + errs[0]);
-      this.valid = false;
+      return;
+    } else if (!this.ast) {
+      console.log('// parse failed for ' + this.ident + ': no ast');
+      return;
     } else {
+      this.ast = ast || undefined;
       this.valid = true;
     }
 
@@ -217,16 +219,16 @@ export class Variable implements type.Variable {
   // returns a string of this variables initial equation. suitable for
   // exec()'ing
   initialEquation(): string {
-    return this.eqn;
+    return this.eqn || '';
   }
 
-  code(offsets: type.Offsets): string {
+  code(offsets: type.Offsets): string | undefined {
     if (this.isConst()) {
       return "this.initials['" + this.ident + "']";
     }
-    const visitor = new CodegenVisitor(offsets, this.model.ident === 'main');
+    const visitor = new CodegenVisitor(offsets, defined(this.model).ident === 'main');
 
-    const ok = this.ast.walk(visitor);
+    const ok = defined(this.ast).walk(visitor);
     if (!ok) {
       console.log('// codegen failed for ' + this.ident);
       return '';
@@ -245,7 +247,7 @@ export class Variable implements type.Variable {
         continue;
       }
       allDeps = allDeps.add(n);
-      const v = this.model.vars.get(n);
+      const v = defined(this.model).vars.get(n);
       if (!v) {
         continue;
       }
@@ -258,25 +260,25 @@ export class Variable implements type.Variable {
   }
 
   lessThan(that: Variable): boolean {
-    return that.getDeps().has(this.ident);
+    return that.getDeps().has(defined(this.ident));
   }
 
   isConst(): boolean {
-    return isFinite(this.eqn);
+    return this.eqn !== undefined && isFinite(this.eqn);
   }
 }
 
 export class Stock extends Variable {
   initial: string;
-  inflows: string[];
-  outflows: string[];
+  inflows: List<string>;
+  outflows: List<string>;
 
   constructor(model: type.Model, v: xmile.Variable) {
     super(model, v);
 
     this.initial = v.eqn || '';
-    this.inflows = v.inflows || [];
-    this.outflows = v.outflows || [];
+    this.inflows = v.inflows || List();
+    this.outflows = v.outflows || List();
   }
 
   // FIXME: returns a string of this variables initial equation. suitable for
@@ -285,17 +287,17 @@ export class Stock extends Variable {
     return this.initial;
   }
 
-  code(v: type.Offsets): string {
-    let eqn = 'curr[' + v[this.ident] + '] + (';
-    if (this.inflows.length > 0) {
+  code(v: type.Offsets): string | undefined {
+    let eqn = 'curr[' + v[defined(this.ident)] + '] + (';
+    if (this.inflows.size > 0) {
       eqn += this.inflows.map(s => 'curr[' + v[s] + ']').join('+');
     }
-    if (this.outflows.length > 0) {
+    if (this.outflows.size > 0) {
       eqn +=
         '- (' + this.outflows.map(s => 'curr[' + v[s] + ']').join('+') + ')';
     }
     // stocks can have no inflows or outflows and still be valid
-    if (this.inflows.length === 0 && this.outflows.length === 0) {
+    if (this.inflows.size === 0 && this.outflows.size === 0) {
       eqn += '0';
     }
     eqn += ')*dt';
@@ -311,34 +313,35 @@ export class Table extends Variable {
   constructor(model: type.Model, v: xmile.Variable) {
     super(model, v);
 
-    const ypts = v.gf.yPoints;
+    const gf = defined(v.gf);
+    const ypts = gf.yPoints;
 
     // FIXME(bp) unit test
-    const xpts = v.gf.xPoints;
-    const xscale = v.gf.xScale;
+    const xpts = gf.xPoints;
+    const xscale = gf.xScale;
     const xmin = xscale ? xscale.min : 0;
     const xmax = xscale ? xscale.max : 0;
 
-    for (let i = 0; i < ypts.length; i++) {
+    for (let i = 0; i < ypts.size; i++) {
       let x: number;
       // either the x points have been explicitly specified, or
       // it is a linear mapping of points between xmin and xmax,
       // inclusive
       if (xpts) {
-        x = xpts[i];
+        x = defined(xpts.get(i));
       } else {
-        x = (i / (ypts.length - 1)) * (xmax - xmin) + xmin;
+        x = (i / (ypts.size - 1)) * (xmax - xmin) + xmin;
       }
       this.x.push(x);
-      this.y.push(ypts[i]);
+      this.y.push(defined(ypts.get(i)));
     }
   }
 
-  code(v: type.Offsets): string {
+  code(v: type.Offsets): string | undefined {
     if (!this.eqn) {
-      return null;
+      return undefined;
     }
-    const index = super.code(v);
+    const index = defined(super.code(v));
     return "lookup(this.tables['" + this.ident + "'], " + index + ')';
   }
 }
@@ -347,7 +350,11 @@ export class Module extends Variable implements type.Module {
   modelName: string;
   refs: Map<string, Reference>;
 
-  constructor(project: type.Project, parent: type.Model | null, v: xmile.Variable) {
+  constructor(
+    project: type.Project,
+    parent: type.Model | null,
+    v: xmile.Variable,
+  ) {
     super();
 
     this.project = project;
@@ -368,7 +375,7 @@ export class Module extends Variable implements type.Module {
     if (v.connections) {
       for (const conn of v.connections) {
         const ref = new Reference(conn);
-        this.refs = this.refs.set(ref.ident, ref);
+        this.refs = this.refs.set(defined(ref.ident), ref);
         this.deps = this.deps.add(ref.ptr);
       }
     }
@@ -386,10 +393,10 @@ export class Module extends Variable implements type.Module {
 
       let context: type.Model;
       if (n[0] === '.') {
-        context = this.project.model(this.project.main.modelName);
+        context = defined(this.project.model(this.project.main.modelName));
         n = n.substr(1);
       } else {
-        context = this.parent;
+        context = exists(this.parent);
       }
       const parts = n.split('.');
       const v = context.lookup(n);
@@ -411,7 +418,7 @@ export class Module extends Variable implements type.Module {
   updateRefs(model: type.Model) {
     for (const [name, v] of model.vars) {
       // skip modules
-      if (model.modules.has(v.ident)) {
+      if (!v.ident || model.modules.has(v.ident)) {
         continue;
       }
 
@@ -423,11 +430,12 @@ export class Module extends Variable implements type.Module {
           continue;
         }
         console.log(`/* got ${name} */`);
-        const conn = new xmile.Connection();
-        conn.from = name;
-        conn.to = name;
+        const conn = new xmile.Connection({
+          from: name,
+          to: name,
+        });
         const ref = new Reference(conn);
-        this.refs = this.refs.set(ref.ident, ref);
+        this.refs = this.refs.set(defined(ref.ident), ref);
       }
     }
   }
@@ -438,7 +446,7 @@ export class Module extends Variable implements type.Module {
     if (!all) {
       all = Map();
     }
-    const mdl = this.project.model(this.modelName);
+    const mdl = defined(this.project.model(this.modelName));
     const name = mdl.name;
     if (all.has(name)) {
       const def = defined(all.get(name)).update(
@@ -475,7 +483,7 @@ export class Reference extends Variable implements type.Reference {
     this.ptr = conn.from;
   }
 
-  code(v: type.Offsets): string {
+  code(v: type.Offsets): string | undefined {
     return 'curr["' + this.ptr + '"]';
   }
 

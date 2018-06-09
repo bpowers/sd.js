@@ -116,7 +116,7 @@ export interface XNode {
 interface IPoint {
   x?: number;
   y?: number;
-};
+}
 
 const PointDefaults = {
   x: -1,
@@ -216,12 +216,9 @@ export class File extends Record(FileDefaults) implements XNode {
   }
 }
 
-interface IModel {
-}
+interface IModel {}
 
-const ModelDefaults = {
-
-};
+const ModelDefaults = {};
 
 class Model extends Record(ModelDefaults) implements XNode {
   constructor(file: IModel) {
@@ -263,9 +260,9 @@ const GFDefaults = {
   type: 'continuous',
   xPoints: List<number>(),
   yPoints: List<number>(),
-  xScale: undefined as (Scale | undefined),
-  yScale: undefined as (Scale | undefined),
-}
+  xScale: undefined as Scale | undefined,
+  yScale: undefined as Scale | undefined,
+};
 
 export class GF extends Record(GFDefaults) implements XNode {
   constructor(gf: IGF) {
@@ -311,7 +308,11 @@ export class GF extends Record(GFDefaults) implements XNode {
       switch (attr.name.toLowerCase()) {
         case 'type':
           const kind = attr.value.toLowerCase();
-          if (kind === 'discrete' || kind === 'continuous' || kind === 'extrapolate') {
+          if (
+            kind === 'discrete' ||
+            kind === 'continuous' ||
+            kind === 'extrapolate'
+          ) {
             table.type = kind;
           } else {
             return [undefined, new Error(`bad GF type: ${kind}`)];

@@ -4,7 +4,7 @@
 
 'use strict';
 
-import { Map, Set } from 'immutable';
+import { List, Map, Set } from 'immutable';
 
 import * as ast from './ast';
 import * as common from './common';
@@ -47,7 +47,7 @@ export class Model implements type.Model {
   }
 
   get ident(): string {
-    return xmile.canonicalize(this.name);
+    return common.canonicalize(this.name);
   }
 
   get simSpec(): type.SimSpec {
@@ -85,7 +85,7 @@ export class Model implements type.Model {
   /**
    * Validates & figures out all necessary variable information.
    */
-  private parseVars(variables: xmile.Variable[]): xmile.Error | null {
+  private parseVars(variables: xmile.Variable[]): Error | null {
     for (const v of variables) {
       // IMPORTANT: we need to use the canonicalized
       // identifier, not the 'xmile name', which is
@@ -94,7 +94,7 @@ export class Model implements type.Model {
 
       // FIXME: is this too simplistic?
       if (this.vars.has(ident)) {
-        return new xmile.Error('duplicate var ' + ident);
+        return new Error('duplicate var ' + ident);
       }
 
       switch (v.type) {
@@ -144,7 +144,7 @@ export class Model implements type.Model {
     return this.instantiateImplicitModules();
   }
 
-  private instantiateImplicitModules(): xmile.Error | null {
+  private instantiateImplicitModules(): Error | null {
     for (const [name, v] of this.vars) {
       const visitor = new BuiltinVisitor(this.project, this, v);
 
@@ -244,7 +244,7 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
         xVar.name = '$·' + this.variable.ident + '·' + this.n + '·arg' + i;
         xVar.eqn = arg.walk(new PrintVisitor());
         const proxyVar = new vars.Variable(this.model, xVar);
-        this.vars = this.vars.set(proxyVar.ident, proxyVar);
+        this.vars = this.vars.set(defined(proxyVar.ident), proxyVar);
         identArgs.push(proxyVar.ident);
       }
     }
@@ -254,17 +254,18 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
     xMod.type = 'module';
     xMod.name = modName;
     xMod.model = 'stdlib·' + fn;
-    xMod.connections = [];
+    xMod.connections = List<xmile.Connection>();
 
     if (!(fn in stdlibArgs)) {
       throw new Error(`unknown function or builtin ${fn}`);
     }
 
     for (let i = 0; i < identArgs.length; i++) {
-      const conn = new xmile.Connection();
-      conn.to = stdlibArgs[fn][i];
-      conn.from = '.' + identArgs[i];
-      xMod.connections.push(conn);
+      const conn = new xmile.Connection({
+        to: stdlibArgs[fn][i],
+        from: '.' + identArgs[i],
+      });
+      xMod.connections = xMod.connections.push(conn);
     }
 
     const module = new vars.Module(this.project, this.model, xMod);

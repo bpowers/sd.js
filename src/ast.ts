@@ -4,8 +4,8 @@
 
 import { Record } from 'immutable';
 
+import { canonicalize } from './common';
 import { SourceLoc, Token } from './type';
-import { canonicalize } from './xmile';
 
 export interface Node {
   pos: SourceLoc;

@@ -14,6 +14,7 @@ import * as vars from './vars';
 import * as Mustache from 'mustache';
 
 import { exists } from './util';
+import { defined } from './common';
 
 // whether we map names -> offsets in a Float64Array, or use names
 // as object property lookups.  With DEBUG = true, equations are
@@ -173,7 +174,9 @@ export class Sim {
     {
       const source = Mustache.render(tmpl, {
         preamble: runtime.preamble,
-        epilogue: isStandalone ? runtime.epilogue : 'onmessage = handleMessage;',
+        epilogue: isStandalone
+          ? runtime.epilogue
+          : 'onmessage = handleMessage;',
         mainClassName: util.titleCase(root.modelName),
         models: compiledModels,
         mainRefs,
@@ -276,36 +279,39 @@ export class Sim {
     // equations, they need to be promoted into initials.
     for (const v of runInitials) {
       let eqn: string;
+      const ident = defined(v.ident);
       if (v instanceof vars.Module) {
-        eqn = `this.modules["${v.ident}"].calcInitial(dt, curr);`;
+        eqn = `this.modules["${ident}"].calcInitial(dt, curr);`;
       } else {
-        if (isRef(v.ident)) {
+        if (isRef(ident)) {
           continue;
         }
         if (v.isConst()) {
-          initials[v.ident] = parseFloat(v.eqn);
+          initials[ident] = parseFloat(defined(v.eqn));
         }
         const result = vars.Variable.prototype.code.apply(v, [offsets]);
-        eqn = `curr[${offsets[v.ident]}] = ${result};`;
+        eqn = `curr[${offsets[ident]}] = ${result};`;
       }
       ci.push(eqn);
     }
     for (const v of runFlows) {
+      const ident = defined(v.ident);
       if (v instanceof vars.Module) {
-        cf.push(`this.modules["${v.ident}"].calcFlows(dt, curr);`);
-      } else if (!isRef(v.ident)) {
-        cf.push(`curr[${offsets[v.ident]}] = ${v.code(offsets)};`);
+        cf.push(`this.modules["${ident}"].calcFlows(dt, curr);`);
+      } else if (!isRef(ident)) {
+        cf.push(`curr[${offsets[ident]}] = ${v.code(offsets)};`);
       }
     }
     for (const v of runStocks) {
+      const ident = defined(v.ident);
       if (v instanceof vars.Module) {
-        cs.push('this.modules["' + v.ident + '"].calcStocks(dt, curr, next);');
+        cs.push('this.modules["' + ident + '"].calcStocks(dt, curr, next);');
       } else if (!v.hasOwnProperty('initial')) {
         cs.push(
-          'next[' + offsets[v.ident] + '] = curr[' + offsets[v.ident] + '];',
+          'next[' + offsets[ident] + '] = curr[' + offsets[ident] + '];',
         );
       } else {
-        cs.push('next[' + offsets[v.ident] + '] = ' + v.code(offsets) + ';');
+        cs.push('next[' + offsets[ident] + '] = ' + v.code(offsets) + ';');
       }
     }
     for (const [n, table] of model.tables) {
