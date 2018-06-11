@@ -15,9 +15,11 @@ export interface SimSpec {
   start: number;
   stop: number;
   dt: number;
-  saveStep: number;
-  method: string;
-  timeUnits: string;
+  saveStep?: number;
+  method?: string;
+  timeUnits?: string;
+
+  toJS(): { [key: string]: any };
 }
 
 export interface Series {

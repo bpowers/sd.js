@@ -113,18 +113,13 @@ export interface XNode {
   // constructor(el: Element): XNode;
 }
 
-interface IPoint {
-  x?: number;
-  y?: number;
-}
-
 const PointDefaults = {
   x: -1,
   y: -1,
 };
 
 export class Point extends Record(PointDefaults) implements XNode {
-  constructor(point: IPoint) {
+  constructor(point: typeof PointDefaults) {
     super(point);
   }
 
@@ -143,7 +138,8 @@ export class Point extends Record(PointDefaults) implements XNode {
   }
 
   static FromXML(el: Element): [Point, undefined] | [undefined, Error] {
-    const pt: IPoint = {};
+    let x: number | undefined;
+    let y: number | undefined;
     let err: Error | undefined;
 
     for (let i = 0; i < el.attributes.length; i++) {
@@ -153,37 +149,25 @@ export class Point extends Record(PointDefaults) implements XNode {
       }
       switch (attr.name.toLowerCase()) {
         case 'x':
-          [pt.x, err] = num(attr.value);
+          [x, err] = num(attr.value);
           if (err) {
             return [undefined, new Error(`x not num: ${err}`)];
           }
           break;
         case 'y':
-          [pt.y, err] = num(attr.value);
+          [y, err] = num(attr.value);
           if (err) {
             return [undefined, new Error(`y not num: ${err}`)];
           }
           break;
       }
     }
-    if (pt.x === undefined || pt.y === undefined) {
+    if (x === undefined || y === undefined) {
       return [undefined, new Error(`expected both x and y on a Point`)];
     }
 
-    return [new Point(pt), undefined];
+    return [new Point({ x, y }), undefined];
   }
-}
-
-interface IFile {
-  version?: string;
-  namespace?: string;
-  header?: Header;
-  simSpec?: SimSpec;
-  dimensions?: List<Dimension>;
-  units?: List<Unit>;
-  behavior?: Behavior;
-  style?: Style;
-  models?: List<Model>;
 }
 
 const FileDefaults = {
@@ -191,15 +175,15 @@ const FileDefaults = {
   namespace: 'https://docs.oasis-open.org/xmile/ns/XMILE/v1.0',
   header: undefined as Header | undefined,
   simSpec: undefined as SimSpec | undefined,
-  dimensions: List<Dimension>(),
-  units: List<Unit>(),
+  dimensions: undefined as List<Dimension> | undefined,
+  units: undefined as List<Unit> | undefined,
   behavior: undefined as Behavior | undefined,
   style: undefined as Style | undefined,
   models: List<Model>(),
 };
 
 export class File extends Record(FileDefaults) implements XNode {
-  constructor(file: IFile) {
+  constructor(file: typeof FileDefaults) {
     super(file);
   }
 
@@ -218,7 +202,7 @@ export class File extends Record(FileDefaults) implements XNode {
   }
 
   static FromXML(el: Element): [File, undefined] | [undefined, Error] {
-    const file: IFile = {};
+    const file = Object.assign({}, FileDefaults);
 
     for (let i = 0; i < el.attributes.length; i++) {
       const attr = el.attributes.item(i);
@@ -280,19 +264,30 @@ export class File extends Record(FileDefaults) implements XNode {
   }
 }
 
-export class SimSpec implements XNode {
-  start: number = 0;
-  stop: number = 1;
-  dt: number = 1;
-  dtReciprocal: number; // the original reciprocal DT
-  saveStep: number = 0;
-  method: string = 'euler';
-  timeUnits: string = '';
+const SimSpecDefaults = {
+  start: 0,
+  stop: 1,
+  dt: 1,
+  dtReciprocal: undefined as number | undefined, // the original reciprocal DT
+  saveStep: 0 as number | undefined,
+  method: 'euler' as string | undefined,
+  timeUnits: undefined as string | undefined,
+};
 
-  [indexName: string]: any;
+export class SimSpec extends Record(SimSpecDefaults) implements XNode {
+  constructor(simSpec: typeof SimSpecDefaults) {
+    super(simSpec);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'SimSpec',
+      data: this.toJS(),
+    };
+  }
 
   static FromXML(el: Element): [SimSpec, undefined] | [undefined, Error] {
-    const simSpec = new SimSpec();
+    const simSpec = Object.assign({}, SimSpecDefaults);
 
     for (let i = 0; i < el.childNodes.length; i++) {
       const child = el.childNodes.item(i) as Element;
@@ -316,7 +311,7 @@ export class SimSpec implements XNode {
         if (err || val === undefined) {
           return [undefined, new Error(child.nodeName + ': ' + err)];
         }
-        simSpec[name] = val;
+        (simSpec as any)[name] = val;
         if (name === 'dt') {
           if (attr(child, 'reciprocal') === 'true') {
             simSpec.dtReciprocal = simSpec.dt;
@@ -349,7 +344,7 @@ export class SimSpec implements XNode {
         return [undefined, new Error(`unknown integration method ${simSpec.method}`)];
     }
 
-    return [simSpec, undefined];
+    return [new SimSpec(simSpec), undefined];
   }
 
   toXml(doc: XMLDocument, parent: Element): boolean {
@@ -357,25 +352,55 @@ export class SimSpec implements XNode {
   }
 }
 
-export class Unit implements XNode {
-  name: string;
-  eqn: string;
-  alias: string;
+const UnitDefaults = {
+  name: '',
+  eqn: '',
+  alias: undefined as string | undefined,
+};
 
-  constructor(el: Element) {}
+export class Unit extends Record(UnitDefaults) implements XNode {
+  constructor(unit: typeof UnitDefaults) {
+    super(unit);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'View',
+      data: this.toJS(),
+    };
+  }
+
+  static FromXML(el: Element): [Unit, undefined] | [undefined, Error] {
+    const unit = Object.assign({}, UnitDefaults);
+    console.log('TODO: unit');
+    return [new Unit(unit), undefined];
+  }
 
   toXml(doc: XMLDocument, parent: Element): boolean {
     return true;
   }
 }
 
-export class Product implements XNode {
-  name: string = 'unknown';
-  lang: string = 'English';
-  version: string = '';
+const ProductDefaults = {
+  name: 'unknown',
+  lang: 'English',
+  version: '',
+};
+
+export class Product extends Record(ProductDefaults) implements XNode {
+  constructor(product: typeof ProductDefaults) {
+    super(product);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'Product',
+      data: this.toJS(),
+    };
+  }
 
   static FromXML(el: Element): [Product, undefined] | [undefined, Error] {
-    const product = new Product();
+    const product = Object.assign({}, ProductDefaults);
     product.name = content(el);
     for (let i = 0; i < el.attributes.length; i++) {
       const attr = el.attributes.item(i);
@@ -391,7 +416,7 @@ export class Product implements XNode {
           break;
       }
     }
-    return [product, undefined];
+    return [new Product(product), undefined];
   }
 
   toXml(doc: XMLDocument, parent: Element): boolean {
@@ -399,27 +424,41 @@ export class Product implements XNode {
   }
 }
 
-export class Header implements XNode {
-  vendor?: string;
-  product?: Product;
-  options?: Options;
-  name: string;
-  version?: string;
-  caption?: string; // WTF is this
+const HeaderDefaults = {
+  vendor: undefined as string | undefined,
+  product: undefined as Product | undefined,
+  options: undefined as Options | undefined,
+  name: '' as string,
+  version: undefined as string | undefined,
+  caption: undefined as string | undefined, // WTF is this
   // image:    Image;
-  author?: string;
-  affiliation?: string;
-  client?: string;
-  copyright?: string;
+  author: undefined as string | undefined,
+  affiliation: undefined as string | undefined,
+  client: undefined as string | undefined,
+  copyright: undefined as string | undefined,
   // contact:  Contact;
-  created?: string; // ISO 8601 date format, e.g. “ 2014-08-10”
-  modified?: string; // ISO 8601 date format
-  uuid?: string; // IETF RFC4122 format (84-4-4-12 hex digits with the dashes)
-  // includes: Include[];
+  created: undefined as string | undefined, // ISO 8601 date format, e.g. “ 2014-08-10”
+  modified: undefined as string | undefined, // ISO 8601 date format
+  uuid: undefined as string | undefined, // IETF RFC4122 format (84-4-4-12 hex digits with the dashes)
+  // includes: List<Include>;
+};
+
+export class Header extends Record(HeaderDefaults) implements XNode {
+  constructor(header: typeof HeaderDefaults) {
+    super(header);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'Header',
+      data: this.toJS(),
+    };
+  }
 
   static FromXML(el: Element): [Header, undefined] | [undefined, Error] {
-    const header = new Header();
+    const header = Object.assign({}, HeaderDefaults);
     let err: Error | undefined;
+
     for (let i = 0; i < el.childNodes.length; i++) {
       const child = el.childNodes.item(i) as Element;
       if (child.nodeType !== 1) {
@@ -474,7 +513,7 @@ export class Header implements XNode {
           break;
       }
     }
-    return [header, undefined];
+    return [new Header(header), undefined];
   }
 
   toXml(doc: XMLDocument, parent: Element): boolean {
@@ -482,14 +521,27 @@ export class Header implements XNode {
   }
 }
 
-export class Dimension implements XNode {
-  name: string = '';
-  size: string = '';
+const DimensionDefaults = {
+  name: '',
+  size: '',
+};
+
+export class Dimension extends Record(DimensionDefaults) implements XNode {
+  constructor(dimension: typeof DimensionDefaults) {
+    super(dimension);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'Dimension',
+      data: this.toJS(),
+    };
+  }
 
   static FromXML(el: Element): [Dimension, undefined] | [undefined, Error] {
-    const dim = new Dimension();
+    const dim = Object.assign({}, DimensionDefaults);
     // TODO: implement
-    return [dim, undefined];
+    return [new Dimension(dim), undefined];
   }
 
   toXml(doc: XMLDocument, parent: Element): boolean {
@@ -497,48 +549,61 @@ export class Dimension implements XNode {
   }
 }
 
-export class Options implements XNode {
-  namespaces: List<string> = List();
-  usesArrays: boolean = false;
-  usesMacros: boolean = false;
-  usesConveyor: boolean = false;
-  usesQueue: boolean = false;
-  usesSubmodels: boolean = false;
-  usesEventPosters: boolean = false;
-  hasModelView: boolean = false;
-  usesOutputs: boolean = false;
-  usesInputs: boolean = false;
-  usesAnnotation: boolean = false;
+const OptionsDefaults = {
+  namespaces: undefined as List<string> | undefined,
+  usesArrays: undefined as boolean | undefined,
+  usesMacros: undefined as boolean | undefined,
+  usesConveyor: undefined as boolean | undefined,
+  usesQueue: undefined as boolean | undefined,
+  usesSubmodels: undefined as boolean | undefined,
+  usesEventPosters: undefined as boolean | undefined,
+  hasModelView: undefined as boolean | undefined,
+  usesOutputs: undefined as boolean | undefined,
+  usesInputs: undefined as boolean | undefined,
+  usesAnnotation: undefined as boolean | undefined,
 
   // arrays
-  maximumDimensions: number = 1;
-  invalidIndexValue: number = 0; // only 0 or NaN
+  maximumDimensions: undefined as number | undefined,
+  invalidIndexValue: undefined as number | undefined, // only 0 or NaN
   // macros
-  recursiveMacros: boolean = false;
-  optionFilters: boolean = false;
+  recursiveMacros: undefined as boolean | undefined,
+  optionFilters: undefined as boolean | undefined,
   // conveyors
-  arrest: boolean = false;
-  leak: boolean = false;
+  arrest: undefined as boolean | undefined,
+  leak: undefined as boolean | undefined,
   // queues
-  overflow: boolean = false;
+  overflow: undefined as boolean | undefined,
   // event posters
-  messages: boolean = false;
+  messages: undefined as boolean | undefined,
   // outputs
-  numericDisplay: boolean = false;
-  lamp: boolean = false;
-  gauge: boolean = false;
+  numericDisplay: undefined as boolean | undefined,
+  lamp: undefined as boolean | undefined,
+  gauge: undefined as boolean | undefined,
   // inputs
-  numericInput: boolean = false;
-  list: boolean = false;
-  graphicalInput: boolean = false;
+  numericInput: undefined as boolean | undefined,
+  list: undefined as boolean | undefined,
+  graphicalInput: undefined as boolean | undefined,
+};
+
+export class Options extends Record(OptionsDefaults) implements XNode {
+  constructor(options: typeof OptionsDefaults) {
+    super(options);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'Options',
+      data: this.toJS(),
+    };
+  }
 
   // avoids an 'implicit any' error when setting options in
   // FromXML below 'indexName' to avoid a spurious tslint
   // 'shadowed name' error.
-  [indexName: string]: any;
+  // [indexName: string]: any;
 
   static FromXML(el: Element): [Options, undefined] | [undefined, Error] {
-    const options = new Options();
+    const options = Object.assign({}, OptionsDefaults);
 
     for (let i = 0; i < el.attributes.length; i++) {
       const attr = el.attributes.item(i);
@@ -576,7 +641,7 @@ export class Options implements XNode {
         continue;
       }
 
-      options[name] = true;
+      (options as any)[name] = true;
 
       if (name === 'usesArrays') {
         let val: string | undefined;
@@ -600,7 +665,7 @@ export class Options implements XNode {
         }
       }
     }
-    return [options, undefined];
+    return [new Options(options), undefined];
   }
 
   toXml(doc: XMLDocument, parent: Element): boolean {

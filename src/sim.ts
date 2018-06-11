@@ -123,7 +123,7 @@ export class TemplateContext {
     this.modules = mods.join(NLSP);
     this.init = init.join(NLSP);
     this.initialVals = JSON.stringify(initials, null, SP);
-    this.simSpecVals = JSON.stringify(model.simSpec, null, SP);
+    this.simSpecVals = JSON.stringify(defined(model.simSpec).toJS(), null, SP);
     this.tableVals = JSON.stringify(tables, null, SP);
     this.calcI = ci.join(NLSP);
     this.calcF = cf.join(NLSP);
