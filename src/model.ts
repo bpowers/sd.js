@@ -241,10 +241,11 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
       if (isIdent(arg)) {
         identArgs.push((arg as ast.Ident).ident);
       } else {
-        const xVar = new xmile.Variable();
-        xVar.type = 'aux';
-        xVar.name = '$·' + this.variable.ident + '·' + this.n + '·arg' + i;
-        xVar.eqn = arg.walk(new PrintVisitor());
+        const xVar = new xmile.Variable({
+          type: 'aux',
+          name: '$·' + this.variable.ident + '·' + this.n + '·arg' + i,
+          eqn: arg.walk(new PrintVisitor()),
+        } as any);
         const proxyVar = new vars.Variable(this.model, xVar);
         this.vars = this.vars.set(defined(proxyVar.ident), proxyVar);
         identArgs.push(defined(proxyVar.ident));
@@ -252,11 +253,12 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
     }
 
     const modName = '$·' + this.variable.ident + '·' + this.n + '·' + fn;
-    const xMod = new xmile.Variable();
-    xMod.type = 'module';
-    xMod.name = modName;
-    xMod.model = 'stdlib·' + fn;
-    xMod.connections = List<xmile.Connection>();
+    let xMod = new xmile.Variable({
+      type: 'module',
+      name: modName,
+      model: 'stdlib·' + fn,
+      connections: List<xmile.Connection>(),
+    } as any);
 
     if (!(fn in stdlibArgs)) {
       throw new Error(`unknown function or builtin ${fn}`);
@@ -267,7 +269,7 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
         to: stdlibArgs[fn][i],
         from: '.' + identArgs[i],
       });
-      xMod.connections = xMod.connections.push(conn);
+      xMod = xMod.update('connections', conns => (conns || List()).push(conn));
     }
 
     const module = new vars.Module(this.project, this.model, xMod);

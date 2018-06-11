@@ -768,32 +768,31 @@ export class Format implements XNode {
   }
 }
 
-// TODO: split into multiple subclasses?
-export class Variable implements XNode {
-  type: string;
-  name?: string;
-  model?: string;
-  eqn?: string = '';
-  gf?: GF;
+const VariableDefaults = {
+  type: '' as string,
+  name: undefined as string | undefined,
+  model: undefined as string | undefined,
+  eqn: undefined as string | undefined,
+  gf: undefined as GF | undefined,
   // mathml        Node;
   // arrayed-vars
-  dimensions?: List<Dimension>; // REQUIRED for arrayed vars
-  elements?: List<ArrayElement>; // non-A2A
+  dimensions: undefined as List<Dimension> | undefined, // REQUIRED for arrayed vars
+  elements: undefined as List<ArrayElement> | undefined, // non-A2A
   // modules
-  connections?: List<Connection>;
-  resource?: string; // path or URL to model XMILE file
+  connections: undefined as List<Connection> | undefined,
+  resource: undefined as string | undefined, // path or URL to model XMILE file
   // access:       string;         // TODO: not sure if should implement
   // autoExport:   boolean;        // TODO: not sure if should implement
-  units?: Unit;
-  doc?: string; // 'or HTML', but HTML is not valid XML.  string-only.
+  units: undefined as Unit | undefined,
+  doc: undefined as string | undefined, // 'or HTML', but HTML is not valid XML.  string-only.
   // eventPoster   EventPoster;
-  range?: Range;
-  scale?: Range;
-  format?: Format;
+  range: undefined as Range | undefined,
+  scale: undefined as Range | undefined,
+  format: undefined as Format | undefined,
   // stocks
-  nonNegative?: boolean;
-  inflows?: List<string>;
-  outflows?: List<string>;
+  nonNegative: undefined as boolean | undefined,
+  inflows: undefined as List<string> | undefined,
+  outflows: undefined as List<string> | undefined,
   // flows
   // multiplier:   string; // expression used on downstream side of stock to convert units
   // queues
@@ -803,10 +802,24 @@ export class Variable implements XNode {
   // leakStart:    number;
   // leakEnd:      number;
   // auxiliaries
-  flowConcept: boolean; // :(
+  flowConcept: undefined as boolean | undefined, // :(
+};
+
+// TODO: split into multiple subclasses?
+export class Variable extends Record(VariableDefaults) implements XNode {
+  constructor(variable: typeof VariableDefaults) {
+    super(variable);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'Variable',
+      data: this.toJS(),
+    };
+  }
 
   static FromXML(el: Element): [Variable, undefined] | [undefined, Error] {
-    const v = new Variable();
+    const v = Object.assign({}, VariableDefaults);
 
     v.type = el.nodeName.toLowerCase();
 
@@ -869,7 +882,7 @@ export class Variable implements XNode {
       }
     }
 
-    return [v, undefined];
+    return [new Variable(v), undefined];
   }
 
   get ident(): string {
@@ -885,16 +898,27 @@ export class Variable implements XNode {
   }
 }
 
-export class Shape implements XNode {
-  static Types: string[] = ['rectangle', 'circle', 'name_only'];
+const ShapeDefaults = {
+  type: 'circle' as 'rectangle' | 'circle' | 'name_only',
+  width: undefined as number | undefined,
+  height: undefined as number | undefined,
+  radius: undefined as number | undefined,
+};
 
-  type: string; // 'rectangle'|'circle'|'name_only'
-  width?: number;
-  height?: number;
-  radius?: number;
+export class Shape extends Record(ShapeDefaults) implements XNode {
+  constructor(shape: typeof ShapeDefaults) {
+    super(shape);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'Shape',
+      data: this.toJS(),
+    };
+  }
 
   static FromXML(el: Element): [Shape, undefined] | [undefined, Error] {
-    const shape = new Shape();
+    const shape = Object.assign({}, ShapeDefaults);
     let err: Error | undefined;
 
     for (let i = 0; i < el.attributes.length; i++) {
@@ -903,12 +927,14 @@ export class Shape implements XNode {
         continue;
       }
       switch (attr.name.toLowerCase()) {
-        case 'type':
-          shape.type = attr.value.toLowerCase();
-          if (!(shape.type in Shape.Types)) {
-            return [undefined, new Error('bad type: ' + shape.type)];
+        case 'type': {
+          const type = attr.value.toLowerCase();
+          if (type !== 'rectangle' && type !== 'circle' && type !== 'name_only') {
+            return [undefined, new Error(`bad shape type: ${type}`)];
           }
+          shape.type = type;
           break;
+        }
         case 'width':
           [shape.width, err] = num(attr.value);
           if (err) {
@@ -929,7 +955,7 @@ export class Shape implements XNode {
           break;
       }
     }
-    return [shape, undefined];
+    return [new Shape(shape), undefined];
   }
 
   toXml(doc: XMLDocument, parent: Element): boolean {
@@ -977,6 +1003,7 @@ const ViewElementDefaults = {
   y: undefined as number | undefined,
   width: undefined as number | undefined,
   height: undefined as number | undefined,
+  style: undefined as Style | undefined,
   shape: undefined as Shape | undefined,
   zIndex: undefined as number | undefined, // default of -1, range of -1 to INT_MAX
   labelSide: undefined as 'top' | 'left' | 'center' | 'bottom' | 'right' | undefined,

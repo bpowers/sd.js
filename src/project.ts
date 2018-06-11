@@ -152,8 +152,10 @@ export class Project implements type.Project {
 
     const mainModel = defined(this.models.get('main'));
 
-    const modVar = new xmile.Variable();
-    modVar.name = 'main';
+    const modVar = new xmile.Variable({
+      type: 'module',
+      name: 'main',
+    } as any);
     this.main = new Module(this, null, modVar);
     this.main.updateRefs(mainModel);
 
