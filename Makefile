@@ -75,7 +75,7 @@ distclean: clean
 	rm -rf node_modules
 
 pre-commit: test rtest
-	yarn format
+	yarn needs-format # we can't format in pre-commit, just check
 	yarn lint
 
 install-git-hooks:
