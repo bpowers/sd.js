@@ -608,15 +608,28 @@ export class Options implements XNode {
   }
 }
 
-export class Behavior implements XNode {
-  allNonNegative: boolean = false;
-  stockNonNegative: boolean = false;
-  flowNonNegative: boolean = false;
+const BehaviorDefaults = {
+  allNonNegative: undefined as boolean | undefined,
+  stockNonNegative: undefined as boolean | undefined,
+  flowNonNegative: undefined as boolean | undefined,
+};
+
+export class Behavior extends Record(BehaviorDefaults) implements XNode {
+  constructor(behavior: typeof BehaviorDefaults) {
+    super(behavior);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'Behavior',
+      data: this.toJS(),
+    };
+  }
 
   static FromXML(el: Element): [Behavior, undefined] | [undefined, Error] {
-    const behavior = new Behavior();
+    const behavior = Object.assign({}, BehaviorDefaults);
     // TODO
-    return [behavior, undefined];
+    return [new Behavior(behavior), undefined];
   }
 
   toXml(doc: XMLDocument, parent: Element): boolean {
@@ -624,26 +637,56 @@ export class Behavior implements XNode {
   }
 }
 
-export class Data implements XNode {
-  constructor(el: Element) {}
+const DataDefaults = {};
+
+export class Data extends Record(DataDefaults) implements XNode {
+  constructor(data: typeof DataDefaults) {
+    super(data);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'Data',
+      data: this.toJS(),
+    };
+  }
+
+  static FromXML(el: Element): [Data, undefined] | [undefined, Error] {
+    const data = Object.assign({}, DataDefaults);
+    console.log('TODO: data');
+    return [new Data(data), undefined];
+  }
 
   toXml(doc: XMLDocument, parent: Element): boolean {
     return true;
   }
 }
 
-export class Model implements XNode {
-  name: string = '';
-  run: boolean = false;
-  namespaces?: List<string>;
-  resource: string; // path or URL to separate resource file
-  simSpec: SimSpec;
+const ModelDefaults = {
+  name: 'main',
+  run: undefined as boolean | undefined,
+  namespaces: undefined as List<string> | undefined,
+  resource: undefined as string | undefined, // path or URL to separate resource file
+  simSpec: undefined as SimSpec | undefined,
   // behavior: Behavior;
-  variables: List<Variable> = List();
-  views: List<View> = List();
+  variables: List<Variable>(),
+  views: List<View>(),
+};
+
+export class Model extends Record(ModelDefaults) implements XNode {
+  constructor(model: typeof ModelDefaults) {
+    super(model);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'Model',
+      data: this.toJS(),
+    };
+  }
 
   static FromXML(el: Element): [Model, undefined] | [undefined, Error] {
-    const model = new Model();
+    const model = Object.assign({}, ModelDefaults);
 
     for (let i = 0; i < el.attributes.length; i++) {
       const attr = el.attributes.item(i);
@@ -704,7 +747,7 @@ export class Model implements XNode {
           break;
       }
     }
-    return [model, undefined];
+    return [new Model(model), undefined];
   }
 
   get ident(): string {
@@ -716,53 +759,94 @@ export class Model implements XNode {
   }
 }
 
+const ArrayElementDefaults = {
+  subscript: undefined as List<string> | undefined,
+  eqn: undefined as string | undefined,
+  gf: undefined as GF | undefined,
+};
+
 // the 'Element' name is defined by the TypeScript lib.d.ts, so we're
 // forced to be more verbose.
-export class ArrayElement implements XNode {
-  subscript: string[] = [];
-  eqn: string;
-  gf: GF;
+export class ArrayElement extends Record(ArrayElementDefaults) implements XNode {
+  constructor(arrayElement: typeof ArrayElementDefaults) {
+    super(arrayElement);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'ArrayElement',
+      data: this.toJS(),
+    };
+  }
 
   static FromXML(el: Element): [ArrayElement, undefined] | [undefined, Error] {
-    const arrayEl = new ArrayElement();
+    const arrayEl = Object.assign({}, ArrayElementDefaults);
     console.log('TODO: array element');
-    return [arrayEl, undefined];
+    return [new ArrayElement(arrayEl), undefined];
   }
+
   toXml(doc: XMLDocument, parent: Element): boolean {
     return true;
   }
 }
 
-// Section 4.1.1 - Ranges, Scales, Number Formats
-export class Range implements XNode {
-  min?: number;
-  max?: number;
+const RangeDefaults = {
+  min: undefined as number | undefined,
+  max: undefined as number | undefined,
   // auto + group only valid on 'scale' tags
-  auto?: boolean;
-  group?: number; // 'unique number identifier'
+  auto: undefined as boolean | undefined,
+  group: undefined as number | undefined, // 'unique number identifier'
+};
+
+// Section 4.1.1 - Ranges, Scales, Number Formats
+export class Range extends Record(RangeDefaults) implements XNode {
+  constructor(range: typeof RangeDefaults) {
+    super(range);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'Range',
+      data: this.toJS(),
+    };
+  }
 
   static FromXML(el: Element): [Range, undefined] | [undefined, Error] {
-    const range = new Range();
+    const range = Object.assign({}, RangeDefaults);
     console.log('TODO: range element');
-    return [range, undefined];
+    return [new Range(range), undefined];
   }
   toXml(doc: XMLDocument, parent: Element): boolean {
     return true;
   }
 }
 
+const FormatDefaults = {
+  precision: undefined as string | undefined, // "default: best guess based on the scale of the variable"
+  scaleBy: undefined as string | undefined,
+  displayAs: undefined as 'number' | 'currency' | 'percent' | undefined,
+  delimit000s: undefined as boolean | undefined, // include thousands separator
+};
+
 // Section 4.1.1 - Ranges, Scales, Number Formats
-export class Format implements XNode {
-  precision: string = ''; // "default: best guess based on the scale of the variable"
-  scaleBy: string = '1';
-  displayAs: string = 'number'; // "number"|"currency"|"percent"
-  delimit000s: boolean = false; // include thousands separator
+export class Format extends Record(FormatDefaults) implements XNode {
+  constructor(format: typeof FormatDefaults) {
+    super(format);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'Format',
+      data: this.toJS(),
+    };
+  }
 
   static FromXML(el: Element): [Format, undefined] | [undefined, Error] {
-    const fmt = new Format();
+    const fmt = Object.assign({}, FormatDefaults);
     console.log('TODO: format element');
-    return [fmt, undefined];
+    return [new Format(fmt), undefined];
   }
+
   toXml(doc: XMLDocument, parent: Element): boolean {
     return true;
   }

@@ -29,7 +29,7 @@ export class Model implements type.Model {
   tables: Map<string, type.Table> = Map();
   vars: Map<string, type.Variable> = Map();
 
-  private spec: type.SimSpec;
+  private spec?: type.SimSpec;
 
   constructor(project: type.Project, ident: string, xModel: xmile.Model) {
     this.project = project;
@@ -39,7 +39,7 @@ export class Model implements type.Model {
 
     this.parseVars(xModel.variables);
 
-    this.spec = xModel.simSpec || null;
+    this.spec = xModel.simSpec;
     this.valid = true;
     return;
   }

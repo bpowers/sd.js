@@ -42,7 +42,7 @@ export interface Model {
   tables: Map<string, Table>;
   project: Project;
   vars: Map<string, Variable>;
-  simSpec: SimSpec;
+  simSpec?: SimSpec;
 
   lookup(name: string): Variable | undefined;
 }
