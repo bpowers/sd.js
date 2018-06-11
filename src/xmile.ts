@@ -1151,25 +1151,6 @@ export class ViewElement implements XNode {
   }
 }
 
-interface IView {
-  type: string;
-  order?: number;
-  width?: number;
-  height?: number;
-  zoom: number; // '100' means 1x zoom
-  scrollX: number; // before zoom is applied
-  scrollY: number; // before zoom is applied
-  background?: string; // 'color' or file: URL
-  pageWidth?: number;
-  pageHeight?: number;
-  pageSequence?: 'row' | 'column';
-  pageOrientation?: 'landscape' | 'portrait';
-  showPages?: boolean;
-  homePage?: number;
-  homeView?: boolean;
-  elements: List<ViewElement>;
-}
-
 const ViewDefaults = {
   type: 'stock_flow',
   order: undefined as number | undefined,
@@ -1190,7 +1171,7 @@ const ViewDefaults = {
 };
 
 export class View extends Record(ViewDefaults) implements XNode {
-  constructor(view: IView) {
+  constructor(view: typeof ViewDefaults) {
     super(view);
   }
 
@@ -1202,7 +1183,7 @@ export class View extends Record(ViewDefaults) implements XNode {
   }
 
   static FromXML(el: Element): [View, undefined] | [undefined, Error] {
-    const view: IView = Object.assign({}, ViewDefaults);
+    const view: typeof ViewDefaults = Object.assign({}, ViewDefaults);
     let err: Error | undefined;
 
     for (let i = 0; i < el.attributes.length; i++) {
@@ -1330,26 +1311,17 @@ export class View extends Record(ViewDefaults) implements XNode {
 
 type GFType = 'continuous' | 'extrapolate' | 'discrete';
 
-interface IGF {
-  name?: string;
-  type?: GFType;
-  xPoints?: List<number>;
-  yPoints?: List<number>;
-  xScale?: Scale;
-  yScale?: Scale; // only affects the scale of the graph in the UI
-}
-
 const GFDefaults = {
-  name: '',
+  name: '' as string | undefined,
   type: 'continuous' as GFType,
-  xPoints: List<number>(),
-  yPoints: List<number>(),
+  xPoints: undefined as List<number> | undefined,
+  yPoints: undefined as List<number> | undefined,
   xScale: undefined as Scale | undefined,
-  yScale: undefined as Scale | undefined,
+  yScale: undefined as Scale | undefined, // only affects the scale of the graph in the UI
 };
 
 export class GF extends Record(GFDefaults) implements XNode {
-  constructor(gf: IGF) {
+  constructor(gf: typeof GFDefaults) {
     super(gf);
   }
 
@@ -1361,7 +1333,7 @@ export class GF extends Record(GFDefaults) implements XNode {
   }
 
   static FromXML(el: Element): [GF, undefined] | [undefined, Error] {
-    const table: IGF = {};
+    const table: typeof GFDefaults = Object.assign({}, GFDefaults);
     let err: Error | undefined;
 
     for (let i = 0; i < el.attributes.length; i++) {

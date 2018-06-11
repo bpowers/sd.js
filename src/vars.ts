@@ -297,8 +297,8 @@ export class Stock extends Variable {
 }
 
 export class Table extends Variable {
-  x: number[] = [];
-  y: number[] = [];
+  x: List<number> = List();
+  y: List<number> = List();
   ok: boolean = true;
 
   constructor(model: type.Model, v: xmile.Variable) {
@@ -313,6 +313,10 @@ export class Table extends Variable {
     const xmin = xscale ? xscale.min : 0;
     const xmax = xscale ? xscale.max : 0;
 
+    if (!ypts) {
+      return;
+    }
+
     for (let i = 0; i < ypts.size; i++) {
       let x: number;
       // either the x points have been explicitly specified, or
@@ -323,8 +327,8 @@ export class Table extends Variable {
       } else {
         x = (i / (ypts.size - 1)) * (xmax - xmin) + xmin;
       }
-      this.x.push(x);
-      this.y.push(defined(ypts.get(i)));
+      this.x = this.x.push(x);
+      this.y = this.y.push(defined(ypts.get(i)));
     }
   }
 

@@ -2,13 +2,13 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-import { Map, Record, Set } from 'immutable';
+import { List, Map, Record, Set } from 'immutable';
 
 import * as xmile from './xmile';
 
 export interface Table {
-  x: number[];
-  y: number[];
+  x: List<number>;
+  y: List<number>;
 }
 
 export interface SimSpec {
