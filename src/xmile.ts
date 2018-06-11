@@ -1394,18 +1394,13 @@ export class GF extends Record(GFDefaults) implements XNode {
   }
 }
 
-interface IScale {
-  min?: number;
-  max?: number;
-}
-
 const ScaleDefaults = {
   min: -1,
   max: -1,
 };
 
 export class Scale extends Record(ScaleDefaults) implements XNode {
-  constructor(scale: IScale) {
+  constructor(scale: typeof ScaleDefaults) {
     super(scale);
   }
 
@@ -1416,15 +1411,9 @@ export class Scale extends Record(ScaleDefaults) implements XNode {
     };
   }
 
-  static FromJSON(obj: any): Scale {
-    if (obj['@class'] !== 'Scale' || !obj.data) {
-      throw new Error('bad object');
-    }
-    return new Scale(obj.data);
-  }
-
   static FromXML(el: Element): [Scale, undefined] | [undefined, Error] {
-    const scale: IScale = {};
+    let min: number | undefined;
+    let max: number | undefined;
     let err: Error | undefined;
 
     for (let i = 0; i < el.attributes.length; i++) {
@@ -1434,13 +1423,13 @@ export class Scale extends Record(ScaleDefaults) implements XNode {
       }
       switch (attr.name.toLowerCase()) {
         case 'min':
-          [scale.min, err] = num(attr.value);
+          [min, err] = num(attr.value);
           if (err) {
             return [undefined, new Error(`bad min: ${attr.value}`)];
           }
           break;
         case 'max':
-          [scale.max, err] = num(attr.value);
+          [max, err] = num(attr.value);
           if (err) {
             return [undefined, new Error(`bad max: ${attr.value}`)];
           }
@@ -1448,17 +1437,12 @@ export class Scale extends Record(ScaleDefaults) implements XNode {
       }
     }
 
-    if (scale.min === undefined || scale.max === undefined) {
+    if (min === undefined || max === undefined) {
       return [undefined, new Error('scale requires both min and max')];
     }
 
-    return [new Scale(scale), undefined];
+    return [new Scale({ min, max }), undefined];
   }
-}
-
-interface IConnection {
-  from?: string;
-  to?: string;
 }
 
 const ConnectionDefaults = {
@@ -1467,7 +1451,7 @@ const ConnectionDefaults = {
 };
 
 export class Connection extends Record(ConnectionDefaults) implements XNode {
-  constructor(conn: IConnection) {
+  constructor(conn: typeof ConnectionDefaults) {
     super(conn);
   }
 
@@ -1478,15 +1462,9 @@ export class Connection extends Record(ConnectionDefaults) implements XNode {
     };
   }
 
-  static FromJSON(obj: any): Connection {
-    if (obj['@class'] !== 'Connection' || !obj.data) {
-      throw new Error('bad object');
-    }
-    return new Connection(obj.data);
-  }
-
   static FromXML(el: Element): [Connection, undefined] | [undefined, Error] {
-    const conn: IConnection = {};
+    let from: string | undefined;
+    let to: string | undefined;
 
     for (let i = 0; i < el.attributes.length; i++) {
       const attr = el.attributes.item(i);
@@ -1495,19 +1473,19 @@ export class Connection extends Record(ConnectionDefaults) implements XNode {
       }
       switch (attr.name.toLowerCase()) {
         case 'to':
-          conn.to = canonicalize(attr.value);
+          to = canonicalize(attr.value);
           break;
         case 'from':
-          conn.from = canonicalize(attr.value);
+          from = canonicalize(attr.value);
           break;
       }
     }
 
-    if (conn.to === undefined || conn.from === undefined) {
+    if (to === undefined || from === undefined) {
       return [undefined, new Error('connect requires both to and from')];
     }
 
-    return [new Connection(conn), undefined];
+    return [new Connection({ from, to }), undefined];
   }
 
   toXml(doc: XMLDocument, parent: Element): boolean {
