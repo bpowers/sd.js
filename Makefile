@@ -74,6 +74,9 @@ clean:
 distclean: clean
 	rm -rf node_modules
 
+format:
+	yarn format
+
 pre-commit: test rtest
 	yarn needs-format # we can't format in pre-commit, just check
 	yarn lint
@@ -86,4 +89,4 @@ bump-tests: $(RTEST_CMD)
 	cd $(RTEST_DIR) && git pull origin master
 	git commit $(RTEST_DIR) -m 'test: bump test-models'
 
-.PHONY: all clean distclean test rtest check pre-commit install-git-hooks bump-tests
+.PHONY: all clean distclean test rtest check format pre-commit install-git-hooks bump-tests
