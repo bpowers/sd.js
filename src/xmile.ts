@@ -1160,27 +1160,58 @@ export class ViewElement implements XNode {
   }
 }
 
-export class View implements XNode {
-  type: string = 'stock_flow'; // 'stock_flow'|'interface'|'popup'|vendor-specific
-  order: number;
-  width: number;
-  height: number;
-  zoom: number = 100; // '100' means 1x zoom
-  scrollX: number = 0; // before zoom is applied
-  scrollY: number = 0; // before zoom is applied
-  background: string; // 'color' or file: URL
-  pageWidth: number;
-  pageHeight: number;
-  pageSequence: string; // 'row'|'column'
-  pageOrientation: string; // 'landscape|portrait'
-  showPages: boolean;
-  homePage: number = 0;
-  homeView: boolean = false;
+interface IView {
+  type: string;
+  order?: number;
+  width?: number;
+  height?: number;
+  zoom: number; // '100' means 1x zoom
+  scrollX: number; // before zoom is applied
+  scrollY: number; // before zoom is applied
+  background?: string; // 'color' or file: URL
+  pageWidth?: number;
+  pageHeight?: number;
+  pageSequence?: 'row'|'column';
+  pageOrientation?: 'landscape'|'portrait';
+  showPages?: boolean;
+  homePage?: number;
+  homeView?: boolean;
+  elements: List<ViewElement>;
+}
 
-  elements: ViewElement[] = [];
+const ViewDefaults = {
+  type: 'stock_flow',
+  order: undefined as (number | undefined),
+  width: undefined as (number | undefined),
+  height: undefined as (number | undefined),
+  zoom: 100,
+  scrollX: 0,
+  scrollY: 0,
+  background: undefined as (string | undefined),
+  pageWidth: undefined as (number | undefined),
+  pageHeight: undefined as (number | undefined),
+  pageSequence: undefined as ('row'|'column' | undefined),
+  pageOrientation: undefined as ('landscape'|'portrait' | undefined),
+  showPages: undefined as (boolean | undefined),
+  homePage: undefined as (number | undefined),
+  homeView: undefined as (boolean | undefined),
+  elements: List<ViewElement>(),
+};
+
+export class View extends Record(ViewDefaults) implements XNode {
+  constructor(view: IView) {
+    super(view);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'View',
+      data: this.toJS(),
+    };
+  }
 
   static FromXML(el: Element): [View, undefined] | [undefined, Error] {
-    const view = new View();
+    const view: IView = Object.assign({}, ViewDefaults);
     let err: Error | undefined;
 
     for (let i = 0; i < el.attributes.length; i++) {
@@ -1244,11 +1275,23 @@ export class View implements XNode {
           }
           break;
         case 'page_sequence':
-          view.pageSequence = attr.value.toLowerCase();
-          break;
+          {
+            const val = attr.value.toLowerCase();
+            if (val !== 'row' && val !== 'column') {
+              return [undefined, new Error(`unknown page_sequence type: ${val}`)];
+            }
+            view.pageSequence = val;
+            break;
+          }
         case 'page_orientation':
-          view.pageOrientation = attr.value.toLowerCase();
-          break;
+          {
+            const val = attr.value.toLowerCase();
+            if (val !== 'landscape' && val !== 'portrait') {
+              return [undefined, new Error(`unknown page_sequence type: ${val}`)];
+            }
+            view.pageOrientation = val;
+            break;
+          }
         case 'show_pages':
           [view.showPages, err] = bool(attr.value);
           if (err) {
@@ -1282,10 +1325,13 @@ export class View implements XNode {
       if (err) {
         return [undefined, new Error('viewEl: ' + err)];
       }
-      view.elements.push(defined(viewEl));
+      if (!view.elements) {
+        view.elements = List<ViewElement>();
+      }
+      view.elements = view.elements.push(defined(viewEl));
     }
 
-    return [view, undefined];
+    return [new View(view), undefined];
   }
 
   toXml(doc: XMLDocument, parent: Element): boolean {
@@ -1306,11 +1352,11 @@ interface IGF {
 
 const GFDefaults = {
   name: '',
-  type: 'continuous',
+  type: 'continuous' as GFType,
   xPoints: List<number>(),
   yPoints: List<number>(),
-  xScale: undefined as Scale | undefined,
-  yScale: undefined as Scale | undefined,
+  xScale: undefined as (Scale | undefined),
+  yScale: undefined as (Scale | undefined),
 };
 
 export class GF extends Record(GFDefaults) implements XNode {
@@ -1323,26 +1369,6 @@ export class GF extends Record(GFDefaults) implements XNode {
       '@class': 'GF',
       data: this.toJS(),
     };
-  }
-
-  static FromJSON(obj: any): GF {
-    if (obj['@class'] !== 'GF' || !obj.data) {
-      throw new Error('bad object');
-    }
-    const data = obj.data;
-    if (data.xPoints) {
-      data.xPoints = List(data.xPoints);
-    }
-    if (data.yPoints) {
-      data.yPoints = List(data.yPoints);
-    }
-    if (data.xScale) {
-      data.xScale = new Scale(data.xScale);
-    }
-    if (data.yScale) {
-      data.yScale = new Scale(data.yScale);
-    }
-    return new GF(data);
   }
 
   static FromXML(el: Element): [GF, undefined] | [undefined, Error] {
