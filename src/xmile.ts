@@ -624,16 +624,6 @@ export class Behavior implements XNode {
   }
 }
 
-// TODO: kill me
-export class Style implements XNode {
-  constructor(el: Element) {}
-
-  toXml(doc: XMLDocument, parent: Element): boolean {
-    return true;
-  }
-}
-
-// TODO: same here
 export class Data implements XNode {
   constructor(el: Element) {}
 
@@ -947,45 +937,67 @@ export class Shape implements XNode {
   }
 }
 
-export class ViewElement implements XNode {
-  type: string;
-  name: string;
-  uid: number; // int
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  shape: Shape;
-  borderWidth: string; // 'thick'|'thin'|double, thick = 3, thin = 1
-  borderColor: string; // hex|predefined-color
-  borderStyle: string; // 'none'|'solid'
-  fontFamily: string;
-  fontWeight: string; // 'normal'|'bold'
-  textDecoration: string; // 'normal'|'underline'
-  textAlign: string; // 'left'|'right'|'center'
-  verticalTextAlign: string; // 'top'|'center'|'bottom'
-  fontColor: string; // hex|predefined-color
-  textBackground: string; // hex|predefined-color
-  fontSize: number; // "<double>pt"
-  padding: number[];
-  // "any attributes of a Border object"
-  color: string;
-  background: string; // hex|predefined-color
-  zIndex: number; // default of -1, range of -1 to INT_MAX
-  // "any attributes of a Text Style object"
-  labelSide: string; // 'top'|'left'|'center'|'bottom'|'right'
-  labelAngle: number; // degrees where 0 is 3 o'clock, counter-clockwise.
+const StyleDefaults = {
+  background: undefined as string | undefined,
+  color: undefined as string | undefined,
+  fontFamily: undefined as string | undefined,
+  fontSize: undefined as string | undefined,
+  fontWeight: undefined as string | undefined,
+  textAlign: undefined as string | undefined,
+  textDecoration: undefined as string | undefined,
+  margin: undefined as string | undefined,
+  padding: undefined as string | undefined,
+  borderColor: undefined as string | undefined,
+  borderStyle: undefined as string | undefined,
+  borderWidth: undefined as string | undefined,
+};
+
+export class Style extends Record(StyleDefaults) implements XNode {
+  constructor(view: typeof StyleDefaults) {
+    super(view);
+  }
+
+  toJSON(): any {
+    return {
+      '@class': 'Style',
+      data: this.toJS(),
+    };
+  }
+
+  static FromXML(el: Element): [Style, undefined] | [undefined, Error] {
+    return [new Style(Object.assign({}, StyleDefaults)), undefined];
+  }
+}
+
+const ViewElementDefaults = {
+  type: '',
+  name: undefined as string | undefined,
+  uid: undefined as number | undefined, // int
+  x: undefined as number | undefined,
+  y: undefined as number | undefined,
+  width: undefined as number | undefined,
+  height: undefined as number | undefined,
+  shape: undefined as Shape | undefined,
+  zIndex: undefined as number | undefined, // default of -1, range of -1 to INT_MAX
+  labelSide: undefined as 'top' | 'left' | 'center' | 'bottom' | 'right' | undefined,
+  labelAngle: undefined as number | undefined, // degrees where 0 is 3 o'clock, counter-clockwise.
   // connectors
-  from: string; // ident
-  to: string; // ident
-  angle: number; // degrees
+  from: undefined as string | undefined, // ident
+  to: undefined as string | undefined, // ident
+  angle: undefined as number | undefined, // degrees
   // flows + multi-point connectors
-  pts?: List<Point>;
+  pts: undefined as List<Point> | undefined,
   // alias
-  of: string;
+  of: undefined as string | undefined,
+};
+
+export class ViewElement extends Record(ViewElementDefaults) implements XNode {
+  constructor(viewElement: typeof ViewElementDefaults) {
+    super(viewElement);
+  }
 
   static FromXML(el: Element): [ViewElement, undefined] | [undefined, Error] {
-    const viewEl = new ViewElement();
+    const viewEl = Object.assign({}, ViewElementDefaults);
     let err: Error | undefined;
 
     viewEl.type = el.nodeName.toLowerCase();
@@ -1030,9 +1042,20 @@ export class ViewElement implements XNode {
             return [undefined, new Error('height: ' + err)];
           }
           break;
-        case 'label_side':
-          viewEl.labelSide = attr.value.toLowerCase();
+        case 'label_side': {
+          const val = attr.value.toLowerCase();
+          if (
+            val !== 'left' &&
+            val !== 'right' &&
+            val !== 'center' &&
+            val !== 'top' &&
+            val !== 'bottom'
+          ) {
+            return [undefined, new Error(`unknown label_side: ${val}`)];
+          }
+          viewEl.labelSide = val;
           break;
+        }
         case 'label_angle':
           [viewEl.labelAngle, err] = num(attr.value);
           if (err) {
@@ -1040,7 +1063,6 @@ export class ViewElement implements XNode {
           }
           break;
         case 'color':
-          viewEl.color = attr.value.toLowerCase();
           break;
         case 'angle':
           [viewEl.angle, err] = num(attr.value);
@@ -1099,7 +1121,7 @@ export class ViewElement implements XNode {
       }
     }
 
-    return [viewEl, undefined];
+    return [new ViewElement(viewEl), undefined];
   }
 
   get hasName(): boolean {
@@ -1107,22 +1129,20 @@ export class ViewElement implements XNode {
   }
 
   get ident(): string {
-    return canonicalize(this.name);
+    return canonicalize(defined(this.name));
   }
 
   get cx(): number {
     switch (this.type) {
       case 'aux':
-        return this.x;
       case 'flow':
-        return this.x;
       case 'module':
-        return this.x;
+        return defined(this.x);
       case 'stock':
         if (this.width) {
-          return this.x + 0.5 * this.width;
+          return defined(this.x) + 0.5 * defined(this.width);
         } else {
-          return this.x;
+          return defined(this.x);
         }
     }
     return NaN;
@@ -1131,16 +1151,14 @@ export class ViewElement implements XNode {
   get cy(): number {
     switch (this.type) {
       case 'aux':
-        return this.y;
       case 'flow':
-        return this.y;
       case 'module':
-        return this.y;
+        return defined(this.y);
       case 'stock':
         if (this.width) {
-          return this.y + 0.5 * this.height;
+          return defined(this.y) + 0.5 * defined(this.height);
         } else {
-          return this.y;
+          return defined(this.y);
         }
     }
     return NaN;
