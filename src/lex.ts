@@ -40,11 +40,7 @@ function isOperator(ch: string | null): boolean {
 // not an operator or number or space.  I think this should be ok, but
 // I can also imagine it missing something important.
 function isIdentifierStart(ch: string): boolean {
-  return (
-    !isNumberStart(ch) &&
-    !isWhitespace(ch) &&
-    (/[_\"]/.test(ch) || !isOperator(ch))
-  );
+  return !isNumberStart(ch) && !isWhitespace(ch) && (/[_\"]/.test(ch) || !isOperator(ch));
 }
 
 // TODO(bp) better errors
@@ -252,9 +248,7 @@ export class Lexer {
   private lexNumber(startPos: SourceLoc): Token {
     // we do a .toLowerCase before the string gets to here, so we
     // don't need to match for lower and upper cased 'e's.
-    const numStr = exists(
-      /\d*(\.\d*)?(e(\d?(\.\d*)?)?)?/.exec(this.text.substring(this.pos)),
-    )[0];
+    const numStr = exists(/\d*(\.\d*)?(e(\d?(\.\d*)?)?)?/.exec(this.text.substring(this.pos)))[0];
     const len = numStr.length;
     this.fastForward(len);
     return new Token(

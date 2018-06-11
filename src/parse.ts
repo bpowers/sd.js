@@ -2,16 +2,7 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-import {
-  BinaryExpr,
-  CallExpr,
-  Constant,
-  Ident,
-  IfExpr,
-  Node,
-  ParenExpr,
-  UnaryExpr,
-} from './ast';
+import { BinaryExpr, CallExpr, Constant, Ident, IfExpr, Node, ParenExpr, UnaryExpr } from './ast';
 import { Lexer } from './lex';
 import { SourceLoc, Token, TokenType } from './type';
 
@@ -44,11 +35,7 @@ export function eqn(eqn: string): [Node | null, string[] | null] {
   return [ast, null];
 }
 
-function binaryLevel(
-  n: number,
-  p: Parser,
-  ops: string,
-): (maxLevel: number) => Node | null {
+function binaryLevel(n: number, p: Parser, ops: string): (maxLevel: number) => Node | null {
   return (maxLevel: number): Node | null => {
     const t = p.lexer.peek();
     // Ensure that we don't inadvertently mess up operator

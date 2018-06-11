@@ -340,19 +340,13 @@ export class SimSpec implements XNode {
       case 'rk45':
       case 'gear':
         console.log(
-          'valid but unsupported integration ' +
-            'method: ' +
-            simSpec.method +
-            '. using euler',
+          'valid but unsupported integration ' + 'method: ' + simSpec.method + '. using euler',
         );
         simSpec.method = 'euler';
         break;
       // unknown
       default:
-        return [
-          undefined,
-          new Error(`unknown integration method ${simSpec.method}`),
-        ];
+        return [undefined, new Error(`unknown integration method ${simSpec.method}`)];
     }
 
     return [simSpec, undefined];
@@ -687,10 +681,7 @@ export class Model implements XNode {
               // Element
               continue;
             }
-            if (
-              typeof vchild.prefix !== 'undefined' &&
-              vchild.prefix === 'isee'
-            ) {
+            if (typeof vchild.prefix !== 'undefined' && vchild.prefix === 'isee') {
               // isee specific info
               continue;
             }
@@ -1171,8 +1162,8 @@ interface IView {
   background?: string; // 'color' or file: URL
   pageWidth?: number;
   pageHeight?: number;
-  pageSequence?: 'row'|'column';
-  pageOrientation?: 'landscape'|'portrait';
+  pageSequence?: 'row' | 'column';
+  pageOrientation?: 'landscape' | 'portrait';
   showPages?: boolean;
   homePage?: number;
   homeView?: boolean;
@@ -1181,20 +1172,20 @@ interface IView {
 
 const ViewDefaults = {
   type: 'stock_flow',
-  order: undefined as (number | undefined),
-  width: undefined as (number | undefined),
-  height: undefined as (number | undefined),
+  order: undefined as number | undefined,
+  width: undefined as number | undefined,
+  height: undefined as number | undefined,
   zoom: 100,
   scrollX: 0,
   scrollY: 0,
-  background: undefined as (string | undefined),
-  pageWidth: undefined as (number | undefined),
-  pageHeight: undefined as (number | undefined),
-  pageSequence: undefined as ('row'|'column' | undefined),
-  pageOrientation: undefined as ('landscape'|'portrait' | undefined),
-  showPages: undefined as (boolean | undefined),
-  homePage: undefined as (number | undefined),
-  homeView: undefined as (boolean | undefined),
+  background: undefined as string | undefined,
+  pageWidth: undefined as number | undefined,
+  pageHeight: undefined as number | undefined,
+  pageSequence: undefined as 'row' | 'column' | undefined,
+  pageOrientation: undefined as 'landscape' | 'portrait' | undefined,
+  showPages: undefined as boolean | undefined,
+  homePage: undefined as number | undefined,
+  homeView: undefined as boolean | undefined,
   elements: List<ViewElement>(),
 };
 
@@ -1274,24 +1265,22 @@ export class View extends Record(ViewDefaults) implements XNode {
             return [undefined, new Error('page_height: ' + err)];
           }
           break;
-        case 'page_sequence':
-          {
-            const val = attr.value.toLowerCase();
-            if (val !== 'row' && val !== 'column') {
-              return [undefined, new Error(`unknown page_sequence type: ${val}`)];
-            }
-            view.pageSequence = val;
-            break;
+        case 'page_sequence': {
+          const val = attr.value.toLowerCase();
+          if (val !== 'row' && val !== 'column') {
+            return [undefined, new Error(`unknown page_sequence type: ${val}`)];
           }
-        case 'page_orientation':
-          {
-            const val = attr.value.toLowerCase();
-            if (val !== 'landscape' && val !== 'portrait') {
-              return [undefined, new Error(`unknown page_sequence type: ${val}`)];
-            }
-            view.pageOrientation = val;
-            break;
+          view.pageSequence = val;
+          break;
+        }
+        case 'page_orientation': {
+          const val = attr.value.toLowerCase();
+          if (val !== 'landscape' && val !== 'portrait') {
+            return [undefined, new Error(`unknown page_sequence type: ${val}`)];
           }
+          view.pageOrientation = val;
+          break;
+        }
         case 'show_pages':
           [view.showPages, err] = bool(attr.value);
           if (err) {
@@ -1355,8 +1344,8 @@ const GFDefaults = {
   type: 'continuous' as GFType,
   xPoints: List<number>(),
   yPoints: List<number>(),
-  xScale: undefined as (Scale | undefined),
-  yScale: undefined as (Scale | undefined),
+  xScale: undefined as Scale | undefined,
+  yScale: undefined as Scale | undefined,
 };
 
 export class GF extends Record(GFDefaults) implements XNode {
@@ -1383,11 +1372,7 @@ export class GF extends Record(GFDefaults) implements XNode {
       switch (attr.name.toLowerCase()) {
         case 'type':
           const kind = attr.value.toLowerCase();
-          if (
-            kind === 'discrete' ||
-            kind === 'continuous' ||
-            kind === 'extrapolate'
-          ) {
+          if (kind === 'discrete' || kind === 'continuous' || kind === 'extrapolate') {
             table.type = kind;
           } else {
             return [undefined, new Error(`bad GF type: ${kind}`)];

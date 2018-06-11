@@ -173,9 +173,7 @@ export class Sim {
     {
       const source = Mustache.render(tmpl, {
         preamble: runtime.preamble,
-        epilogue: isStandalone
-          ? runtime.epilogue
-          : 'onmessage = handleMessage;',
+        epilogue: isStandalone ? runtime.epilogue : 'onmessage = handleMessage;',
         mainClassName: util.titleCase(root.modelName),
         models: compiledModels,
         mainRefs,
@@ -324,9 +322,7 @@ export class Sim {
       if (model.ident === 'main') {
         additional = ' + 1';
       }
-      init.push(
-        'let off = Object.keys(this.offsets).length' + additional + ';',
-      );
+      init.push('let off = Object.keys(this.offsets).length' + additional + ';');
     }
     const mods: string[] = [];
     mods.push('{');
@@ -352,17 +348,7 @@ export class Sim {
     }
     mods.push('}');
 
-    return new TemplateContext(
-      model,
-      mods,
-      init,
-      initials,
-      tables,
-      runtimeOffsets,
-      ci,
-      cf,
-      cs,
-    );
+    return new TemplateContext(model, mods, init, initials, tables, runtimeOffsets, ci, cf, cs);
   }
 
   nextID(modelName: string): number {
@@ -414,10 +400,7 @@ export class Sim {
     return this._post.apply(this, args);
   }
 
-  dominance(
-    overrides: { [n: string]: number },
-    indicators: string[],
-  ): Promise<any> {
+  dominance(overrides: { [n: string]: number }, indicators: string[]): Promise<any> {
     return this._post('dominance', overrides, indicators);
   }
 

@@ -120,20 +120,12 @@ export class CodegenVisitor implements ast.Visitor<boolean> {
       n.r.walk(this);
       this.code += ')';
       return true;
-    } else if (
-      n.op === '=' &&
-      n.l instanceof ast.Constant &&
-      isNaN(n.l.value)
-    ) {
+    } else if (n.op === '=' && n.l instanceof ast.Constant && isNaN(n.l.value)) {
       this.code += 'isNaN(';
       n.r.walk(this);
       this.code += ')';
       return true;
-    } else if (
-      n.op === '=' &&
-      n.r instanceof ast.Constant &&
-      isNaN(n.r.value)
-    ) {
+    } else if (n.op === '=' && n.r instanceof ast.Constant && isNaN(n.r.value)) {
       this.code += 'isNaN(';
       n.l.walk(this);
       this.code += ')';
@@ -226,10 +218,7 @@ export class Variable implements type.Variable {
     if (this.isConst()) {
       return "this.initials['" + this.ident + "']";
     }
-    const visitor = new CodegenVisitor(
-      offsets,
-      defined(this.model).ident === 'main',
-    );
+    const visitor = new CodegenVisitor(offsets, defined(this.model).ident === 'main');
 
     const ok = defined(this.ast).walk(visitor);
     if (!ok) {
@@ -296,8 +285,7 @@ export class Stock extends Variable {
       eqn += this.inflows.map(s => 'curr[' + v[s] + ']').join('+');
     }
     if (this.outflows.size > 0) {
-      eqn +=
-        '- (' + this.outflows.map(s => 'curr[' + v[s] + ']').join('+') + ')';
+      eqn += '- (' + this.outflows.map(s => 'curr[' + v[s] + ']').join('+') + ')';
     }
     // stocks can have no inflows or outflows and still be valid
     if (this.inflows.size === 0 && this.outflows.size === 0) {
@@ -353,11 +341,7 @@ export class Module extends Variable implements type.Module {
   modelName: string;
   refs: Map<string, Reference>;
 
-  constructor(
-    project: type.Project,
-    parent: type.Model | null,
-    v: xmile.Variable,
-  ) {
+  constructor(project: type.Project, parent: type.Model | null, v: xmile.Variable) {
     super();
 
     this.project = project;
@@ -443,18 +427,15 @@ export class Module extends Variable implements type.Module {
     }
   }
 
-  referencedModels(
-    all?: Map<string, type.ModelDef>,
-  ): Map<string, type.ModelDef> {
+  referencedModels(all?: Map<string, type.ModelDef>): Map<string, type.ModelDef> {
     if (!all) {
       all = Map();
     }
     const mdl = defined(this.project.model(this.modelName));
     const name = mdl.name;
     if (all.has(name)) {
-      const def = defined(all.get(name)).update(
-        'modules',
-        (modules: Set<type.Module>) => modules.add(this),
+      const def = defined(all.get(name)).update('modules', (modules: Set<type.Module>) =>
+        modules.add(this),
       );
       all = all.set(name, def);
     } else {

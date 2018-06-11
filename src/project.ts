@@ -38,10 +38,7 @@ function parseStdModels() {
       continue;
     }
     const modelStr = stdlib.xmileModels[name];
-    const xml = new xmldom.DOMParser().parseFromString(
-      modelStr,
-      'application/xml',
-    );
+    const xml = new xmldom.DOMParser().parseFromString(modelStr, 'application/xml');
     const ctx = new Project(xml, true);
     const mdl = ctx.model(name);
     if (!mdl) {
@@ -88,15 +85,8 @@ export class Project implements type.Project {
   }
 
   // isMain should only be true when called from the constructor.
-  addDocument(
-    xmileDoc: XMLDocument,
-    isMain = false,
-    skipStdlib = false,
-  ): Error | undefined {
-    if (
-      !xmileDoc ||
-      xmileDoc.getElementsByTagName('parsererror').length !== 0
-    ) {
+  addDocument(xmileDoc: XMLDocument, isMain = false, skipStdlib = false): Error | undefined {
+    if (!xmileDoc || xmileDoc.getElementsByTagName('parsererror').length !== 0) {
       this.valid = false;
       return Error.Version;
     }

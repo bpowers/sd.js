@@ -96,12 +96,7 @@ export class CallExpr implements Node {
   lParenPos: SourceLoc;
   rParenPos: SourceLoc;
 
-  constructor(
-    fun: Node,
-    lParenPos: SourceLoc,
-    args: Node[],
-    rParenPos: SourceLoc,
-  ) {
+  constructor(fun: Node, lParenPos: SourceLoc, args: Node[], rParenPos: SourceLoc) {
     this.fun = fun;
     this.args = args;
     this.lParenPos = lParenPos;

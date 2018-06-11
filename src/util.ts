@@ -22,12 +22,7 @@ function swap(array: any[], a: number, b: number): void {
 
 // partition used in quicksort, based off pseudocode
 // on wikipedia
-export function partition(
-  array: any[],
-  l: number,
-  r: number,
-  p: number,
-): number {
+export function partition(array: any[], l: number, r: number, p: number): number {
   const pValue = array[p];
   // move the pivot to the end
   swap(array, p, r);
@@ -66,12 +61,7 @@ export function partition(
 /**
  *  Quicksort implementation, sorts in place.
  */
-export function sort(
-  array: any[],
-  l = 0,
-  r = array.length - 1,
-  part = partition,
-): void {
+export function sort(array: any[], l = 0, r = array.length - 1, part = partition): void {
   if (l >= r) {
     return;
   }
