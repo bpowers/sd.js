@@ -917,8 +917,10 @@ export class Format extends Record(FormatDefaults) implements XNode {
   }
 }
 
+type VariableType = 'flow' | 'module' | 'stock' | 'aux' | 'connector';
+
 const VariableDefaults = {
-  type: '' as string,
+  type: 'aux' as VariableType,
   name: undefined as string | undefined,
   model: undefined as string | undefined,
   eqn: undefined as string | undefined,
@@ -970,7 +972,18 @@ export class Variable extends Record(VariableDefaults) implements XNode {
   static FromXML(el: Element): [Variable, undefined] | [undefined, Error] {
     const v = Object.assign({}, VariableDefaults);
 
-    v.type = el.nodeName.toLowerCase();
+    const typename = el.nodeName.toLowerCase();
+    if (
+      typename === 'aux' ||
+      typename === 'stock' ||
+      typename === 'flow' ||
+      typename === 'module' ||
+      typename === 'connector'
+    ) {
+      v.type = typename;
+    } else {
+      return [undefined, new Error(`unknown variable type: ${typename}`)];
+    }
 
     for (let i = 0; i < el.attributes.length; i++) {
       const attr = el.attributes.item(i);
