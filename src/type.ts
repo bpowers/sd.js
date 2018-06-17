@@ -34,6 +34,7 @@ export interface Project {
   main: Module;
 
   model(name?: string): Model | undefined;
+  getFiles(): List<xmile.File>;
 }
 
 export interface Model {

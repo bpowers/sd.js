@@ -4,6 +4,7 @@ import * as fs from 'fs';
 
 import { expect } from 'chai';
 import { List } from 'immutable';
+import { defined } from '../lib/common';
 import { Project } from '../lib/sd';
 import { FileFromJSON } from '../lib/xmile';
 import { promisify } from 'util';
@@ -52,12 +53,14 @@ describe('roundtrip', async () => {
       const project = new Project(xml);
       const files = project.getFiles();
       expect(files.size).to.equal(1);
-      const file1 = files.get(0);
-      const json = files.toJSON();
-      console.log(JSON.stringify(json, undefined, 2));
-      const [file2, err] = FileFromJSON(json);
+      const file1 = defined(files.first());
+      const jsonStr1 = JSON.stringify(file1, undefined, 2);
+      const jsonParsed1 = JSON.parse(jsonStr1);
+      const [file2, err] = FileFromJSON(jsonParsed1);
       expect(err).to.be.undefined;
-      expect(file1).to.deep.equal(file2);
+      const jsonStr2 = JSON.stringify(file2, undefined, 2);
+      const jsonParsed2 = JSON.parse(jsonStr2);
+      expect(jsonParsed1).to.deep.equal(jsonParsed2);
     });
   }
 });

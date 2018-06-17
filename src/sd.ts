@@ -13,7 +13,7 @@ export { Project } from './project';
 export { Stock } from './vars';
 
 export { Variable } from './type';
-export { View, ViewElement } from './xmile';
+export { FileFromJSON, View, ViewElement } from './xmile';
 
 export const Error = common.Error;
 

@@ -126,7 +126,7 @@ export class Point extends Record(PointDefaults) implements XNode {
   toJSON(): any {
     return {
       '@class': 'Point',
-      data: this.toJS(),
+      data: super.toJSON(),
     };
   }
 
@@ -190,7 +190,7 @@ export class File extends Record(FileDefaults) implements XNode {
   toJSON(): any {
     return {
       '@class': 'File',
-      data: this.toJS(),
+      data: super.toJSON(),
     };
   }
 
@@ -282,7 +282,7 @@ export class SimSpec extends Record(SimSpecDefaults) implements XNode {
   toJSON(): any {
     return {
       '@class': 'SimSpec',
-      data: this.toJS(),
+      data: super.toJSON(),
     };
   }
 
@@ -366,7 +366,7 @@ export class Unit extends Record(UnitDefaults) implements XNode {
   toJSON(): any {
     return {
       '@class': 'Unit',
-      data: this.toJS(),
+      data: super.toJSON(),
     };
   }
 
@@ -395,7 +395,7 @@ export class Product extends Record(ProductDefaults) implements XNode {
   toJSON(): any {
     return {
       '@class': 'Product',
-      data: this.toJS(),
+      data: super.toJSON(),
     };
   }
 
@@ -451,7 +451,7 @@ export class Header extends Record(HeaderDefaults) implements XNode {
   toJSON(): any {
     return {
       '@class': 'Header',
-      data: this.toJS(),
+      data: super.toJSON(),
     };
   }
 
@@ -534,7 +534,7 @@ export class Dimension extends Record(DimensionDefaults) implements XNode {
   toJSON(): any {
     return {
       '@class': 'Dimension',
-      data: this.toJS(),
+      data: super.toJSON(),
     };
   }
 
@@ -593,7 +593,7 @@ export class Options extends Record(OptionsDefaults) implements XNode {
   toJSON(): any {
     return {
       '@class': 'Options',
-      data: this.toJS(),
+      data: super.toJSON(),
     };
   }
 
@@ -687,7 +687,7 @@ export class Behavior extends Record(BehaviorDefaults) implements XNode {
   toJSON(): any {
     return {
       '@class': 'Behavior',
-      data: this.toJS(),
+      data: super.toJSON(),
     };
   }
 
@@ -712,7 +712,7 @@ export class Data extends Record(DataDefaults) implements XNode {
   toJSON(): any {
     return {
       '@class': 'Data',
-      data: this.toJS(),
+      data: super.toJSON(),
     };
   }
 
@@ -746,7 +746,7 @@ export class Model extends Record(ModelDefaults) implements XNode {
   toJSON(): any {
     return {
       '@class': 'Model',
-      data: this.toJS(),
+      data: super.toJSON(),
     };
   }
 
@@ -840,7 +840,7 @@ export class ArrayElement extends Record(ArrayElementDefaults) implements XNode 
   toJSON(): any {
     return {
       '@class': 'ArrayElement',
-      data: this.toJS(),
+      data: super.toJSON(),
     };
   }
 
@@ -872,7 +872,7 @@ export class Range extends Record(RangeDefaults) implements XNode {
   toJSON(): any {
     return {
       '@class': 'Range',
-      data: this.toJS(),
+      data: super.toJSON(),
     };
   }
 
@@ -902,7 +902,7 @@ export class Format extends Record(FormatDefaults) implements XNode {
   toJSON(): any {
     return {
       '@class': 'Format',
-      data: this.toJS(),
+      data: super.toJSON(),
     };
   }
 
@@ -965,7 +965,7 @@ export class Variable extends Record(VariableDefaults) implements XNode {
   toJSON(): any {
     return {
       '@class': 'Variable',
-      data: this.toJS(),
+      data: super.toJSON(),
     };
   }
 
@@ -1075,7 +1075,7 @@ export class Shape extends Record(ShapeDefaults) implements XNode {
   toJSON(): any {
     return {
       '@class': 'Shape',
-      data: this.toJS(),
+      data: super.toJSON(),
     };
   }
 
@@ -1148,7 +1148,7 @@ export class Style extends Record(StyleDefaults) implements XNode {
   toJSON(): any {
     return {
       '@class': 'Style',
-      data: this.toJS(),
+      data: super.toJSON(),
     };
   }
 
@@ -1188,7 +1188,7 @@ export class ViewElement extends Record(ViewElementDefaults) implements XNode {
   toJSON(): any {
     return {
       '@class': 'ViewElement',
-      data: this.toJS(),
+      data: super.toJSON(),
     };
   }
 
@@ -1392,7 +1392,7 @@ export class View extends Record(ViewDefaults) implements XNode {
   toJSON(): any {
     return {
       '@class': 'View',
-      data: this.toJS(),
+      data: super.toJSON(),
     };
   }
 
@@ -1542,7 +1542,7 @@ export class GF extends Record(GFDefaults) implements XNode {
   toJSON(): any {
     return {
       '@class': 'GF',
-      data: this.toJS(),
+      data: super.toJSON(),
     };
   }
 
@@ -1621,7 +1621,7 @@ export class Scale extends Record(ScaleDefaults) implements XNode {
   toJSON(): any {
     return {
       '@class': 'Scale',
-      data: this.toJS(),
+      data: super.toJSON(),
     };
   }
 
@@ -1672,7 +1672,7 @@ export class Connection extends Record(ConnectionDefaults) implements XNode {
   toJSON(): any {
     return {
       '@class': 'Connection',
-      data: this.toJS(),
+      data: super.toJSON(),
     };
   }
 
@@ -1733,6 +1733,7 @@ const TypeRegistry = Map<string, XNode>([
 const FromJSON = (json: any): [any, undefined] | [undefined, Error] => {
   switch (typeof json) {
     case 'number':
+    case 'boolean':
     case 'string':
     case 'symbol':
     case 'undefined':
@@ -1740,35 +1741,46 @@ const FromJSON = (json: any): [any, undefined] | [undefined, Error] => {
       return [json, undefined];
   }
 
-  json = Object.assign({}, json);
-  for (const key in json) {
-    if (!json.hasOwnProperty(key)) {
-      continue;
-    }
-    const value = json[key];
-    if (value === undefined || value === null) {
-      continue;
-    }
-
-    if (value.constructor === Array) {
-      const array: Array<any> = value;
-      json[key] = List(array.map(item => FromJSON(item)));
-    } else if (typeof value === 'object') {
-      const [newValue, err] = FromJSON(value);
+  if (Array.isArray(json)) {
+    const result = [];
+    for (const item of json) {
+      const [obj, err] = FromJSON(item);
       if (err !== undefined) {
         return [undefined, err];
+      } else {
+        result.push(obj);
       }
-      json[key] = newValue;
     }
+    return [result, undefined];
   }
+
   const className: string | undefined = json['@class'];
   if (className === undefined) {
     return [undefined, new Error(`no class`)];
   } else if (!TypeRegistry.has(json['@class'])) {
     return [undefined, new Error(`unknown class '${className}'`)];
+  } else if (json.data === undefined) {
+    return [undefined, new Error(`no data for class ${className}`)];
+  }
+
+  const data = Object.assign({}, json.data);
+  for (const key in data) {
+    if (!data.hasOwnProperty(key)) {
+      continue;
+    }
+    const value = data[key];
+    if (value === undefined || value === null) {
+      continue;
+    }
+
+    const [newValue, err] = FromJSON(value);
+    if (err !== undefined) {
+      return [undefined, err];
+    }
+    data[key] = newValue;
   }
   const Kind: any = defined(TypeRegistry.get(className));
-  return new Kind(defined(json.data));
+  return [new Kind(data), undefined];
 };
 
 export const FileFromJSON = (json: any): [File, undefined] | [undefined, Error] => {
