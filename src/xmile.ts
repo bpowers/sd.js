@@ -1157,7 +1157,7 @@ export class Style extends Record(StyleDefaults) implements XNode {
   }
 }
 
-type ViewElementType = VariableType | 'style';
+type ViewElementType = VariableType | 'cloud' | 'style';
 
 const ViewElementDefaults = {
   type: 'aux' as ViewElementType,
