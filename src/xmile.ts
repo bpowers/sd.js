@@ -1157,8 +1157,10 @@ export class Style extends Record(StyleDefaults) implements XNode {
   }
 }
 
+type ViewElementType = VariableType | 'style';
+
 const ViewElementDefaults = {
-  type: '',
+  type: 'aux' as ViewElementType,
   name: undefined as string | undefined,
   uid: undefined as number | undefined, // int
   x: undefined as number | undefined,
@@ -1196,7 +1198,19 @@ export class ViewElement extends Record(ViewElementDefaults) implements XNode {
     const viewEl = Object.assign({}, ViewElementDefaults);
     let err: Error | undefined;
 
-    viewEl.type = el.nodeName.toLowerCase();
+    const typename = el.nodeName.toLowerCase();
+    if (
+      typename === 'aux' ||
+      typename === 'stock' ||
+      typename === 'flow' ||
+      typename === 'module' ||
+      typename === 'connector' ||
+      typename === 'style'
+    ) {
+      viewEl.type = typename;
+    } else {
+      return [undefined, new Error(`unknown variable type: ${typename}`)];
+    }
 
     for (let i = 0; i < el.attributes.length; i++) {
       const attr = el.attributes.item(i);
@@ -1501,6 +1515,11 @@ export class View extends Record(ViewDefaults) implements XNode {
       const child = el.childNodes.item(i) as Element;
       if (child.nodeType !== 1) {
         // Element
+        continue;
+      }
+
+      // ignore isee children and weird old things
+      if (child.prefix === 'isee' || child.nodeName === 'simulation_delay') {
         continue;
       }
 
