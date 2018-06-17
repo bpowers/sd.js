@@ -1,7 +1,8 @@
 {
   "files": [
     "test/lex.ts",
-    "test/parse.ts"
+    "test/parse.ts",
+    "test/serialization.ts"
   ],
 
   "compilerOptions": {
