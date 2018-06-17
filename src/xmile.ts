@@ -1751,7 +1751,7 @@ const FromJSON = (json: any): [any, undefined] | [undefined, Error] => {
         result.push(obj);
       }
     }
-    return [result, undefined];
+    return [List(result), undefined];
   }
 
   const className: string | undefined = json['@class'];

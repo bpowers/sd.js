@@ -3,7 +3,7 @@
 import * as fs from 'fs';
 
 import { expect } from 'chai';
-import { List } from 'immutable';
+import { is, List } from 'immutable';
 import { defined } from '../lib/common';
 import { Project } from '../lib/sd';
 import { FileFromJSON } from '../lib/xmile';
@@ -61,6 +61,9 @@ describe('roundtrip', async () => {
       const jsonStr2 = JSON.stringify(file2, undefined, 2);
       const jsonParsed2 = JSON.parse(jsonStr2);
       expect(jsonParsed1).to.deep.equal(jsonParsed2);
+      expect(is(file1, file2)).to.be.be.true;
+      expect(file1.equals(defined(file2))).to.be.be.true;
+      expect(defined(file2).equals(file1)).to.be.be.true;
     });
   }
 });
