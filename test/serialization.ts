@@ -1,8 +1,15 @@
 // Copyright 2018 Bobby Powers. All rights reserved.
 
-import { expect } from 'chai';
+import * as fs from 'fs';
 
+import { expect } from 'chai';
 import { List } from 'immutable';
+import { Project } from '../lib/sd';
+import { FileFromJSON } from '../lib/xmile';
+import { promisify } from 'util';
+import { DOMParser } from 'xmldom';
+
+const readFile = promisify(fs.readFile);
 
 const MODEL_PATHS = List([
   'test/test-models/tests/xidz_zidz/xidz_zidz.xmile',
@@ -37,12 +44,20 @@ const MODEL_PATHS = List([
   'test/test-models/samples/SIR/SIR_reciprocal-dt.xmile',
 ]);
 
-describe('roundtrip', () => {
-  for (const path in MODEL_PATHS) {
-    it(`should roundtrip ${path}`, done => {
-      console.log(`TODO: ${path}`);
-      expect(path).to.deep.equal(path);
-      done();
+describe('roundtrip', async () => {
+  for (const path of MODEL_PATHS) {
+    it(`should roundtrip ${path}`, async () => {
+      const data = await readFile(path);
+      const xml = new DOMParser().parseFromString(data.toString(), 'application/xml');
+      const project = new Project(xml);
+      const files = project.getFiles();
+      expect(files.size).to.equal(1);
+      const file1 = files.get(0);
+      const json = files.toJSON();
+      console.log(JSON.stringify(json, undefined, 2));
+      const [file2, err] = FileFromJSON(json);
+      expect(err).to.be.undefined;
+      expect(file1).to.deep.equal(file2);
     });
   }
 });

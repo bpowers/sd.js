@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-import { List, Record, Set } from 'immutable';
+import { List, Map, Record, Set } from 'immutable';
 
 import { canonicalize, defined, exists } from './common';
 
@@ -110,7 +110,7 @@ const bool = (v: any): [boolean, undefined] | [false, Error] => {
 };
 
 export interface XNode {
-  // constructor(el: Element): XNode;
+  // constructor(args: any): XNode;
 }
 
 const PointDefaults = {
@@ -365,7 +365,7 @@ export class Unit extends Record(UnitDefaults) implements XNode {
 
   toJSON(): any {
     return {
-      '@class': 'View',
+      '@class': 'Unit',
       data: this.toJS(),
     };
   }
@@ -1185,6 +1185,13 @@ export class ViewElement extends Record(ViewElementDefaults) implements XNode {
     super(viewElement);
   }
 
+  toJSON(): any {
+    return {
+      '@class': 'ViewElement',
+      data: this.toJS(),
+    };
+  }
+
   static FromXML(el: Element): [ViewElement, undefined] | [undefined, Error] {
     const viewEl = Object.assign({}, ViewElementDefaults);
     let err: Error | undefined;
@@ -1699,3 +1706,71 @@ export class Connection extends Record(ConnectionDefaults) implements XNode {
     return true;
   }
 }
+
+const TypeRegistry = Map<string, XNode>([
+  ['Point', Point],
+  ['File', File],
+  ['SimSpec', SimSpec],
+  ['Unit', Unit],
+  ['Product', Product],
+  ['Header', Header],
+  ['Dimension', Dimension],
+  ['Options', Options],
+  ['Behavior', Behavior],
+  ['Data', Data],
+  ['Model', Model],
+  ['ArrayElement', ArrayElement],
+  ['Range', Range],
+  ['Format', Format],
+  ['Variable', Variable],
+  ['ViewElement', ViewElement],
+  ['View', View],
+  ['GF', GF],
+  ['Scale', Scale],
+  ['Connection', Connection],
+]);
+
+const FromJSON = (json: any): [any, undefined] | [undefined, Error] => {
+  switch (typeof json) {
+    case 'number':
+    case 'string':
+    case 'symbol':
+    case 'undefined':
+    case 'function':
+      return [json, undefined];
+  }
+
+  json = Object.assign({}, json);
+  for (const key in json) {
+    if (!json.hasOwnProperty(key)) {
+      continue;
+    }
+    const value = json[key];
+    if (value === undefined || value === null) {
+      continue;
+    }
+
+    if (value.constructor === Array) {
+      const array: Array<any> = value;
+      json[key] = List(array.map(item => FromJSON(item)));
+    } else if (typeof value === 'object') {
+      const [newValue, err] = FromJSON(value);
+      if (err !== undefined) {
+        return [undefined, err];
+      }
+      json[key] = newValue;
+    }
+  }
+  const className: string | undefined = json['@class'];
+  if (className === undefined) {
+    return [undefined, new Error(`no class`)];
+  } else if (!TypeRegistry.has(json['@class'])) {
+    return [undefined, new Error(`unknown class '${className}'`)];
+  }
+  const Kind: any = defined(TypeRegistry.get(className));
+  return new Kind(defined(json.data));
+};
+
+export const FileFromJSON = (json: any): [File, undefined] | [undefined, Error] => {
+  return FromJSON(json);
+};

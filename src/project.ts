@@ -2,11 +2,10 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-import { Map } from 'immutable';
+import { List, Map } from 'immutable';
 
 import * as xmldom from 'xmldom';
 
-import * as common from './common';
 import * as stdlib from './stdlib';
 import * as type from './type';
 import * as xmile from './xmile';
@@ -62,15 +61,18 @@ export class Project implements type.Project {
   simSpec: type.SimSpec;
   main: type.Module;
 
-  private files: xmile.File[];
-  private xmile: XMLDocument;
+  private files: List<xmile.File>;
   private models: Map<string, type.Model>;
 
   constructor(xmileDoc: XMLDocument, skipStdlib = false) {
-    this.files = [];
+    this.files = List();
     this.models = Map();
     this.valid = false;
     this.addDocument(xmileDoc, true, skipStdlib);
+  }
+
+  getFiles(): List<xmile.File> {
+    return this.files;
   }
 
   model(name?: string): type.Model | undefined {
@@ -110,7 +112,7 @@ export class Project implements type.Project {
 
     // FIXME: compat translation of equations
 
-    this.files.push(file);
+    this.files = this.files.push(file);
 
     if (isMain) {
       this.name = (file.header && file.header.name) || 'sd project';

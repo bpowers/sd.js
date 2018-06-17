@@ -12,7 +12,6 @@ import { builtins, defined, exists } from './common';
 import * as ast from './ast';
 import * as parse from './parse';
 import * as type from './type';
-import * as util from './util';
 import * as xmile from './xmile';
 
 const JsOps: Map<string, string> = Map({
@@ -193,10 +192,10 @@ export class Variable implements type.Variable {
 
     const [ast, errs] = parse.eqn(this.eqn);
     if (errs) {
-      console.log('// parse failed for ' + this.ident + ': ' + errs[0]);
+      // console.log('// parse failed for ' + this.ident + ': ' + errs[0]);
       return;
     } else if (!ast) {
-      console.log('// parse failed for ' + this.ident + ': no ast');
+      // console.log('// parse failed for ' + this.ident + ': no ast');
       return;
     } else {
       this.ast = ast || undefined;
@@ -416,11 +415,11 @@ export class Module extends Variable implements type.Module {
       // account for references into a child module
       const deps = v.deps;
       for (const depName of deps) {
-        console.log(`/* ${this.modelName} -- ${v.ident} look ${name} */`);
+        // console.log(`/* ${this.modelName} -- ${v.ident} look ${name} */`);
         if (!name.includes('.')) {
           continue;
         }
-        console.log(`/* got ${name} */`);
+        // console.log(`/* got ${name} */`);
         const conn = new xmile.Connection({
           from: name,
           to: name,
