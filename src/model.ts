@@ -81,7 +81,7 @@ export class Model implements type.Model {
       throw new Error('FIXME: sim of non-main model');
     }
     const mod = this.project.main;
-    return new sim.Sim(mod, isStandalone);
+    return new sim.Sim(this.project, mod, isStandalone);
   }
 
   /**
@@ -101,40 +101,40 @@ export class Model implements type.Model {
 
       switch (v.type) {
         case 'module':
-          const module = new vars.Module(this.project, this, v);
+          const module = new vars.Module(v);
           this.modules = this.modules.set(ident, module);
           this.vars = this.vars.set(ident, module);
           break;
         case 'stock':
-          const stock = new vars.Stock(this, v);
+          const stock = new vars.Stock(v);
           this.vars = this.vars.set(ident, stock);
           break;
         case 'aux':
           // FIXME: fix Variable/GF/Table nonsense
           let aux: type.Variable | null = null;
           if (v.gf) {
-            const table = new vars.Table(this, v);
+            const table = new vars.Table(v);
             if (table.ok) {
               this.tables = this.tables.set(ident, table);
               aux = table;
             }
           }
           if (aux === null) {
-            aux = new vars.Variable(this, v);
+            aux = new vars.Variable(v);
           }
           this.vars = this.vars.set(ident, aux);
           break;
         case 'flow':
           let flow: type.Variable | null = null;
           if (v.gf) {
-            const table = new vars.Table(this, v);
+            const table = new vars.Table(v);
             if (table.ok) {
               this.tables = this.tables.set(ident, table);
               flow = table;
             }
           }
           if (flow === null) {
-            flow = new vars.Variable(this, v);
+            flow = new vars.Variable(v);
           }
           this.vars = this.vars.set(ident, flow);
           break;
@@ -246,7 +246,7 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
           name: '$·' + this.variable.ident + '·' + this.n + '·arg' + i,
           eqn: arg.walk(new PrintVisitor()),
         } as any);
-        const proxyVar = new vars.Variable(this.model, xVar);
+        const proxyVar = new vars.Variable(xVar);
         this.vars = this.vars.set(defined(proxyVar.ident), proxyVar);
         identArgs.push(defined(proxyVar.ident));
       }
@@ -272,7 +272,7 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
       xMod = xMod.update('connections', conns => (conns || List()).push(conn));
     }
 
-    const module = new vars.Module(this.project, this.model, xMod);
+    const module = new vars.Module(xMod);
     this.modules = this.modules.set(modName, module);
     this.vars = this.vars.set(modName, module);
 

@@ -50,11 +50,6 @@ export interface Model {
   lookup(name: string): Variable | undefined;
 }
 
-// FIXME: use a Map
-export interface Offsets {
-  [name: string]: number | string;
-}
-
 interface ModelDefProps {
   model: Model | undefined;
   modules: Set<Module>;
@@ -83,22 +78,20 @@ export interface Variable {
 
   ast?: any; // FIXME: this is any to fix circular deps
 
-  project: Project;
-  parent: Model | null;
   model?: Model;
 
   deps: Set<string>;
   allDeps?: Set<string>;
 
   isConst(): boolean;
-  getDeps(): Set<string>;
-  code(v: Offsets): string | undefined;
+  getDeps(parent: Model, project: Project): Set<string>;
+  code(parent: Model, offsets: Map<string, number>): string | undefined;
 }
 
 export interface Module extends Variable {
   modelName: string;
   refs: Map<string, Reference>;
-  referencedModels(all?: Map<string, ModelDef>): Map<string, ModelDef>;
+  referencedModels(project: Project, all?: Map<string, ModelDef>): Map<string, ModelDef>;
   updateRefs(model: Model): void;
 }
 

@@ -2,8 +2,6 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-import * as type from './type';
-
 export { defined, exists, titleCase } from './common';
 
 /// dName converts a string into the format the user
@@ -22,13 +20,19 @@ function swap(array: any[], a: number, b: number): void {
 
 // partition used in quicksort, based off pseudocode
 // on wikipedia
-export function partition(array: any[], l: number, r: number, p: number): number {
+export function partition<T>(
+  array: Array<T>,
+  cmp: Comparator<T>,
+  l: number,
+  r: number,
+  p: number,
+): number {
   const pValue = array[p];
   // move the pivot to the end
   swap(array, p, r);
   let store = l;
   for (let i = l; i < r; ++i) {
-    if (array[i].lessThan(pValue)) {
+    if (cmp.lessThan(array[i], pValue)) {
       swap(array, i, store);
       store += 1;
     }
@@ -38,38 +42,28 @@ export function partition(array: any[], l: number, r: number, p: number): number
   return store;
 }
 
-// partition used in quicksort for numbers, based off
-// pseudocode on wikipedia
-/*
-  function partitionNum(array, l, r, p) {
-  let pValue = array[p];
-  // move the pivot to the end
-  swap(array, p, r);
-  let i, store = l;
-  for (i = l; i < r; ++i) {
-  if (array[i] < pValue) {
-  swap(array, i, store);
-  store += 1;
-  }
-  }
-  // move pivot to final location.
-  swap(array, store, r);
-  return store;
-  };
-*/
+export interface Comparator<T> {
+  lessThan(a: T, b: T): boolean;
+}
 
 /**
  *  Quicksort implementation, sorts in place.
  */
-export function sort(array: any[], l = 0, r = array.length - 1, part = partition): void {
+export function sort<T>(
+  array: Array<T>,
+  cmp: Comparator<T>,
+  l = 0,
+  r = array.length - 1,
+  part = partition,
+): void {
   if (l >= r) {
     return;
   }
 
   const pivot = Math.floor(l + (r - l) / 2);
-  const newPivot = part(array, l, r, pivot);
-  sort(array, l, newPivot - 1, part);
-  sort(array, newPivot + 1, r, part);
+  const newPivot = part(array, cmp, l, r, pivot);
+  sort(array, cmp, l, newPivot - 1, part);
+  sort(array, cmp, newPivot + 1, r, part);
 }
 
 /**

@@ -112,7 +112,7 @@ export class TemplateContext {
     init: any,
     initials: any,
     tables: any,
-    runtimeOffsets: any,
+    runtimeOffsets: Map<string, number>,
     ci: any,
     cf: any,
     cs: any,
@@ -132,6 +132,29 @@ export class TemplateContext {
   }
 }
 
+class VarComparator implements util.Comparator<type.Variable> {
+  deps: Map<string, Set<string>> = Map();
+  project: type.Project;
+  parent: type.Model;
+
+  constructor(project: type.Project, parent: type.Model) {
+    this.project = project;
+    this.parent = parent;
+  }
+
+  lessThan(a: type.Variable, b: type.Variable): boolean {
+    const aName = defined(a.ident);
+    const bName = defined(b.ident);
+    if (!this.deps.has(aName)) {
+      this.deps = this.deps.set(aName, a.getDeps(this.parent, this.project));
+    }
+    if (!this.deps.has(bName)) {
+      this.deps = this.deps.set(bName, b.getDeps(this.parent, this.project));
+    }
+    return defined(this.deps.get(bName)).has(aName);
+  }
+}
+
 export class Sim {
   root: type.Module;
   project: type.Project;
@@ -140,14 +163,14 @@ export class Sim {
   idSeq: any;
   worker?: Worker;
 
-  constructor(root: type.Module, isStandalone: boolean) {
+  constructor(project: type.Project, root: type.Module, isStandalone: boolean) {
     this.root = root;
-    this.project = root.project;
+    this.project = project;
     this.seq = 1; // message id sequence
     this.promised = {}; // callback storage, keyed by message id
     this.idSeq = {}; // variable offset sequence.  Time is always offset 0
 
-    const models = root.referencedModels();
+    const models = root.referencedModels(project);
     const compiledModels: TemplateContext[] = [];
     for (const [n, modelDef] of models) {
       if (n === 'main') {
@@ -218,8 +241,8 @@ export class Sim {
       return false;
     };
 
-    const offsets: type.Offsets = {};
-    const runtimeOffsets: type.Offsets = {};
+    let offsets: Map<string, number> = Map();
+    let runtimeOffsets: Map<string, number> = Map();
 
     // decide which run lists each variable has to be, based on
     // its type and const-ness
@@ -230,7 +253,7 @@ export class Sim {
         runStocks.push(v);
       } else if (v instanceof vars.Stock) {
         // add any referenced vars to initials
-        for (const d of v.getDeps()) {
+        for (const d of v.getDeps(model, this.project)) {
           if (d === 'time' || initialsIncludes(d)) {
             continue;
           }
@@ -252,19 +275,19 @@ export class Sim {
 
       if (!(v instanceof vars.Module) && !isRef(n)) {
         const off = this.nextID(model.name);
-        runtimeOffsets[n] = off;
+        runtimeOffsets = runtimeOffsets.set(n, off);
         if (DEBUG) {
-          offsets[n] = `${off}/*${n}*/`;
+          offsets = offsets.set(n, off); // `${off}/*${n}*/`;
         } else {
-          offsets[n] = off;
+          offsets = offsets.set(n, off);
         }
       }
     }
 
     // stocks don't have to be sorted, since they can only depend
     // on values calculated in the flows phase.
-    util.sort(runInitials);
-    util.sort(runFlows);
+    util.sort(runInitials, new VarComparator(this.project, model));
+    util.sort(runFlows, new VarComparator(this.project, model));
 
     const initials: { [name: string]: number } = {};
     const tables: { [name: string]: type.Table } = {};
@@ -286,8 +309,8 @@ export class Sim {
         if (v.isConst()) {
           initials[ident] = parseFloat(defined(v.eqn));
         }
-        const result = vars.Variable.prototype.code.apply(v, [offsets]);
-        eqn = `curr[${offsets[ident]}] = ${result};`;
+        const result = vars.Variable.prototype.code.apply(v, [model, offsets]);
+        eqn = `curr[${defined(offsets.get(ident))}] = ${result};`;
       }
       ci.push(eqn);
     }
@@ -296,7 +319,7 @@ export class Sim {
       if (v instanceof vars.Module) {
         cf.push(`this.modules["${ident}"].calcFlows(dt, curr);`);
       } else if (!isRef(ident)) {
-        cf.push(`curr[${offsets[ident]}] = ${v.code(offsets)};`);
+        cf.push(`curr[${defined(offsets.get(ident))}] = ${v.code(model, offsets)};`);
       }
     }
     for (const v of runStocks) {
@@ -304,9 +327,11 @@ export class Sim {
       if (v instanceof vars.Module) {
         cs.push('this.modules["' + ident + '"].calcStocks(dt, curr, next);');
       } else if (!v.hasOwnProperty('initial')) {
-        cs.push('next[' + offsets[ident] + '] = curr[' + offsets[ident] + '];');
+        cs.push(
+          'next[' + defined(offsets.get(ident)) + '] = curr[' + defined(offsets.get(ident)) + '];',
+        );
       } else {
-        cs.push('next[' + offsets[ident] + '] = ' + v.code(offsets) + ';');
+        cs.push('next[' + defined(offsets.get(ident)) + '] = ' + v.code(model, offsets) + ';');
       }
     }
     for (const [n, table] of model.tables) {

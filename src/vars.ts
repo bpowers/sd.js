@@ -28,12 +28,12 @@ const JsOps: Map<string, string> = Map({
 // contain a string with valid JS code to be emitted into the
 // Simulation Worker.
 export class CodegenVisitor implements ast.Visitor<boolean> {
-  offsets: type.Offsets;
+  offsets: Map<string, number>;
   code: string = '';
   isMain: boolean;
   scope: string;
 
-  constructor(offsets: type.Offsets, isMain: boolean) {
+  constructor(offsets: Map<string, number>, isMain: boolean) {
     this.offsets = offsets;
     this.isMain = isMain;
     this.scope = isMain ? 'curr' : 'globalCurr';
@@ -42,7 +42,7 @@ export class CodegenVisitor implements ast.Visitor<boolean> {
   ident(n: ast.Ident): boolean {
     if (n.ident === 'time') {
       this.refTime();
-    } else if (n.ident in this.offsets) {
+    } else if (this.offsets.has(n.ident)) {
       this.refDirect(n.ident);
     } else {
       this.refIndirect(n.ident);
@@ -152,9 +152,7 @@ export class CodegenVisitor implements ast.Visitor<boolean> {
 
   // the value of an aux, stock, or flow in the current module
   private refDirect(ident: string): void {
-    this.code += 'curr[';
-    this.code += this.offsets[ident];
-    this.code += ']';
+    this.code += `curr[${defined(this.offsets.get(ident))}]`;
   }
 
   // the value of an overridden module input
@@ -172,24 +170,21 @@ export class Variable implements type.Variable {
   eqn?: string;
   ast?: ast.Node;
 
-  project: type.Project;
-  parent: type.Model | null;
-  // only for modules
-  model?: type.Model;
-
   deps: Set<string>;
   allDeps?: Set<string>;
 
-  constructor(model?: type.Model, v?: xmile.Variable) {
+  constructor(xVar?: xmile.Variable) {
     if (!arguments.length) {
       return;
     }
-    this.model = model;
-    this.xmile = v;
+    this.xmile = xVar;
 
-    this.ident = v ? v.ident : undefined;
-    this.eqn = v ? v.eqn || '' : '';
+    this.ident = xVar && xVar.name ? xVar.ident : undefined;
+    this.eqn = xVar && xVar.eqn;
 
+    if (!this.eqn) {
+      return;
+    }
     const [ast, errs] = parse.eqn(this.eqn);
     if (errs) {
       // console.log('// parse failed for ' + this.ident + ': ' + errs[0]);
@@ -213,11 +208,11 @@ export class Variable implements type.Variable {
     return this.eqn || '';
   }
 
-  code(offsets: type.Offsets): string | undefined {
+  code(parent: type.Model, offsets: Map<string, number>): string | undefined {
     if (this.isConst()) {
       return "this.initials['" + this.ident + "']";
     }
-    const visitor = new CodegenVisitor(offsets, defined(this.model).ident === 'main');
+    const visitor = new CodegenVisitor(offsets, parent.ident === 'main');
 
     const ok = defined(this.ast).walk(visitor);
     if (!ok) {
@@ -228,7 +223,7 @@ export class Variable implements type.Variable {
     return visitor.code;
   }
 
-  getDeps(): Set<string> {
+  getDeps(parent: type.Model, project: type.Project): Set<string> {
     if (this.allDeps) {
       return this.allDeps;
     }
@@ -238,20 +233,16 @@ export class Variable implements type.Variable {
         continue;
       }
       allDeps = allDeps.add(n);
-      const v = defined(this.model).vars.get(n);
+      const v = parent.vars.get(n);
       if (!v) {
         continue;
       }
-      for (const nn of v.getDeps()) {
+      for (const nn of v.getDeps(parent, project)) {
         allDeps = allDeps.add(nn);
       }
     }
     this.allDeps = allDeps;
     return allDeps;
-  }
-
-  lessThan(that: Variable): boolean {
-    return that.getDeps().has(defined(this.ident));
   }
 
   isConst(): boolean {
@@ -264,12 +255,12 @@ export class Stock extends Variable {
   inflows: List<string>;
   outflows: List<string>;
 
-  constructor(model: type.Model, v: xmile.Variable) {
-    super(model, v);
+  constructor(xVar: xmile.Variable) {
+    super(xVar);
 
-    this.initial = v.eqn || '';
-    this.inflows = v.inflows || List();
-    this.outflows = v.outflows || List();
+    this.initial = xVar.eqn ? xVar.eqn : '';
+    this.inflows = xVar.inflows || List();
+    this.outflows = xVar.outflows || List();
   }
 
   // FIXME: returns a string of this variables initial equation. suitable for
@@ -278,13 +269,13 @@ export class Stock extends Variable {
     return this.initial;
   }
 
-  code(v: type.Offsets): string | undefined {
-    let eqn = 'curr[' + v[defined(this.ident)] + '] + (';
+  code(parent: type.Model, offset: Map<string, number>): string | undefined {
+    let eqn = 'curr[' + defined(offset.get(defined(this.ident))) + '] + (';
     if (this.inflows.size > 0) {
-      eqn += this.inflows.map(s => 'curr[' + v[s] + ']').join('+');
+      eqn += this.inflows.map(s => 'curr[' + defined(offset.get(s)) + ']').join('+');
     }
     if (this.outflows.size > 0) {
-      eqn += '- (' + this.outflows.map(s => 'curr[' + v[s] + ']').join('+') + ')';
+      eqn += '- (' + this.outflows.map(s => 'curr[' + defined(offset.get(s)) + ']').join('+') + ')';
     }
     // stocks can have no inflows or outflows and still be valid
     if (this.inflows.size === 0 && this.outflows.size === 0) {
@@ -300,10 +291,10 @@ export class Table extends Variable {
   y: List<number> = List();
   ok: boolean = true;
 
-  constructor(model: type.Model, v: xmile.Variable) {
-    super(model, v);
+  constructor(xVar: xmile.Variable) {
+    super(xVar);
 
-    const gf = defined(v.gf);
+    const gf = defined(xVar.gf);
     const ypts = gf.yPoints;
 
     // FIXME(bp) unit test
@@ -331,11 +322,11 @@ export class Table extends Variable {
     }
   }
 
-  code(v: type.Offsets): string | undefined {
+  code(parent: type.Model, v: Map<string, number>): string | undefined {
     if (!this.eqn) {
       return undefined;
     }
-    const index = defined(super.code(v));
+    const index = defined(super.code(parent, v));
     return "lookup(this.tables['" + this.ident + "'], " + index + ')';
   }
 }
@@ -344,26 +335,24 @@ export class Module extends Variable implements type.Module {
   modelName: string;
   refs: Map<string, Reference>;
 
-  constructor(project: type.Project, parent: type.Model | null, v: xmile.Variable) {
-    super();
+  constructor(xVar: xmile.Variable) {
+    super(xVar);
 
-    this.project = project;
-    this.parent = parent;
-    this.xmile = v;
-    this.ident = v.ident;
+    this.xmile = xVar;
+    this.ident = xVar.ident;
     // This is a deviation from the XMILE spec, but is the
     // only thing that makes sense -- having a 1 to 1
     // relationship between model name and module name
     // would be insane.
-    if (v.model) {
-      this.modelName = v.model;
+    if (xVar.model) {
+      this.modelName = xVar.model;
     } else {
       this.modelName = this.ident;
     }
     this.refs = Map();
     this.deps = Set<string>();
-    if (v.connections) {
-      for (const conn of v.connections) {
+    if (xVar.connections) {
+      for (const conn of xVar.connections) {
         const ref = new Reference(conn);
         this.refs = this.refs.set(defined(ref.ident), ref);
         this.deps = this.deps.add(ref.ptr);
@@ -371,7 +360,7 @@ export class Module extends Variable implements type.Module {
     }
   }
 
-  getDeps(): Set<string> {
+  getDeps(parent: type.Model, project: type.Project): Set<string> {
     if (this.allDeps) {
       return this.allDeps;
     }
@@ -383,10 +372,10 @@ export class Module extends Variable implements type.Module {
 
       let context: type.Model;
       if (n[0] === '.') {
-        context = defined(this.project.model(this.project.main.modelName));
+        context = defined(project.model(project.main.modelName));
         n = n.substr(1);
       } else {
-        context = exists(this.parent);
+        context = parent;
       }
       const parts = n.split('.');
       const v = context.lookup(n);
@@ -397,7 +386,7 @@ export class Module extends Variable implements type.Module {
       if (!(v instanceof Stock)) {
         allDeps = allDeps.add(parts[0]);
       }
-      for (const nn of v.getDeps()) {
+      for (const nn of v.getDeps(parent, project)) {
         allDeps = allDeps.add(nn);
       }
     }
@@ -430,11 +419,14 @@ export class Module extends Variable implements type.Module {
     }
   }
 
-  referencedModels(all?: Map<string, type.ModelDef>): Map<string, type.ModelDef> {
+  referencedModels(
+    project: type.Project,
+    all?: Map<string, type.ModelDef>,
+  ): Map<string, type.ModelDef> {
     if (!all) {
       all = Map();
     }
-    const mdl = defined(this.project.model(this.modelName));
+    const mdl = defined(project.model(this.modelName));
     const name = mdl.name;
     if (all.has(name)) {
       const def = defined(all.get(name)).update('modules', (modules: Set<type.Module>) =>
@@ -451,7 +443,7 @@ export class Module extends Variable implements type.Module {
       );
     }
     for (const [name, module] of mdl.modules) {
-      all = module.referencedModels(all);
+      all = module.referencedModels(project, all);
     }
     return all;
   }
@@ -463,19 +455,13 @@ export class Reference extends Variable implements type.Reference {
 
   constructor(conn: xmile.Connection) {
     super();
-    // FIXME: there is maybe something cleaner to do here?
-    this.xmile = undefined;
     this.xmileConn = conn;
     this.ident = conn.to;
     this.ptr = conn.from;
   }
 
-  code(v: type.Offsets): string | undefined {
-    return 'curr["' + this.ptr + '"]';
-  }
-
-  lessThan(that: Variable): boolean {
-    return that.getDeps().has(this.ptr);
+  code(parent: type.Model, offsets: Map<string, number>): string | undefined {
+    return `curr["${this.ptr}"]`;
   }
 
   isConst(): boolean {
