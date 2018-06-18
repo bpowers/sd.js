@@ -21,7 +21,7 @@ function swap(array: any[], a: number, b: number): void {
 // partition used in quicksort, based off pseudocode
 // on wikipedia
 export function partition<T>(
-  array: Array<T>,
+  array: T[],
   cmp: Comparator<T>,
   l: number,
   r: number,
@@ -50,7 +50,7 @@ export interface Comparator<T> {
  *  Quicksort implementation, sorts in place.
  */
 export function sort<T>(
-  array: Array<T>,
+  array: T[],
   cmp: Comparator<T>,
   l = 0,
   r = array.length - 1,

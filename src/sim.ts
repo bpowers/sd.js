@@ -324,6 +324,9 @@ export class Sim {
     }
     for (const v of runStocks) {
       const ident = defined(v.ident);
+      if (isRef(ident)) {
+        continue;
+      }
       if (v instanceof vars.Module) {
         cs.push('this.modules["' + ident + '"].calcStocks(dt, curr, next);');
       } else if (!v.hasOwnProperty('initial')) {
