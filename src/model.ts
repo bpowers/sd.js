@@ -142,32 +142,37 @@ export class Model implements type.Model {
   }
 
   private instantiateImplicitModules(): Error | null {
-    for (const [name, v] of this.vars) {
-      const visitor = new BuiltinVisitor(this.project, this, v);
+    let additionalVars = Map<string, vars.Variable>();
+    this.vars = this.vars.map(
+      (v: vars.Variable): vars.Variable => {
+        const visitor = new BuiltinVisitor(this.project, this, v);
 
-      // check for builtins that require module instantiations
-      if (!v.ast) {
-        continue;
-      }
-
-      const ast = v.ast.walk(visitor);
-      if (visitor.didRewrite) {
-        v.setAST(ast);
-      }
-
-      for (const [name, v] of visitor.vars) {
-        if (this.vars.has(name)) {
-          throw new Error('builtin walk error, duplicate ' + name);
+        // check for builtins that require module instantiations
+        if (!v.ast) {
+          return v;
         }
-        this.vars = this.vars.set(name, v);
-      }
-      for (const [name, mod] of visitor.modules) {
-        if (this.modules.has(name)) {
-          throw new Error('builtin walk error, duplicate ' + name);
+
+        const ast = v.ast.walk(visitor);
+        if (visitor.didRewrite) {
+          v = v.setAST(ast);
         }
-        this.modules = this.modules.set(name, mod);
-      }
-    }
+
+        for (const [name, v] of visitor.vars) {
+          if (this.vars.has(name)) {
+            throw new Error('builtin walk error, duplicate ' + name);
+          }
+          additionalVars = additionalVars.set(name, v);
+        }
+        for (const [name, mod] of visitor.modules) {
+          if (this.modules.has(name)) {
+            throw new Error('builtin walk error, duplicate ' + name);
+          }
+          this.modules = this.modules.set(name, mod);
+        }
+        return v;
+      },
+    );
+    this.vars = this.vars.merge(additionalVars);
 
     for (const [name, mod] of this.modules) {
       mod.updateRefs(this);

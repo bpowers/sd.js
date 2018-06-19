@@ -172,46 +172,40 @@ const variableDefaults = {
   deps: Set<string>(),
 };
 
-export class Variable implements type.Variable {
-  readonly xmile: xmile.Variable | undefined;
-  readonly valid: boolean = false;
-  readonly ident: string | undefined;
-  readonly eqn: string | undefined;
-  ast: ast.Node | undefined;
-  deps: Set<string> = Set();
-
+export class Variable extends Record(variableDefaults) implements type.Variable {
   constructor(xVar?: xmile.Variable) {
-    this.xmile = xVar;
+    const variable = Object.assign({}, variableDefaults);
+    variable.xmile = xVar;
 
-    this.ident = xVar && xVar.name ? xVar.ident : undefined;
-    this.eqn = xVar && xVar.eqn;
+    variable.ident = xVar && xVar.name ? xVar.ident : undefined;
+    variable.eqn = xVar && xVar.eqn;
 
-    if (this.eqn) {
-      const [ast, errs] = parse.eqn(this.eqn);
+    if (variable.eqn) {
+      const [ast, errs] = parse.eqn(variable.eqn);
       if (ast) {
-        this.ast = ast || undefined;
-        this.valid = true;
+        variable.ast = ast || undefined;
+        variable.valid = true;
       }
     }
 
     // for a flow or aux, we depend on variables that aren't built
     // in functions in the equation.
     if (xVar && xVar.type === 'module') {
-      this.deps = Set<string>();
+      variable.deps = Set<string>();
       if (xVar.connections) {
         for (const conn of xVar.connections) {
           const ref = new Reference(conn);
-          this.deps = this.deps.add(ref.ptr);
+          variable.deps = variable.deps.add(ref.ptr);
         }
       }
     } else {
-      this.deps = identifierSet(this.ast);
+      variable.deps = identifierSet(variable.ast);
     }
+    super(variable);
   }
 
-  setAST(ast: ast.Node): void {
-    this.ast = ast;
-    this.deps = identifierSet(this.ast);
+  setAST(ast: ast.Node): Variable {
+    return this.set('ast', ast).set('deps', identifierSet(ast));
   }
 
   // returns a string of this variables initial equation. suitable for
@@ -400,6 +394,8 @@ export class Module extends Variable implements type.Module {
       if (!v.ident || model.modules.has(v.ident)) {
         continue;
       }
+
+      // FIXME:  I'm pretty sure this doesn't make any sense
 
       // account for references into a child module
       const deps = v.deps;
