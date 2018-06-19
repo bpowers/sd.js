@@ -6,22 +6,22 @@
 
 import { List, Map, Set } from 'immutable';
 
-import { defined } from './common';
-
 import * as ast from './ast';
 import * as common from './common';
 import * as type from './type';
-import * as vars from './vars';
 import * as xmile from './xmile';
+
+import { defined } from './common';
+import { Module, Stock, Table, Variable } from './vars';
 
 export class Model implements type.Model {
   name: string;
   valid: boolean;
   project: type.Project;
   xModel: xmile.Model;
-  modules: Map<string, vars.Module> = Map();
-  tables: Map<string, vars.Table> = Map();
-  vars: Map<string, vars.Variable> = Map();
+  modules: Map<string, Module>;
+  tables: Map<string, Table>;
+  vars: Map<string, Variable>;
 
   private spec?: type.SimSpec;
 
@@ -31,7 +31,18 @@ export class Model implements type.Model {
 
     this.name = ident;
 
-    this.parseVars(xModel.variables);
+    const [vars, modules, tables, err] = Model.parseVars(project, xModel.variables);
+    if (err !== undefined) {
+      throw err;
+    }
+
+    for (const [name, mod] of defined(modules)) {
+      mod.updateRefs(this);
+    }
+
+    this.vars = defined(vars);
+    this.modules = defined(modules);
+    this.tables = defined(tables);
 
     this.spec = xModel.simSpec;
     this.valid = true;
@@ -72,7 +83,15 @@ export class Model implements type.Model {
   /**
    * Validates & figures out all necessary variable information.
    */
-  private parseVars(variables: List<xmile.Variable>): Error | null {
+  private static parseVars(
+    project: type.Project,
+    variables: List<xmile.Variable>,
+  ):
+    | [Map<string, Variable>, Map<string, Module>, Map<string, Table>, undefined]
+    | [undefined, undefined, undefined, Error] {
+    let vars = Map<string, Variable>();
+    let modules = Map<string, Module>();
+    let tables = Map<string, Table>();
     for (const v of variables) {
       // IMPORTANT: we need to use the canonicalized
       // identifier, not the 'xmile name', which is
@@ -80,62 +99,71 @@ export class Model implements type.Model {
       const ident = v.ident;
 
       // FIXME: is this too simplistic?
-      if (this.vars.has(ident)) {
-        return new Error('duplicate var ' + ident);
+      if (vars.has(ident)) {
+        return [undefined, undefined, undefined, new Error('duplicate var ' + ident)];
       }
 
       switch (v.type) {
         case 'module':
-          const module = new vars.Module(v);
-          this.modules = this.modules.set(ident, module);
-          this.vars = this.vars.set(ident, module);
+          const module = new Module(v);
+          modules = modules.set(ident, module);
+          vars = vars.set(ident, module);
           break;
         case 'stock':
-          const stock = new vars.Stock(v);
-          this.vars = this.vars.set(ident, stock);
+          const stock = new Stock(v);
+          vars = vars.set(ident, stock);
           break;
         case 'aux':
           // FIXME: fix Variable/GF/Table nonsense
-          let aux: vars.Variable | null = null;
+          let aux: Variable | null = null;
           if (v.gf) {
-            const table = new vars.Table(v);
+            const table = new Table(v);
             if (table.ok) {
-              this.tables = this.tables.set(ident, table);
+              tables = tables.set(ident, table);
               aux = table;
             }
           }
           if (aux === null) {
-            aux = new vars.Variable(v);
+            aux = new Variable(v);
           }
-          this.vars = this.vars.set(ident, aux);
+          vars = vars.set(ident, aux);
           break;
         case 'flow':
-          let flow: vars.Variable | null = null;
+          let flow: Variable | null = null;
           if (v.gf) {
-            const table = new vars.Table(v);
+            const table = new Table(v);
             if (table.ok) {
-              this.tables = this.tables.set(ident, table);
+              tables = tables.set(ident, table);
               flow = table;
             }
           }
           if (flow === null) {
-            flow = new vars.Variable(v);
+            flow = new Variable(v);
           }
-          this.vars = this.vars.set(ident, flow);
+          vars = vars.set(ident, flow);
           break;
         default:
           throw new Error('unreachable: unknown type "' + v.type + '"');
       }
     }
 
-    return this.instantiateImplicitModules();
+    const [vars2, modules2, err] = Model.instantiateImplicitModules(project, vars);
+    if (err) {
+      return [undefined, undefined, undefined, err];
+    }
+
+    return [defined(vars2), defined(modules2).merge(modules), tables, undefined];
   }
 
-  private instantiateImplicitModules(): Error | null {
-    let additionalVars = Map<string, vars.Variable>();
-    this.vars = this.vars.map(
-      (v: vars.Variable): vars.Variable => {
-        const visitor = new BuiltinVisitor(this.project, this, v);
+  private static instantiateImplicitModules(
+    project: type.Project,
+    vars: Map<string, Variable>,
+  ): [Map<string, Variable>, Map<string, Module>, undefined] | [undefined, undefined, Error] {
+    let modules = Map<string, Module>();
+    let additionalVars = Map<string, Variable>();
+    vars = vars.map(
+      (v: Variable): Variable => {
+        const visitor = new BuiltinVisitor(project, v);
 
         // check for builtins that require module instantiations
         if (!v.ast) {
@@ -148,27 +176,23 @@ export class Model implements type.Model {
         }
 
         for (const [name, v] of visitor.vars) {
-          if (this.vars.has(name)) {
+          if (vars.has(name)) {
             throw new Error('builtin walk error, duplicate ' + name);
           }
           additionalVars = additionalVars.set(name, v);
         }
         for (const [name, mod] of visitor.modules) {
-          if (this.modules.has(name)) {
+          if (modules.has(name)) {
             throw new Error('builtin walk error, duplicate ' + name);
           }
-          this.modules = this.modules.set(name, mod);
+          modules = modules.set(name, mod);
         }
         return v;
       },
     );
-    this.vars = this.vars.merge(additionalVars);
+    vars = vars.merge(additionalVars);
 
-    for (const [name, mod] of this.modules) {
-      mod.updateRefs(this);
-    }
-
-    return null;
+    return [vars, modules, undefined];
   }
 }
 
@@ -188,15 +212,13 @@ const stdlibArgs: { [n: string]: string[] } = {
 // that are actually module instantiations
 class BuiltinVisitor implements ast.Visitor<ast.Node> {
   project: type.Project;
-  model: Model;
   variable: type.Variable;
-  modules: Map<string, vars.Module> = Map();
-  vars: Map<string, vars.Variable> = Map();
+  modules: Map<string, Module> = Map();
+  vars: Map<string, Variable> = Map();
   n: number = 0;
 
-  constructor(project: type.Project, m: Model, v: type.Variable) {
+  constructor(project: type.Project, v: type.Variable) {
     this.project = project;
-    this.model = m;
     this.variable = v;
   }
 
@@ -241,7 +263,7 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
           name: `$·${this.variable.ident}·${this.n}·arg${i}`,
           eqn: arg.walk(new PrintVisitor()),
         } as any);
-        const proxyVar = new vars.Variable(xVar);
+        const proxyVar = new Variable(xVar);
         this.vars = this.vars.set(defined(proxyVar.ident), proxyVar);
         identArgs.push(defined(proxyVar.ident));
       }
@@ -267,7 +289,7 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
       xMod = xMod.update('connections', conns => (conns || List()).push(conn));
     }
 
-    const module = new vars.Module(xMod);
+    const module = new Module(xMod);
     this.modules = this.modules.set(modName, module);
     this.vars = this.vars.set(modName, module);
 
