@@ -917,7 +917,7 @@ export class Format extends Record(FormatDefaults) implements XNode {
   }
 }
 
-type VariableType = 'flow' | 'module' | 'stock' | 'aux' | 'connector';
+type VariableType = 'flow' | 'module' | 'stock' | 'aux' | 'connector' | 'reference';
 
 const VariableDefaults = {
   type: 'aux' as VariableType,
@@ -958,7 +958,7 @@ const VariableDefaults = {
 
 // TODO: split into multiple subclasses?
 export class Variable extends Record(VariableDefaults) implements XNode {
-  constructor(variable: typeof VariableDefaults) {
+  constructor(variable: Partial<typeof VariableDefaults>) {
     super(variable);
   }
 

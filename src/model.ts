@@ -12,13 +12,8 @@ import * as ast from './ast';
 import * as common from './common';
 import * as sim from './sim';
 import * as type from './type';
-import * as util from './util';
 import * as vars from './vars';
 import * as xmile from './xmile';
-
-const identifierSet = vars.identifierSet;
-
-const VAR_TYPES = Set<string>(['module', 'stock', 'aux', 'flow']);
 
 export class Model implements type.Model {
   name: string;
@@ -27,7 +22,7 @@ export class Model implements type.Model {
   xModel: xmile.Model;
   modules: Map<string, type.Module> = Map();
   tables: Map<string, type.Table> = Map();
-  vars: Map<string, type.Variable> = Map();
+  vars: Map<string, vars.Variable> = Map();
 
   private spec?: type.SimSpec;
 
@@ -111,7 +106,7 @@ export class Model implements type.Model {
           break;
         case 'aux':
           // FIXME: fix Variable/GF/Table nonsense
-          let aux: type.Variable | null = null;
+          let aux: vars.Variable | null = null;
           if (v.gf) {
             const table = new vars.Table(v);
             if (table.ok) {
@@ -125,7 +120,7 @@ export class Model implements type.Model {
           this.vars = this.vars.set(ident, aux);
           break;
         case 'flow':
-          let flow: type.Variable | null = null;
+          let flow: vars.Variable | null = null;
           if (v.gf) {
             const table = new vars.Table(v);
             if (table.ok) {
@@ -151,8 +146,13 @@ export class Model implements type.Model {
       const visitor = new BuiltinVisitor(this.project, this, v);
 
       // check for builtins that require module instantiations
-      if (v.ast) {
-        v.ast = v.ast.walk(visitor);
+      if (!v.ast) {
+        continue;
+      }
+
+      const ast = v.ast.walk(visitor);
+      if (visitor.didRewrite) {
+        v.setAST(ast);
       }
 
       for (const [name, v] of visitor.vars) {
@@ -167,10 +167,6 @@ export class Model implements type.Model {
         }
         this.modules = this.modules.set(name, mod);
       }
-
-      // if we rewrote the AST, make sure to update our dependencies
-      v.deps = identifierSet(v.ast);
-      v.allDeps = undefined;
     }
 
     for (const [name, mod] of this.modules) {
@@ -200,13 +196,17 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
   model: Model;
   variable: type.Variable;
   modules: Map<string, type.Module> = Map();
-  vars: Map<string, type.Variable> = Map();
+  vars: Map<string, vars.Variable> = Map();
   n: number = 0;
 
   constructor(project: type.Project, m: Model, v: type.Variable) {
     this.project = project;
     this.model = m;
     this.variable = v;
+  }
+
+  get didRewrite(): boolean {
+    return this.n > 0;
   }
 
   ident(n: ast.Ident): ast.Node {
@@ -243,7 +243,7 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
       } else {
         const xVar = new xmile.Variable({
           type: 'aux',
-          name: '$·' + this.variable.ident + '·' + this.n + '·arg' + i,
+          name: `$·${this.variable.ident}·${this.n}·arg${i}`,
           eqn: arg.walk(new PrintVisitor()),
         } as any);
         const proxyVar = new vars.Variable(xVar);
@@ -252,11 +252,11 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
       }
     }
 
-    const modName = '$·' + this.variable.ident + '·' + this.n + '·' + fn;
+    const modName = `$·${this.variable.ident}·${this.n}·${fn}`;
     let xMod = new xmile.Variable({
       type: 'module',
       name: modName,
-      model: 'stdlib·' + fn,
+      model: `stdlib·${fn}`,
       connections: List<xmile.Connection>(),
     } as any);
 

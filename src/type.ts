@@ -71,17 +71,14 @@ export class ModelDef extends Record(modelDefDefaults) {
 }
 
 export interface Variable {
-  xmile?: xmile.Variable;
+  readonly xmile: xmile.Variable | undefined;
 
-  ident?: string;
-  eqn?: string;
+  readonly ident?: string;
+  readonly eqn?: string;
 
-  ast?: any; // FIXME: this is any to fix circular deps
+  readonly ast?: any; // FIXME: this is any to fix circular deps
 
-  model?: Model;
-
-  deps: Set<string>;
-  allDeps?: Set<string>;
+  readonly deps: Set<string>;
 
   isConst(): boolean;
   getDeps(parent: Model, project: Project): Set<string>;

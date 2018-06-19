@@ -5,7 +5,7 @@
 // FIXME: this seems to fix a bug in Typescript 1.5
 declare function isFinite(n: string | number): boolean;
 
-import { List, Map, Set } from 'immutable';
+import { List, Map, Record, Set } from 'immutable';
 
 import { builtins, defined, exists } from './common';
 
@@ -163,42 +163,54 @@ export class CodegenVisitor implements ast.Visitor<boolean> {
   }
 }
 
-export class Variable implements type.Variable {
-  xmile?: xmile.Variable;
-  valid: boolean = false;
-  ident?: string;
-  eqn?: string;
-  ast?: ast.Node;
+const variableDefaults = {
+  xmile: undefined as xmile.Variable | undefined,
+  valid: false as boolean,
+  ident: undefined as string | undefined,
+  eqn: undefined as string | undefined,
+  ast: undefined as ast.Node | undefined,
+  deps: Set<string>(),
+};
 
-  deps: Set<string>;
-  allDeps?: Set<string>;
+export class Variable implements type.Variable {
+  readonly xmile: xmile.Variable | undefined;
+  readonly valid: boolean = false;
+  readonly ident: string | undefined;
+  readonly eqn: string | undefined;
+  ast: ast.Node | undefined;
+  deps: Set<string> = Set();
 
   constructor(xVar?: xmile.Variable) {
-    if (!arguments.length) {
-      return;
-    }
     this.xmile = xVar;
 
     this.ident = xVar && xVar.name ? xVar.ident : undefined;
     this.eqn = xVar && xVar.eqn;
 
-    if (!this.eqn) {
-      return;
-    }
-    const [ast, errs] = parse.eqn(this.eqn);
-    if (errs) {
-      // console.log('// parse failed for ' + this.ident + ': ' + errs[0]);
-      return;
-    } else if (!ast) {
-      // console.log('// parse failed for ' + this.ident + ': no ast');
-      return;
-    } else {
-      this.ast = ast || undefined;
-      this.valid = true;
+    if (this.eqn) {
+      const [ast, errs] = parse.eqn(this.eqn);
+      if (ast) {
+        this.ast = ast || undefined;
+        this.valid = true;
+      }
     }
 
     // for a flow or aux, we depend on variables that aren't built
     // in functions in the equation.
+    if (xVar && xVar.type === 'module') {
+      this.deps = Set<string>();
+      if (xVar.connections) {
+        for (const conn of xVar.connections) {
+          const ref = new Reference(conn);
+          this.deps = this.deps.add(ref.ptr);
+        }
+      }
+    } else {
+      this.deps = identifierSet(this.ast);
+    }
+  }
+
+  setAST(ast: ast.Node): void {
+    this.ast = ast;
     this.deps = identifierSet(this.ast);
   }
 
@@ -224,9 +236,6 @@ export class Variable implements type.Variable {
   }
 
   getDeps(parent: type.Model, project: type.Project): Set<string> {
-    if (this.allDeps) {
-      return this.allDeps;
-    }
     let allDeps = Set<string>();
     for (const n of this.deps) {
       if (allDeps.has(n)) {
@@ -241,7 +250,6 @@ export class Variable implements type.Variable {
         allDeps = allDeps.add(nn);
       }
     }
-    this.allDeps = allDeps;
     return allDeps;
   }
 
@@ -332,14 +340,12 @@ export class Table extends Variable {
 }
 
 export class Module extends Variable implements type.Module {
-  modelName: string;
-  refs: Map<string, Reference>;
+  readonly modelName: string;
+  refs: Map<string, Reference> = Map();
 
   constructor(xVar: xmile.Variable) {
     super(xVar);
 
-    this.xmile = xVar;
-    this.ident = xVar.ident;
     // This is a deviation from the XMILE spec, but is the
     // only thing that makes sense -- having a 1 to 1
     // relationship between model name and module name
@@ -347,23 +353,18 @@ export class Module extends Variable implements type.Module {
     if (xVar.model) {
       this.modelName = xVar.model;
     } else {
-      this.modelName = this.ident;
+      this.modelName = defined(xVar.ident);
     }
-    this.refs = Map();
-    this.deps = Set<string>();
+
     if (xVar.connections) {
       for (const conn of xVar.connections) {
         const ref = new Reference(conn);
         this.refs = this.refs.set(defined(ref.ident), ref);
-        this.deps = this.deps.add(ref.ptr);
       }
     }
   }
 
   getDeps(parent: type.Model, project: type.Project): Set<string> {
-    if (this.allDeps) {
-      return this.allDeps;
-    }
     let allDeps = Set<string>();
     for (let n of this.deps) {
       if (allDeps.has(n)) {
@@ -390,7 +391,6 @@ export class Module extends Variable implements type.Module {
         allDeps = allDeps.add(nn);
       }
     }
-    this.allDeps = allDeps;
     return allDeps;
   }
 
@@ -454,9 +454,8 @@ export class Reference extends Variable implements type.Reference {
   ptr: string;
 
   constructor(conn: xmile.Connection) {
-    super();
+    super(new xmile.Variable({ name: conn.to }));
     this.xmileConn = conn;
-    this.ident = conn.to;
     this.ptr = conn.from;
   }
 
