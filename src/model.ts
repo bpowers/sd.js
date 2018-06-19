@@ -10,7 +10,6 @@ import { defined } from './common';
 
 import * as ast from './ast';
 import * as common from './common';
-import * as sim from './sim';
 import * as type from './type';
 import * as vars from './vars';
 import * as xmile from './xmile';
@@ -20,8 +19,8 @@ export class Model implements type.Model {
   valid: boolean;
   project: type.Project;
   xModel: xmile.Model;
-  modules: Map<string, type.Module> = Map();
-  tables: Map<string, type.Table> = Map();
+  modules: Map<string, vars.Module> = Map();
+  tables: Map<string, vars.Table> = Map();
   vars: Map<string, vars.Variable> = Map();
 
   private spec?: type.SimSpec;
@@ -68,15 +67,6 @@ export class Model implements type.Model {
       return undefined;
     }
     return nextModel.lookup(parts.slice(1).join('.'));
-  }
-
-  sim(isStandalone: boolean): sim.Sim {
-    if (this.name !== 'main') {
-      // mod = new vars.Module(this.project, null, 'main', this.name);
-      throw new Error('FIXME: sim of non-main model');
-    }
-    const mod = this.project.main;
-    return new sim.Sim(this.project, mod, isStandalone);
   }
 
   /**
@@ -200,7 +190,7 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
   project: type.Project;
   model: Model;
   variable: type.Variable;
-  modules: Map<string, type.Module> = Map();
+  modules: Map<string, vars.Module> = Map();
   vars: Map<string, vars.Variable> = Map();
   n: number = 0;
 

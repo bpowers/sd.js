@@ -9,10 +9,9 @@ import { Project } from './project';
 
 export { Model } from './model';
 export { Project } from './project';
-
-export { Stock } from './vars';
-
+export { Sim } from './sim';
 export { Variable } from './type';
+export { Stock } from './vars';
 export { FileFromJSON, View, ViewElement } from './xmile';
 
 export const Error = common.Error;

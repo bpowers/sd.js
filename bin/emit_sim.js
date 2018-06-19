@@ -1,22 +1,24 @@
 #!/usr/bin/env node
 
-DOMParser = require('xmldom').DOMParser;
-Mustache = require('mustache');
+const fs = require('fs');
+const sd = require('../lib/sd');
 
-var fs = require('fs');
-var sd = require('../lib/sd');
+const DOMParser = require('xmldom').DOMParser;
+const promisify = require('util').promisify;
+const readFile = promisify(fs.readFile);
 
-var argv = process.argv;
-if (argv.length < 3) {
-  console.log('usage: ./emit_sim.js XMILE_FILE');
-  process.exit(1);
-}
+const main = async () => {
+  const argv = process.argv;
+  if (argv.length < 3) {
+    console.log('usage: ./emit_sim.js XMILE_FILE');
+    process.exit(1);
+  }
 
-fs.readFile(argv[2], function(err, data) {
-  var xml = new DOMParser().parseFromString(data.toString(), 'application/xml');
-  var ctx = new sd.Project(xml);
-  var mdl = ctx.model();
-  var sim = mdl.sim(true);
+  const data = await readFile(argv[2]);
+  const xml = new DOMParser().parseFromString(data.toString(), 'application/xml');
+  const project = new sd.Project(xml);
+  // called for the side effect
+  new sd.Sim(project, project.main, true);
+};
 
-  // console.log(JSON.stringify(ctx.files[0], null, '    '));
-});
+main();
