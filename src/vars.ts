@@ -253,9 +253,9 @@ export class Variable extends Record(variableDefaults) implements type.Variable 
 }
 
 export class Stock extends Variable {
-  initial: string;
-  inflows: List<string>;
-  outflows: List<string>;
+  readonly initial: string;
+  readonly inflows: List<string>;
+  readonly outflows: List<string>;
 
   constructor(xVar: xmile.Variable) {
     super(xVar);
@@ -289,9 +289,9 @@ export class Stock extends Variable {
 }
 
 export class Table extends Variable {
-  x: List<number> = List();
-  y: List<number> = List();
-  ok: boolean = true;
+  readonly x: List<number> = List();
+  readonly y: List<number> = List();
+  readonly ok: boolean = true;
 
   constructor(xVar: xmile.Variable) {
     super(xVar);
@@ -335,7 +335,7 @@ export class Table extends Variable {
 
 export class Module extends Variable implements type.Module {
   readonly modelName: string;
-  refs: Map<string, Reference> = Map();
+  readonly refs: Map<string, Reference> = Map();
 
   constructor(xVar: xmile.Variable) {
     super(xVar);
@@ -410,7 +410,7 @@ export class Module extends Variable implements type.Module {
           to: name,
         });
         const ref = new Reference(conn);
-        this.refs = this.refs.set(defined(ref.ident), ref);
+        // this.refs = this.refs.set(defined(ref.ident), ref);
       }
     }
   }
@@ -446,8 +446,8 @@ export class Module extends Variable implements type.Module {
 }
 
 export class Reference extends Variable implements type.Reference {
-  xmileConn: xmile.Connection;
-  ptr: string;
+  readonly xmileConn: xmile.Connection;
+  readonly ptr: string;
 
   constructor(conn: xmile.Connection) {
     super(new xmile.Variable({ name: conn.to }));
