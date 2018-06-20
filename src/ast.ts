@@ -5,7 +5,7 @@
 import { Record } from 'immutable';
 
 import { canonicalize } from './common';
-import { SourceLoc, Token } from './type';
+import { SourceLoc, Token, UnknownSourceLoc } from './type';
 
 export interface Node {
   pos: SourceLoc;
@@ -23,6 +23,11 @@ export interface Visitor<T> {
   unary(n: UnaryExpr): T;
   binary(n: BinaryExpr): T;
 }
+
+const identDefaults = {
+  ident: '' as string,
+  pos: UnknownSourceLoc,
+};
 
 export class Ident implements Node {
   ident: string;

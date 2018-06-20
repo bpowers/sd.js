@@ -106,21 +106,34 @@ export const enum TokenType {
   NUMBER,
 }
 
-export class SourceLoc {
-  constructor(public line: number, public pos: number) {}
+const sourceLocDefaults = {
+  line: -1,
+  pos: -1,
+};
+
+export class SourceLoc extends Record(sourceLocDefaults) {
+  constructor(line: number, pos: number) {
+    super({ line, pos });
+  }
 
   off(n: number): SourceLoc {
     return new SourceLoc(this.line, this.pos + n);
   }
 }
 
-export class Token {
-  constructor(
-    public tok: string,
-    public type: TokenType,
-    public startLoc: SourceLoc,
-    public endLoc: SourceLoc,
-  ) {}
+export const UnknownSourceLoc = new SourceLoc(-1, -1);
+
+const tokenDefaults = {
+  tok: '',
+  type: TokenType.TOKEN,
+  startLoc: UnknownSourceLoc,
+  endLoc: UnknownSourceLoc,
+};
+
+export class Token extends Record(tokenDefaults) {
+  constructor(tok: string, type: TokenType, startLoc: SourceLoc, endLoc: SourceLoc) {
+    super({ endLoc, startLoc, tok, type });
+  }
 
   get value(): number {
     if (this.type !== TokenType.NUMBER) {
