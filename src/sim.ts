@@ -4,7 +4,7 @@
 
 'use strict';
 
-import { Map, Set } from 'immutable';
+import { List, Map, Set } from 'immutable';
 
 import * as Mustache from 'mustache';
 
@@ -158,25 +158,31 @@ class VarComparator implements util.Comparator<type.Variable> {
 export class Sim {
   root: type.Module;
   project: type.Project;
-  seq: number;
-  promised: any;
-  idSeq: any;
+  seq: number = 1; // unique message ids
+  // callback storage, keyed by message id
+  promised: Map<number, (result: any, err: any) => void> = Map();
+  // variable offset sequence.  Time is always offset 0 for the main model
+  idSeq: Map<string, number> = Map();
   worker?: Worker;
 
   constructor(project: type.Project, root: type.Module, isStandalone: boolean) {
     this.root = root;
     this.project = project;
-    this.seq = 1; // message id sequence
-    this.promised = {}; // callback storage, keyed by message id
-    this.idSeq = {}; // variable offset sequence.  Time is always offset 0
+
+    // We start with a project (our context), and a module.  Next
+    // we find all of the models (like the main model, stdlib
+    // functions, and any user-defined modules), compile them to
+    // JS classes, template out the whole thing to a string, and
+    // either write it to stdout or a Worker.
 
     const models = root.referencedModels(project);
+
     const compiledModels: TemplateContext[] = [];
     for (const [n, modelDef] of models) {
       if (n === 'main') {
-        this.idSeq[n] = 1; // add 1 for time
+        this.idSeq = this.idSeq.set(n, 1); // add 1 for time
       } else {
-        this.idSeq[n] = 0;
+        this.idSeq = this.idSeq.set(n, 0);
       }
       if (!modelDef.model) {
         throw new Error('expected a model');
@@ -184,13 +190,7 @@ export class Sim {
       compiledModels.push(this._process(modelDef.model, modelDef.modules));
     }
 
-    const mainRefs: any[] = [];
-    for (const [ref, ptr] of root.refs) {
-      mainRefs.push({
-        name: ref,
-        ptr,
-      });
-    }
+    const mainRefs = root.refs;
     console.log('// mainRefs: ' + JSON.stringify(root.refs));
 
     {
@@ -208,14 +208,13 @@ export class Sim {
       const blob = new Blob([source], { type: 'text/javascript' });
       this.worker = new Worker(window.URL.createObjectURL(blob));
     }
-    // FIXME: find any
     this.worker.addEventListener(
       'message',
-      (e: any): void => {
-        const id = e.data[0];
+      (e: MessageEvent): void => {
+        const id: number = e.data[0];
         const result = e.data[1];
-        const cb = this.promised[id];
-        delete this.promised[id];
+        const cb = this.promised.get(id);
+        this.promised = this.promised.delete(id);
         if (cb) {
           cb(result[0], result[1]);
         }
@@ -380,7 +379,9 @@ export class Sim {
   }
 
   nextID(modelName: string): number {
-    return this.idSeq[modelName]++;
+    const id = defined(this.idSeq.get(modelName));
+    this.idSeq = this.idSeq.set(modelName, id + 1);
+    return id;
   }
 
   // FIXME: any?
@@ -391,13 +392,13 @@ export class Sim {
       if (!this.worker) {
         return;
       }
-      this.promised[id] = (result: any, err: any) => {
+      this.promised.set(id, (result: any, err: any) => {
         if (err !== undefined && err !== null) {
           reject(err);
         } else {
           resolve(result);
         }
-      };
+      });
       this.worker.postMessage([id].concat(args));
     });
   }
