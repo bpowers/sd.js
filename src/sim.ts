@@ -187,7 +187,7 @@ export class Sim {
       if (!modelDef.model) {
         throw new Error('expected a model');
       }
-      compiledModels.push(this._process(modelDef.model, modelDef.modules));
+      compiledModels.push(this.compileModel(modelDef.model, modelDef.modules));
     }
 
     const mainRefs = root.refs;
@@ -222,7 +222,7 @@ export class Sim {
     );
   }
 
-  _process(model: type.Model, modules: Set<type.Module>): TemplateContext {
+  compileModel(model: type.Model, modules: Set<type.Module>): TemplateContext {
     const runInitials: type.Variable[] = [];
     const runFlows: type.Variable[] = [];
     const runStocks: type.Variable[] = [];
@@ -308,8 +308,9 @@ export class Sim {
         if (v.isConst()) {
           initials[ident] = parseFloat(defined(v.eqn));
         }
-        const result = vars.Variable.prototype.code.apply(v, [model, offsets]);
-        eqn = `curr[${defined(offsets.get(ident))}] = ${result};`;
+        const off = defined(offsets.get(ident));
+        const value = v.initialEquation(model, offsets);
+        eqn = `curr[${off}] = ${value};`;
       }
       ci.push(eqn);
     }
@@ -342,36 +343,25 @@ export class Sim {
         y: table.y,
       };
     }
-    let additional = '';
+
     const init: string[] = [];
     if (model.modules.size > 0) {
       // +1 for implicit time
-      if (model.ident === 'main') {
-        additional = ' + 1';
-      }
-      init.push('let off = Object.keys(this.offsets).length' + additional + ';');
+      const additional = model.ident === 'main' ? ' + 1' : '';
+      init.push(`let off = Object.keys(this.offsets).length${additional};`);
     }
     const mods: string[] = [];
     mods.push('{');
     for (const [n, module] of model.modules) {
-      init.push('const ' + n + 'Refs = {');
+      init.push(`const ${n}Refs = {`);
       for (const [refName, ref] of module.refs) {
-        init.push('    "' + refName + '": "' + ref.ptr + '",');
+        init.push(`    "${refName}": "${ref.ptr}",`);
       }
       init.push('};');
-      init.push(
-        'const ' +
-          n +
-          ' = new ' +
-          util.titleCase(module.modelName) +
-          '("' +
-          n +
-          '", this, off, ' +
-          n +
-          'Refs);',
-      );
-      init.push('off += ' + n + '.nVars;');
-      mods.push('    "' + n + '": ' + n + ',');
+      const modelName = util.titleCase(module.modelName);
+      init.push(`const ${n} = new ${modelName}("${n}", this, off, ${n}Refs);`);
+      init.push(`off += ${n}.nVars;`);
+      mods.push(`    "${n}": ${n},`);
     }
     mods.push('}');
 
@@ -385,7 +375,7 @@ export class Sim {
   }
 
   // FIXME: any?
-  _post(...args: any[]): Promise<any> {
+  private post(...args: any[]): Promise<any> {
     const id = this.seq++;
 
     return new Promise<any>((resolve, reject) => {
@@ -412,41 +402,41 @@ export class Sim {
   }
 
   reset(): Promise<any> {
-    return this._post('reset');
+    return this.post('reset');
   }
 
   setValue(name: string, val: number): Promise<any> {
-    return this._post('set_val', name, val);
+    return this.post('set_val', name, val);
   }
 
   value(...names: string[]): Promise<any> {
     const args = ['get_val'].concat(names);
-    return this._post.apply(this, args);
+    return this.post.apply(this, args);
   }
 
   series(...names: string[]): Promise<any> {
     const args = ['get_series'].concat(names);
-    return this._post.apply(this, args);
+    return this.post.apply(this, args);
   }
 
   dominance(overrides: { [n: string]: number }, indicators: string[]): Promise<any> {
-    return this._post('dominance', overrides, indicators);
+    return this.post('dominance', overrides, indicators);
   }
 
   runTo(time: number): Promise<any> {
-    return this._post('run_to', time);
+    return this.post('run_to', time);
   }
 
   runToEnd(): Promise<any> {
-    return this._post('run_to_end');
+    return this.post('run_to_end');
   }
 
   setDesiredSeries(names: string[]): Promise<any> {
-    return this._post('set_desired_series', names);
+    return this.post('set_desired_series', names);
   }
 
   varNames(includeHidden = false): Promise<any> {
-    return this._post('var_names', includeHidden);
+    return this.post('var_names', includeHidden);
   }
 
   async csv(delim: string = ','): Promise<string> {

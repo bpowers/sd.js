@@ -82,6 +82,7 @@ export interface Variable {
 
   isConst(): boolean;
   getDeps(parent: Model, project: Project): Set<string>;
+  initialEquation(parent: Model, offsets: Map<string, number>): string | undefined;
   code(parent: Model, offsets: Map<string, number>): string | undefined;
 }
 

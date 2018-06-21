@@ -189,8 +189,8 @@ export class Variable extends Record(variableDefaults) implements type.Variable 
 
   // returns a string of this variables initial equation. suitable for
   // exec()'ing
-  initialEquation(): string {
-    return this.eqn || '';
+  initialEquation(parent: type.Model, offsets: Map<string, number>): string | undefined {
+    return this.code(parent, offsets);
   }
 
   code(parent: type.Model, offsets: Map<string, number>): string | undefined {
@@ -245,8 +245,8 @@ export class Stock extends Variable {
 
   // FIXME: returns a string of this variables initial equation. suitable for
   // exec()'ing
-  initialEquation(): string {
-    return this.initial;
+  initialEquation(parent: type.Model, offset: Map<string, number>): string | undefined {
+    return super.code(parent, offset);
   }
 
   code(parent: type.Model, offset: Map<string, number>): string | undefined {
