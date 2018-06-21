@@ -23,119 +23,96 @@ const JsOps: Map<string, string> = Map({
   '=': '===',
 });
 
-// An AST visitor. after calling walk() on the root of an equation's
-// AST with an instance of this class, the visitor.code member will
-// contain a string with valid JS code to be emitted into the
-// Simulation Worker.
-export class CodegenVisitor implements ast.Visitor<boolean> {
-  offsets: Map<string, number>;
-  code: string = '';
-  isMain: boolean;
-  scope: string;
+const codegenVisitorDefaults = {
+  offsets: Map<string, number>(),
+  isMain: false,
+  scope: 'curr' as 'curr' | 'globalCurr',
+};
 
+// Converts an AST into a string of JavaScript
+export class CodegenVisitor extends Record(codegenVisitorDefaults) implements ast.Visitor<string> {
   constructor(offsets: Map<string, number>, isMain: boolean) {
-    this.offsets = offsets;
-    this.isMain = isMain;
-    this.scope = isMain ? 'curr' : 'globalCurr';
+    super({
+      offsets,
+      isMain,
+      scope: isMain ? 'curr' : 'globalCurr',
+    });
   }
 
-  ident(n: ast.Ident): boolean {
+  ident(n: ast.Ident): string {
     if (n.ident === 'time') {
-      this.refTime();
+      return this.refTime();
     } else if (this.offsets.has(n.ident)) {
-      this.refDirect(n.ident);
+      return this.refDirect(n.ident);
     } else {
-      this.refIndirect(n.ident);
+      return this.refIndirect(n.ident);
     }
-    return true;
   }
 
-  constant(n: ast.Constant): boolean {
-    this.code += '' + n.value;
-    return true;
+  constant(n: ast.Constant): string {
+    return `${n.value}`;
   }
 
-  call(n: ast.CallExpr): boolean {
+  call(n: ast.CallExpr): string {
     if (!ast.isIdent(n.fun)) {
-      console.log('// for now, only idents can be used as fns.');
-      console.log(n);
-      return false;
+      throw new Error(`only idents can be used as fns, not ${n.fun}`);
     }
+
     const fn = n.fun.ident;
     if (!builtins.has(fn)) {
-      console.log('// unknown builtin: ' + fn);
-      return false;
+      throw new Error(`unknown builtin: ${fn}`);
     }
-    this.code += fn;
-    this.code += '(';
+
+    let code = `${fn}(`;
     const builtin = defined(builtins.get(fn));
     if (builtin.usesTime) {
-      this.code += 'dt, ';
-      this.refTime();
+      code += `dt, ${this.refTime()}`;
       if (n.args.size) {
-        this.code += ', ';
+        code += ', ';
       }
     }
 
-    n.args.forEach((arg, i) => {
-      arg.walk(this);
-      if (i !== n.args.size - 1) {
-        this.code += ', ';
-      }
-    });
+    code += n.args.map(arg => arg.walk(this)).join(', ');
+    code += ')';
 
-    this.code += ')';
-    return true;
+    return code;
   }
 
-  if(n: ast.IfExpr): boolean {
+  if(n: ast.IfExpr): string {
+    const cond = n.cond.walk(this);
+    const t = n.t.walk(this);
+    const f = n.f.walk(this);
+
     // use the ternary operator for if statements
-    this.code += '(';
-    n.cond.walk(this);
-    this.code += ' ? ';
-    n.t.walk(this);
-    this.code += ' : ';
-    n.f.walk(this);
-    this.code += ')';
-    return true;
+    return `(${cond} ? ${t} : ${f})`;
   }
 
-  paren(n: ast.ParenExpr): boolean {
-    this.code += '(';
-    n.x.walk(this);
-    this.code += ')';
-    return true;
+  paren(n: ast.ParenExpr): string {
+    const x = n.x.walk(this);
+    return `(${x})`;
   }
 
-  unary(n: ast.UnaryExpr): boolean {
+  unary(n: ast.UnaryExpr): string {
     // if we're doing 'not', explicitly convert the result
     // back to a number.
     const op = n.op === '!' ? '+!' : n.op;
-    this.code += op;
-    n.x.walk(this);
-    return true;
+    const x = n.x.walk(this);
+    return `${op}${x}`;
   }
 
-  binary(n: ast.BinaryExpr): boolean {
+  binary(n: ast.BinaryExpr): string {
     // exponentiation isn't a builtin operator in JS, it
     // is implemented as a function in the Math module.
     if (n.op === '^') {
-      this.code += 'Math.pow(';
-      n.l.walk(this);
-      this.code += ',';
-      n.r.walk(this);
-      this.code += ')';
-      return true;
+      const l = n.l.walk(this);
+      const r = n.r.walk(this);
+      return `Math.pow(${l}, ${r})`;
     } else if (n.op === '=' && n.l instanceof ast.Constant && isNaN(n.l.value)) {
-      this.code += 'isNaN(';
-      n.r.walk(this);
-      this.code += ')';
-      return true;
+      const r = n.r.walk(this);
+      return `isNaN(${r})`;
     } else if (n.op === '=' && n.r instanceof ast.Constant && isNaN(n.r.value)) {
-      this.code += 'isNaN(';
-      n.l.walk(this);
-      this.code += ')';
-      return true;
+      const l = n.r.walk(this);
+      return `isNaN(${l})`;
     }
 
     let op = n.op;
@@ -143,30 +120,25 @@ export class CodegenVisitor implements ast.Visitor<boolean> {
     if (JsOps.has(n.op)) {
       op = defined(JsOps.get(n.op));
     }
-    this.code += '(';
-    n.l.walk(this);
-    this.code += op;
-    n.r.walk(this);
-    this.code += ')';
-    return true;
+
+    const l = n.l.walk(this);
+    const r = n.r.walk(this);
+    return `${l} ${op} ${r}`;
   }
 
   // the value of time in the current simulation step
-  private refTime(): void {
-    this.code += this.scope;
-    this.code += '[0]';
+  private refTime(): string {
+    return `${this.scope}[0]`;
   }
 
   // the value of an aux, stock, or flow in the current module
-  private refDirect(ident: string): void {
-    this.code += `curr[${defined(this.offsets.get(ident))}]`;
+  private refDirect(ident: string): string {
+    return `curr[${defined(this.offsets.get(ident))}]`;
   }
 
   // the value of an overridden module input
-  private refIndirect(ident: string): void {
-    this.code += "globalCurr[this.ref['";
-    this.code += ident;
-    this.code += "']]";
+  private refIndirect(ident: string): string {
+    return `globalCurr[this.ref['${ident}']]`;
   }
 }
 
@@ -227,13 +199,12 @@ export class Variable extends Record(variableDefaults) implements type.Variable 
     }
     const visitor = new CodegenVisitor(offsets, parent.ident === 'main');
 
-    const ok = defined(this.ast).walk(visitor);
-    if (!ok) {
+    try {
+      return defined(this.ast).walk(visitor);
+    } catch (e) {
       console.log('// codegen failed for ' + this.ident);
       return '';
     }
-
-    return visitor.code;
   }
 
   getDeps(parent: type.Model, project: type.Project): Set<string> {
