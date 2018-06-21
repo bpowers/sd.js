@@ -323,17 +323,17 @@ export class Sim {
     }
     for (const v of runStocks) {
       const ident = defined(v.ident);
+      // if a variable is a reference in this monomorphization of a
+      // model, no need to calculate + store a value
       if (isRef(ident)) {
         continue;
       }
       if (v instanceof vars.Module) {
-        cs.push('this.modules["' + ident + '"].calcStocks(dt, curr, next);');
-      } else if (!v.hasOwnProperty('initial')) {
-        cs.push(
-          'next[' + defined(offsets.get(ident)) + '] = curr[' + defined(offsets.get(ident)) + '];',
-        );
+        cs.push(`this.modules['${ident}'].calcStocks(dt, curr, next);`);
       } else {
-        cs.push('next[' + defined(offsets.get(ident)) + '] = ' + v.code(model, offsets) + ';');
+        const off = defined(offsets.get(ident));
+        const value = v instanceof vars.Stock ? v.code(model, offsets) : `curr[${off}]`;
+        cs.push(`next[${off}] = ${value};`);
       }
     }
     for (const [n, table] of model.tables) {
@@ -449,23 +449,13 @@ export class Sim {
     return this._post('var_names', includeHidden);
   }
 
-  csv(delim: string = ','): Promise<string> {
-    return new Promise((resolve, reject) => {
-      let vars: string[] | null = null;
-      this.varNames()
-        .then((names: string[]) => {
-          // save so that we have a stable/sorted
-          // iteration order
-          vars = names;
-          return this.series(...names);
-        })
-        .then((data: { [name: string]: type.Series }) => {
-          resolve(this.csvFromData(data, exists(vars), delim));
-        });
-    });
+  async csv(delim: string = ','): Promise<string> {
+    const names: string[] = await this.varNames();
+    const data: { [name: string]: type.Series } = await this.series(...names);
+    return Sim.csvFromData(data, names, delim);
   }
 
-  private csvFromData(
+  private static csvFromData(
     data: { [name: string]: type.Series },
     vars: string[],
     delim: string,
