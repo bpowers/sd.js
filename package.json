@@ -49,8 +49,8 @@
     "watch": "^1.0.2"
   },
   "scripts": {
-    "needs-format": "prettier --print-width 100 --single-quote --trailing-comma all -l \"src/*.ts\" \"test/*.ts\"",
-    "format": "prettier --print-width 100 --single-quote --trailing-comma all --write \"src/*.ts\" \"test/*.ts\"",
+    "needs-format": "prettier -l \"src/*.ts\" \"test/*.ts\"",
+    "format": "prettier --write \"src/*.ts\" \"test/*.ts\"",
     "lint": "yarn run tslint -c .tslint.json --project .tsconfig.lib-cjs.json",
     "test": "tsc -p .tsconfig.test.json && mocha",
     "build:pre": "node support/mkdirp.js build-rt lib build",
