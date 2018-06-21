@@ -2,16 +2,21 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-import { Record } from 'immutable';
+import { List, Record } from 'immutable';
 
 import { canonicalize } from './common';
 import { SourceLoc, Token, UnknownSourceLoc } from './type';
+
+// this is a gross hack to work around the mismatch of TypeScript
+// and immutable JS.
+const defaultNode: Node = (null as any) as Node;
 
 export interface Node {
   pos: SourceLoc;
   end: SourceLoc; // the char after this token
 
   walk<T>(v: Visitor<T>): T;
+  equals(other: any): boolean; // provided by Record
 }
 
 export interface Visitor<T> {
@@ -27,19 +32,18 @@ export interface Visitor<T> {
 const identDefaults = {
   ident: '' as string,
   pos: UnknownSourceLoc,
+  len: 0,
 };
 
-export class Ident implements Node {
-  ident: string;
-  pos: SourceLoc;
-  len: number;
-
+export class Ident extends Record(identDefaults) implements Node {
   constructor(pos: SourceLoc, name: string) {
-    this.ident = canonicalize(name);
-    this.pos = pos;
     // this.name is canonicalized, so we need to store the
     // original length.
-    this.len = name.length;
+    super({
+      ident: canonicalize(name),
+      len: name.length,
+      pos,
+    });
   }
 
   get end(): SourceLoc {
@@ -51,15 +55,23 @@ export class Ident implements Node {
   }
 }
 
-export class Constant implements Node {
-  value: number;
-  len: number;
-  pos: SourceLoc;
+export function isIdent(n: Node): n is Ident {
+  return n.constructor === Ident;
+}
 
+const constantDefaults = {
+  value: NaN,
+  len: -1,
+  pos: UnknownSourceLoc,
+};
+
+export class Constant extends Record(constantDefaults) implements Node {
   constructor(pos: SourceLoc, value: string) {
-    this.value = parseFloat(value);
-    this.pos = pos;
-    this.len = value.length;
+    super({
+      value: parseFloat(value),
+      len: value.length,
+      pos,
+    });
   }
 
   get end(): SourceLoc {
@@ -71,15 +83,15 @@ export class Constant implements Node {
   }
 }
 
-export class ParenExpr implements Node {
-  x: Node;
-  lPos: SourceLoc;
-  rPos: SourceLoc;
+const parenDefaults = {
+  x: defaultNode,
+  lPos: UnknownSourceLoc,
+  rPos: UnknownSourceLoc,
+};
 
+export class ParenExpr extends Record(parenDefaults) implements Node {
   constructor(lPos: SourceLoc, x: Node, rPos: SourceLoc) {
-    this.x = x;
-    this.lPos = lPos;
-    this.rPos = rPos;
+    super({ lPos, rPos, x });
   }
 
   get pos(): SourceLoc {
@@ -94,18 +106,16 @@ export class ParenExpr implements Node {
   }
 }
 
-export class CallExpr implements Node {
-  fun: Node;
-  args: Node[];
+const callDefaults = {
+  fun: defaultNode,
+  args: List<Node>(),
+  lParenPos: UnknownSourceLoc,
+  rParenPos: UnknownSourceLoc,
+};
 
-  lParenPos: SourceLoc;
-  rParenPos: SourceLoc;
-
-  constructor(fun: Node, lParenPos: SourceLoc, args: Node[], rParenPos: SourceLoc) {
-    this.fun = fun;
-    this.args = args;
-    this.lParenPos = lParenPos;
-    this.rParenPos = rParenPos;
+export class CallExpr extends Record(callDefaults) implements Node {
+  constructor(fun: Node, lParenPos: SourceLoc, args: List<Node>, rParenPos: SourceLoc) {
+    super({ fun, args, lParenPos, rParenPos });
   }
 
   get pos(): SourceLoc {
@@ -120,15 +130,15 @@ export class CallExpr implements Node {
   }
 }
 
-export class UnaryExpr implements Node {
-  op: string;
-  x: Node;
-  opPos: SourceLoc;
+const unaryDefaults = {
+  op: '',
+  x: defaultNode,
+  opPos: UnknownSourceLoc,
+};
 
+export class UnaryExpr extends Record(unaryDefaults) implements Node {
   constructor(opPos: SourceLoc, op: string, x: Node) {
-    this.op = op;
-    this.x = x;
-    this.opPos = opPos;
+    super({ op, x, opPos });
   }
 
   get pos(): SourceLoc {
@@ -143,17 +153,16 @@ export class UnaryExpr implements Node {
   }
 }
 
-export class BinaryExpr implements Node {
-  op: string;
-  l: Node;
-  r: Node;
-  opPos: SourceLoc;
+const binaryDefaults = {
+  op: '',
+  l: defaultNode,
+  r: defaultNode,
+  opPos: UnknownSourceLoc,
+};
 
+export class BinaryExpr extends Record(binaryDefaults) implements Node {
   constructor(l: Node, opPos: SourceLoc, op: string, r: Node) {
-    this.l = l;
-    this.op = op;
-    this.r = r;
-    this.opPos = opPos;
+    super({ l, op, r, opPos });
   }
 
   get pos(): SourceLoc {
@@ -168,14 +177,16 @@ export class BinaryExpr implements Node {
   }
 }
 
-export class IfExpr implements Node {
-  cond: Node;
-  t: Node;
-  f: Node;
-  ifPos: SourceLoc;
-  thenPos: SourceLoc;
-  elsePos: SourceLoc;
+const ifDefaults = {
+  cond: defaultNode,
+  t: defaultNode,
+  f: defaultNode,
+  ifPos: UnknownSourceLoc,
+  thenPos: UnknownSourceLoc,
+  elsePos: UnknownSourceLoc,
+};
 
+export class IfExpr extends Record(ifDefaults) implements Node {
   constructor(
     ifPos: SourceLoc,
     cond: Node,
@@ -184,12 +195,7 @@ export class IfExpr implements Node {
     elsePos: SourceLoc,
     f: Node,
   ) {
-    this.cond = cond;
-    this.t = t;
-    this.f = f;
-    this.ifPos = ifPos;
-    this.thenPos = thenPos;
-    this.elsePos = elsePos;
+    super({ cond, t, f, ifPos, thenPos, elsePos });
   }
 
   get pos(): SourceLoc {

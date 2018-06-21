@@ -2,6 +2,8 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
+import { List } from 'immutable';
+
 import { BinaryExpr, CallExpr, Constant, Ident, IfExpr, Node, ParenExpr, UnaryExpr } from './ast';
 import { Lexer } from './lex';
 import { SourceLoc, Token, TokenType } from './type';
@@ -230,7 +232,7 @@ class Parser {
   }
 
   call(fn: Node, lParenLoc: SourceLoc): Node | null {
-    const args: Node[] = [];
+    let args = List<Node>();
 
     // no-arg call - simplifies logic to special case this.
     let rParenLoc: SourceLoc | null;
@@ -244,7 +246,7 @@ class Parser {
         this.errs.push('expected expression as arg in function call');
         return null;
       }
-      args.push(arg);
+      args = args.push(arg);
       if (this.consumeTok(',')) {
         continue;
       }

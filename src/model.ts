@@ -2,8 +2,6 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-'use strict';
-
 import { List, Map, Set } from 'immutable';
 
 import * as ast from './ast';
@@ -11,6 +9,7 @@ import * as common from './common';
 import * as type from './type';
 import * as xmile from './xmile';
 
+import { isIdent } from './ast';
 import { defined } from './common';
 import { Module, Stock, Table, Variable } from './vars';
 
@@ -196,17 +195,13 @@ export class Model implements type.Model {
   }
 }
 
-function isIdent(n: ast.Node): boolean {
-  return n.hasOwnProperty('ident');
-}
-
-const stdlibArgs: { [n: string]: string[] } = {
-  smth1: ['input', 'delay_time', 'initial_value'],
-  smth3: ['input', 'delay_time', 'initial_value'],
-  delay1: ['input', 'delay_time', 'initial_value'],
-  delay3: ['input', 'delay_time', 'initial_value'],
-  trend: ['input', 'delay_time', 'initial_value'],
-};
+const stdlibArgs = Map<string, List<string>>([
+  ['smth1', List(['input', 'delay_time', 'initial_value'])],
+  ['smth3', List(['input', 'delay_time', 'initial_value'])],
+  ['delay1', List(['input', 'delay_time', 'initial_value'])],
+  ['delay3', List(['input', 'delay_time', 'initial_value'])],
+  ['trend', List(['input', 'delay_time', 'initial_value'])],
+]);
 
 // An AST visitor to deal with desugaring calls to builtin functions
 // that are actually module instantiations
@@ -233,16 +228,13 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
     return n;
   }
   call(n: ast.CallExpr): ast.Node {
-    const args = [];
-    for (const arg of n.args) {
-      args.push(arg.walk(this));
-    }
+    const args = n.args.map(arg => arg.walk(this));
 
     if (!isIdent(n.fun)) {
       throw new Error('// for now, only idents can be used as fns.');
     }
 
-    const fn = (n.fun as ast.Ident).ident;
+    const fn = n.fun.ident;
     if (common.builtins.has(fn)) {
       return new ast.CallExpr(n.fun, n.lParenPos, args, n.rParenPos);
     }
@@ -252,22 +244,21 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
       throw new Error('unknown builtin: ' + fn);
     }
 
-    const identArgs: string[] = [];
-    for (let i = 0; i < args.length; i++) {
-      const arg = args[i];
+    let identArgs = List<string>();
+    args.forEach((arg, i) => {
       if (isIdent(arg)) {
-        identArgs.push((arg as ast.Ident).ident);
+        identArgs = identArgs.push(arg.ident);
       } else {
         const xVar = new xmile.Variable({
           type: 'aux',
           name: `$·${this.variable.ident}·${this.n}·arg${i}`,
           eqn: arg.walk(new PrintVisitor()),
-        } as any);
+        });
         const proxyVar = new Variable(xVar);
         this.vars = this.vars.set(defined(proxyVar.ident), proxyVar);
         identArgs.push(defined(proxyVar.ident));
       }
-    }
+    });
 
     const modName = `$·${this.variable.ident}·${this.n}·${fn}`;
     let xMod = new xmile.Variable({
@@ -275,19 +266,21 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
       name: modName,
       model: `stdlib·${fn}`,
       connections: List<xmile.Connection>(),
-    } as any);
+    });
 
-    if (!(fn in stdlibArgs)) {
+    if (!stdlibArgs.has(fn)) {
       throw new Error(`unknown function or builtin ${fn}`);
     }
 
-    for (let i = 0; i < identArgs.length; i++) {
+    const stdlibVars = defined(stdlibArgs.get(fn));
+
+    identArgs.forEach((identArg, i) => {
       const conn = new xmile.Connection({
-        to: stdlibArgs[fn][i],
-        from: '.' + identArgs[i],
+        to: defined(stdlibVars.get(i)),
+        from: '.' + identArg,
       });
       xMod = xMod.update('connections', conns => (conns || List()).push(conn));
-    }
+    });
 
     const module = new Module(xMod);
     this.modules = this.modules.set(modName, module);
@@ -325,38 +318,30 @@ class PrintVisitor implements ast.Visitor<string> {
     return n.ident;
   }
   constant(n: ast.Constant): string {
-    return '' + n.value;
+    return `${n.value}`;
   }
   call(n: ast.CallExpr): string {
-    let s = n.fun.walk(this);
-    s += '(';
-    for (let i = 0; i < n.args.length; i++) {
-      s += n.args[i].walk(this);
-      if (i !== n.args.length - 1) {
-        s += ',';
-      }
-    }
-    s += ')';
-
-    return s;
+    const fun = n.fun.walk(this);
+    const args = n.args.map(arg => arg.walk(this)).join(',');
+    return `${fun}(${args})`;
   }
   if(n: ast.IfExpr): string {
-    let s = 'IF (';
-    s += n.cond.walk(this);
-    s += ') THEN (';
-    s += n.t.walk(this);
-    s += ') ELSE (';
-    s += n.f.walk(this);
-    s += ')';
-    return s;
+    const cond = n.cond.walk(this);
+    const t = n.t.walk(this);
+    const f = n.f.walk(this);
+    return `IF (${cond}) THEN (${t}) ELSE (${f})`;
   }
   paren(n: ast.ParenExpr): string {
-    return '(' + n.x.walk(this) + ')';
+    const x = n.x.walk(this);
+    return `(${x})`;
   }
   unary(n: ast.UnaryExpr): string {
-    return n.op + n.x.walk(this);
+    const x = n.x.walk(this);
+    return `${n.op}${x}`;
   }
   binary(n: ast.BinaryExpr): string {
-    return n.l.walk(this) + n.op + n.r.walk(this);
+    const l = n.l.walk(this);
+    const r = n.r.walk(this);
+    return `${l}${n.op}${r}`;
   }
 }

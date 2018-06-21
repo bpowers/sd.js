@@ -49,17 +49,19 @@ export class CodegenVisitor implements ast.Visitor<boolean> {
     }
     return true;
   }
+
   constant(n: ast.Constant): boolean {
     this.code += '' + n.value;
     return true;
   }
+
   call(n: ast.CallExpr): boolean {
-    if (!n.fun.hasOwnProperty('ident')) {
+    if (!ast.isIdent(n.fun)) {
       console.log('// for now, only idents can be used as fns.');
       console.log(n);
       return false;
     }
-    const fn = (n.fun as ast.Ident).ident;
+    const fn = n.fun.ident;
     if (!builtins.has(fn)) {
       console.log('// unknown builtin: ' + fn);
       return false;
@@ -70,20 +72,22 @@ export class CodegenVisitor implements ast.Visitor<boolean> {
     if (builtin.usesTime) {
       this.code += 'dt, ';
       this.refTime();
-      if (n.args.length) {
+      if (n.args.size) {
         this.code += ', ';
       }
     }
 
-    for (let i = 0; i < n.args.length; i++) {
-      n.args[i].walk(this);
-      if (i !== n.args.length - 1) {
+    n.args.forEach((arg, i) => {
+      arg.walk(this);
+      if (i !== n.args.size - 1) {
         this.code += ', ';
       }
-    }
+    });
+
     this.code += ')';
     return true;
   }
+
   if(n: ast.IfExpr): boolean {
     // use the ternary operator for if statements
     this.code += '(';
@@ -95,12 +99,14 @@ export class CodegenVisitor implements ast.Visitor<boolean> {
     this.code += ')';
     return true;
   }
+
   paren(n: ast.ParenExpr): boolean {
     this.code += '(';
     n.x.walk(this);
     this.code += ')';
     return true;
   }
+
   unary(n: ast.UnaryExpr): boolean {
     // if we're doing 'not', explicitly convert the result
     // back to a number.
@@ -109,6 +115,7 @@ export class CodegenVisitor implements ast.Visitor<boolean> {
     n.x.walk(this);
     return true;
   }
+
   binary(n: ast.BinaryExpr): boolean {
     // exponentiation isn't a builtin operator in JS, it
     // is implemented as a function in the Math module.

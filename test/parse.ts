@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-'use strict';
+import { List } from 'immutable';
 
 import { expect } from 'chai';
 import * as parse from '../lib/parse';
@@ -55,18 +55,18 @@ const PARSE_TESTS: ParseTestData[] = [
   },
   {
     in: 'smooth()',
-    out: new CallExpr(new Ident(l(0, 0), 'smooth'), l(0, 6), [], l(0, 7)),
+    out: new CallExpr(new Ident(l(0, 0), 'smooth'), l(0, 6), List(), l(0, 7)),
   },
   {
     in: 'smooth(1, 2 + 3, d)',
     out: new CallExpr(
       new Ident(l(0, 0), 'smooth'),
       l(0, 6),
-      [
+      List([
         new Constant(l(0, 7), '1'),
         new BinaryExpr(new Constant(l(0, 10), '2'), l(0, 12), '+', new Constant(l(0, 14), '3')),
         new Ident(l(0, 17), 'd'),
-      ],
+      ]),
       l(0, 18),
     ),
   },
@@ -165,7 +165,7 @@ describe('parse', function(): void {
       }
       expect(node).not.to.be.null;
       expect(err).to.be.null;
-      expect(node).to.deep.equal(t.out);
+      expect(t.out.equals(node)).to.be.true;
       done();
     });
   });
