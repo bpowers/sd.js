@@ -209,18 +209,16 @@ export class Variable extends Record(variableDefaults) implements type.Variable 
 
   getDeps(context: type.Context): Set<string> {
     let allDeps = Set<string>();
-    for (const n of this.deps) {
-      if (allDeps.has(n)) {
+    for (const ident of this.deps) {
+      if (allDeps.has(ident)) {
         continue;
       }
-      allDeps = allDeps.add(n);
-      const v = context.parent.vars.get(n);
+      allDeps = allDeps.add(ident);
+      const v = context.parent.vars.get(ident);
       if (!v) {
         continue;
       }
-      for (const nn of v.getDeps(context)) {
-        allDeps = allDeps.add(nn);
-      }
+      allDeps = allDeps.merge(v.getDeps(context));
     }
     return allDeps;
   }
@@ -348,11 +346,10 @@ export class Module extends Variable implements type.Module {
       if (!v) {
         throw new Error(`couldn't find ${ident}`);
       }
+      // if we hit a Stock the dependencies 'stop'
       if (!(v instanceof Stock)) {
         allDeps = allDeps.add(ident.split('.')[0]);
-      }
-      for (const nn of v.getDeps(context)) {
-        allDeps = allDeps.add(nn);
+        allDeps = allDeps.merge(v.getDeps(context));
       }
     }
     return allDeps;
