@@ -12,8 +12,8 @@ import { SourceLoc, Token, UnknownSourceLoc } from './type';
 const defaultNode: Node = (null as any) as Node;
 
 export interface Node {
-  pos: SourceLoc;
-  end: SourceLoc; // the char after this token
+  readonly pos: SourceLoc;
+  readonly end: SourceLoc; // the char after this token
 
   walk<T>(v: Visitor<T>): T;
   equals(other: any): boolean; // provided by Record
