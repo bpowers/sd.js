@@ -32,14 +32,10 @@ let stdModels: Map<string, type.Model> | undefined;
 
 function parseStdModels() {
   stdModels = Map();
-  for (const name in stdlib.xmileModels) {
-    if (!stdlib.xmileModels.hasOwnProperty(name)) {
-      continue;
-    }
-    const modelStr = stdlib.xmileModels[name];
+  for (const [name, modelStr] of stdlib.xmileModels) {
     const xml = new xmldom.DOMParser().parseFromString(modelStr, 'application/xml');
-    const ctx = new Project(xml, true);
-    const mdl = ctx.model(name);
+    const project = new Project(xml, true);
+    const mdl = project.model(name);
     if (!mdl) {
       console.log('FIXME: invariant broken');
       continue;
@@ -68,7 +64,22 @@ export class Project implements type.Project {
     this.files = List();
     this.models = Map();
     this.valid = false;
-    this.addDocument(xmileDoc, true, skipStdlib);
+
+    if (!skipStdlib) {
+      if (stdModels === undefined) {
+        parseStdModels();
+      }
+      if (stdModels === undefined) {
+        throw new Error("couldn't parse std models");
+      }
+
+      // add standard models, like 'delay1' and 'smth3'.
+      for (const [name, stdModel] of stdModels) {
+        this.models = this.models.set(name, stdModel);
+      }
+    }
+
+    this.addDocument(xmileDoc, true);
   }
 
   getFiles(): List<xmile.File> {
@@ -87,7 +98,7 @@ export class Project implements type.Project {
   }
 
   // isMain should only be true when called from the constructor.
-  addDocument(xmileDoc: XMLDocument, isMain = false, skipStdlib = false): Error | undefined {
+  addDocument(xmileDoc: XMLDocument, isMain = false): Error | undefined {
     if (!xmileDoc || xmileDoc.getElementsByTagName('parsererror').length !== 0) {
       this.valid = false;
       return Error.Version;
@@ -123,20 +134,6 @@ export class Project implements type.Project {
       }
     }
 
-    if (!skipStdlib) {
-      if (stdModels === undefined) {
-        parseStdModels();
-      }
-      if (stdModels === undefined) {
-        return new Error("couldn't parse std models");
-      }
-
-      // add standard models, like 'delay1' and 'smth3'.
-      for (const [name, stdModel] of stdModels) {
-        this.models = this.models.set(name, stdModel);
-      }
-    }
-
     // FIXME: merge the other parts of the model into the
     // project
     for (const xModel of file.models) {
@@ -157,9 +154,8 @@ export class Project implements type.Project {
     const xMod = new xmile.Variable({
       type: 'module',
       name: 'main',
-    } as any);
+    });
     this.main = new Module(xMod);
-    this.main.updateRefs(mainModel);
 
     return undefined;
   }

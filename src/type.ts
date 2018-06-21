@@ -89,7 +89,6 @@ export interface Module extends Variable {
   modelName: string;
   refs: Map<string, Reference>;
   referencedModels(project: Project, all?: Map<string, ModelDef>): Map<string, ModelDef>;
-  updateRefs(model: Model): void;
 }
 
 export interface Reference extends Variable {

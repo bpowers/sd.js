@@ -35,10 +35,6 @@ export class Model implements type.Model {
       throw err;
     }
 
-    for (const [name, mod] of defined(modules)) {
-      mod.updateRefs(this);
-    }
-
     this.vars = defined(vars);
     this.modules = defined(modules);
     this.tables = defined(tables);

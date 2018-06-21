@@ -351,9 +351,6 @@ export class Module extends Variable implements type.Module {
         context = parent;
       }
       const parts = n.split('.');
-      if (n === 'lynxes.lynxes') {
-        debugger;
-      }
       const v = context.lookup(n);
       if (!v) {
         throw new Error(`couldn't find ${n}`);
@@ -366,31 +363,6 @@ export class Module extends Variable implements type.Module {
       }
     }
     return allDeps;
-  }
-
-  updateRefs(model: type.Model) {
-    // for (const [name, v] of model.vars) {
-    //   // skip modules
-    //   if (!v.ident || model.modules.has(v.ident)) {
-    //     continue;
-    //   }
-    //   // FIXME:  I'm pretty sure this doesn't make any sense
-    //   // account for references into a child module
-    //   const deps = v.deps;
-    //   for (const depName of deps) {
-    //     // console.log(`/* ${this.modelName} -- ${v.ident} look ${name} */`);
-    //     if (!name.includes('.')) {
-    //       continue;
-    //     }
-    //     // console.log(`/* got ${name} */`);
-    //     const conn = new xmile.Connection({
-    //       from: name,
-    //       to: name,
-    //     });
-    //     const ref = new Reference(conn);
-    //     // this.refs = this.refs.set(defined(ref.ident), ref);
-    //   }
-    // }
   }
 
   referencedModels(
