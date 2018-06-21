@@ -16,7 +16,6 @@ import { Module, Stock, Table, Variable } from './vars';
 export class Model implements type.Model {
   name: string;
   valid: boolean;
-  project: type.Project;
   xModel: xmile.Model;
   modules: Map<string, Module>;
   tables: Map<string, Table>;
@@ -25,7 +24,6 @@ export class Model implements type.Model {
   private spec?: type.SimSpec;
 
   constructor(project: type.Project, ident: string, xModel: xmile.Model) {
-    this.project = project;
     this.xModel = xModel;
 
     this.name = ident;
@@ -52,27 +50,8 @@ export class Model implements type.Model {
     return common.canonicalize(this.name);
   }
 
-  get simSpec(): type.SimSpec {
-    return this.spec || this.project.simSpec;
-  }
-
-  lookup(id: string): type.Variable | undefined {
-    if (id[0] === '.') {
-      id = id.substr(1);
-    }
-    if (this.vars.has(id)) {
-      return this.vars.get(id);
-    }
-    const parts = id.split('.');
-    const module = this.modules.get(parts[0]);
-    if (!module) {
-      return undefined;
-    }
-    const nextModel = this.project.model(module.modelName);
-    if (!nextModel) {
-      return undefined;
-    }
-    return nextModel.lookup(parts.slice(1).join('.'));
+  get simSpec(): type.SimSpec | undefined {
+    return this.spec;
   }
 
   /**

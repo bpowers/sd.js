@@ -4,11 +4,11 @@
 
 'use strict';
 
-import { List, Map, Set } from 'immutable';
+import { Map, Set } from 'immutable';
 
 import * as Mustache from 'mustache';
 
-import { defined, exists } from './common';
+import { defined } from './common';
 
 import * as runtime from './runtime';
 import * as type from './type';
@@ -107,6 +107,7 @@ export class TemplateContext {
   offsets: string;
 
   constructor(
+    project: type.Project,
     model: type.Model,
     mods: any,
     init: any,
@@ -123,7 +124,7 @@ export class TemplateContext {
     this.modules = mods.join(NLSP);
     this.init = init.join(NLSP);
     this.initialVals = JSON.stringify(initials, null, SP);
-    this.simSpecVals = JSON.stringify(defined(model.simSpec).toJS(), null, SP);
+    this.simSpecVals = JSON.stringify(defined(model.simSpec || project.simSpec).toJS(), null, SP);
     this.tableVals = JSON.stringify(tables, null, SP);
     this.calcI = ci.join(NLSP);
     this.calcF = cf.join(NLSP);
@@ -134,22 +135,20 @@ export class TemplateContext {
 
 class VarComparator implements util.Comparator<type.Variable> {
   deps: Map<string, Set<string>> = Map();
-  project: type.Project;
-  parent: type.Model;
+  context: type.Context;
 
   constructor(project: type.Project, parent: type.Model) {
-    this.project = project;
-    this.parent = parent;
+    this.context = new type.Context(project, parent);
   }
 
   lessThan(a: type.Variable, b: type.Variable): boolean {
     const aName = defined(a.ident);
     const bName = defined(b.ident);
     if (!this.deps.has(aName)) {
-      this.deps = this.deps.set(aName, a.getDeps(this.parent, this.project));
+      this.deps = this.deps.set(aName, a.getDeps(this.context));
     }
     if (!this.deps.has(bName)) {
-      this.deps = this.deps.set(bName, b.getDeps(this.parent, this.project));
+      this.deps = this.deps.set(bName, b.getDeps(this.context));
     }
     return defined(this.deps.get(bName)).has(aName);
   }
@@ -187,7 +186,7 @@ export class Sim {
       if (!modelDef.model) {
         throw new Error('expected a model');
       }
-      compiledModels.push(this.compileModel(modelDef.model, modelDef.modules));
+      compiledModels.push(this.compileModel(project, modelDef.model, modelDef.modules));
     }
 
     const mainRefs = root.refs;
@@ -222,7 +221,11 @@ export class Sim {
     );
   }
 
-  compileModel(model: type.Model, modules: Set<type.Module>): TemplateContext {
+  compileModel(
+    project: type.Project,
+    model: type.Model,
+    modules: Set<type.Module>,
+  ): TemplateContext {
     const runInitials: type.Variable[] = [];
     const runFlows: type.Variable[] = [];
     const runStocks: type.Variable[] = [];
@@ -243,6 +246,8 @@ export class Sim {
     let offsets: Map<string, number> = Map();
     let runtimeOffsets: Map<string, number> = Map();
 
+    const context = new type.Context(project, model);
+
     // decide which run lists each variable has to be, based on
     // its type and const-ness
     for (const [n, v] of model.vars) {
@@ -252,11 +257,11 @@ export class Sim {
         runStocks.push(v);
       } else if (v instanceof vars.Stock) {
         // add any referenced vars to initials
-        for (const d of v.getDeps(model, this.project)) {
+        for (const d of v.getDeps(context)) {
           if (d === 'time' || initialsIncludes(d)) {
             continue;
           }
-          const dependentVar = model.lookup(d);
+          const dependentVar = context.lookup(d);
           if (dependentVar) {
             runInitials.push(dependentVar);
           }
@@ -365,7 +370,18 @@ export class Sim {
     }
     mods.push('}');
 
-    return new TemplateContext(model, mods, init, initials, tables, runtimeOffsets, ci, cf, cs);
+    return new TemplateContext(
+      project,
+      model,
+      mods,
+      init,
+      initials,
+      tables,
+      runtimeOffsets,
+      ci,
+      cf,
+      cs,
+    );
   }
 
   nextID(modelName: string): number {

@@ -207,18 +207,18 @@ export class Variable extends Record(variableDefaults) implements type.Variable 
     }
   }
 
-  getDeps(parent: type.Model, project: type.Project): Set<string> {
+  getDeps(context: type.Context): Set<string> {
     let allDeps = Set<string>();
     for (const n of this.deps) {
       if (allDeps.has(n)) {
         continue;
       }
       allDeps = allDeps.add(n);
-      const v = parent.vars.get(n);
+      const v = context.parent.vars.get(n);
       if (!v) {
         continue;
       }
-      for (const nn of v.getDeps(parent, project)) {
+      for (const nn of v.getDeps(context)) {
         allDeps = allDeps.add(nn);
       }
     }
@@ -336,29 +336,22 @@ export class Module extends Variable implements type.Module {
     }
   }
 
-  getDeps(parent: type.Model, project: type.Project): Set<string> {
+  getDeps(context: type.Context): Set<string> {
+    // TODO(bp): I think we need qualified idents for module deps
     let allDeps = Set<string>();
-    for (let n of this.deps) {
-      if (allDeps.has(n)) {
+    for (const ident of this.deps) {
+      if (allDeps.has(ident)) {
         continue;
       }
 
-      let context: type.Model;
-      if (n[0] === '.') {
-        context = defined(project.model(project.main.modelName));
-        n = n.substr(1);
-      } else {
-        context = parent;
-      }
-      const parts = n.split('.');
-      const v = context.lookup(n);
+      const v = context.lookup(ident);
       if (!v) {
-        throw new Error(`couldn't find ${n}`);
+        throw new Error(`couldn't find ${ident}`);
       }
       if (!(v instanceof Stock)) {
-        allDeps = allDeps.add(parts[0]);
+        allDeps = allDeps.add(ident.split('.')[0]);
       }
-      for (const nn of v.getDeps(parent, project)) {
+      for (const nn of v.getDeps(context)) {
         allDeps = allDeps.add(nn);
       }
     }
