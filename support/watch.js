@@ -6,16 +6,18 @@ const watch = require('watch');
 const reload = browserSync.reload;
 
 browserSync({
-        port: 5000,
-        notify: false,
-        logPrefix: 'browsix',
-        snippetOptions: {
-		rule: {
-			match: '<span id="browser-sync-binding"></span>',
-			fn: function (snippet) { return snippet; },
-		},
-        },
-        server: { baseDir: ['.'] },
+  port: 5000,
+  notify: false,
+  logPrefix: 'browsix',
+  snippetOptions: {
+    rule: {
+      match: '<span id="browser-sync-binding"></span>',
+      fn: function(snippet) {
+        return snippet;
+      },
+    },
+  },
+  server: { baseDir: ['.'] },
 });
 
 // watch...
