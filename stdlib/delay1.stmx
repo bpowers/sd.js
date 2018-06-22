@@ -15,7 +15,7 @@
 	<isee:prefs show_module_prefix="true" live_update_on_drag="true" layer="model" saved_runs="5" keep="false" rifp="true"/>
 	<isee:multiplayer_settings include_chat="true" allow_observers="false" advance_time_increment="1" observer_start_page="home_page" enabled="false"/>
 	<model_units/>
-	<model name="delay1">
+	<model name="stdlib·delay1">
 		<variables>
 			<stock name="Stock">
 				<eqn>(IF initial_value = NAN THEN input ELSE initial_value) * delay_time</eqn>

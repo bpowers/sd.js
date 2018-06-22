@@ -40,13 +40,14 @@ export interface Project {
 }
 
 export interface Model {
-  name: string;
   ident: string;
   valid: boolean;
   modules: Map<string, Module>;
   tables: Map<string, Table>;
   vars: Map<string, Variable>;
   simSpec?: SimSpec;
+
+  view(index: number): xmile.View | undefined;
 }
 
 interface ModelDefProps {

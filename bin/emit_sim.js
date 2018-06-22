@@ -16,7 +16,10 @@ const main = async () => {
 
   const data = await readFile(argv[2]);
   const xml = new DOMParser().parseFromString(data.toString(), 'application/xml');
-  const project = new sd.Project(xml);
+  const [project, err] = sd.stdProject.addFile(xml);
+  if (err) {
+    throw err;
+  }
   // called for the side effect
   new sd.Sim(project, project.main, true);
 };

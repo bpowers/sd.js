@@ -118,9 +118,9 @@ export class TemplateContext {
     cf: any,
     cs: any,
   ) {
-    this.name = model.name;
-    this.className = util.titleCase(model.name);
-    this.isModule = model.name !== 'main';
+    this.name = model.ident;
+    this.className = util.titleCase(model.ident);
+    this.isModule = model.ident !== 'main';
     this.modules = mods.join(NLSP);
     this.init = init.join(NLSP);
     this.initialVals = JSON.stringify(initials, null, SP);
@@ -278,7 +278,7 @@ export class Sim {
       }
 
       if (!(v instanceof vars.Module) && !isRef(n)) {
-        const off = this.nextID(model.name);
+        const off = this.nextID(model.ident);
         runtimeOffsets = runtimeOffsets.set(n, off);
         if (DEBUG) {
           offsets = offsets.set(n, off); // `${off}/*${n}*/`;

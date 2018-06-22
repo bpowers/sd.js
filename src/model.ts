@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-import { List, Map, Set } from 'immutable';
+import { List, Map, Record } from 'immutable';
 
 import * as ast from './ast';
 import * as common from './common';
@@ -13,33 +13,28 @@ import { isIdent } from './ast';
 import { defined } from './common';
 import { Module, Stock, Table, Variable } from './vars';
 
-export class Model implements type.Model {
-  name: string;
-  valid: boolean;
-  xModel: xmile.Model;
-  modules: Map<string, Module>;
-  tables: Map<string, Table>;
-  vars: Map<string, Variable>;
+const modelDefaults = {
+  valid: false,
+  xModel: (null as any) as xmile.Model,
+  modules: Map<string, Module>(),
+  tables: Map<string, Table>(),
+  vars: Map<string, Variable>(),
+};
 
-  private spec?: type.SimSpec;
-
-  constructor(project: type.Project, ident: string, xModel: xmile.Model) {
-    this.xModel = xModel;
-
-    this.name = ident;
-
+export class Model extends Record(modelDefaults) implements type.Model {
+  constructor(project: type.Project, xModel: xmile.Model) {
     const [vars, modules, tables, err] = Model.parseVars(project, xModel.variables);
     if (err !== undefined) {
       throw err;
     }
 
-    this.vars = defined(vars);
-    this.modules = defined(modules);
-    this.tables = defined(tables);
-
-    this.spec = xModel.simSpec;
-    this.valid = true;
-    return;
+    super({
+      xModel,
+      valid: true,
+      vars: defined(vars),
+      modules: defined(modules),
+      tables: defined(tables),
+    });
   }
 
   view(index: number): xmile.View | undefined {
@@ -47,11 +42,12 @@ export class Model implements type.Model {
   }
 
   get ident(): string {
-    return common.canonicalize(this.name);
+    const name = !this.xModel.ident ? 'main' : this.xModel.ident;
+    return common.canonicalize(name);
   }
 
   get simSpec(): type.SimSpec | undefined {
-    return this.spec;
+    return this.xModel.simSpec;
   }
 
   /**
@@ -168,6 +164,10 @@ export class Model implements type.Model {
 
     return [vars, modules, undefined];
   }
+}
+
+export function isModel(model: any): model is Model {
+  return model.constructor === Model;
 }
 
 const stdlibArgs = Map<string, List<string>>([

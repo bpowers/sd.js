@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-import { List, Map } from 'immutable';
+import { List, Map, Record } from 'immutable';
 
 import * as xmldom from 'xmldom';
 
@@ -28,58 +28,49 @@ const getXmileElement = (xmileDoc: XMLDocument): Element | undefined => {
   return undefined;
 };
 
-let stdModels: Map<string, type.Model> | undefined;
-
-function parseStdModels() {
-  stdModels = Map();
-  for (const [name, modelStr] of stdlib.xmileModels) {
-    const xml = new xmldom.DOMParser().parseFromString(modelStr, 'application/xml');
-    const project = new Project(xml, true);
-    const mdl = project.model(name);
-    if (!mdl) {
-      console.log('FIXME: invariant broken');
-      continue;
-    }
-    mdl.name = 'stdlib·' + mdl.name;
-    const ident = mdl.ident;
-    stdModels = stdModels.set('stdlib·' + ident, mdl);
-  }
-}
+const projectDefaults = {
+  name: 'sd project',
+  main: undefined as type.Module | undefined,
+  files: List<xmile.File>(),
+  models: Map<string, type.Model>(),
+};
 
 /**
  * Project is the container for a set of SD models.
  *
  * A single project may include models + non-model elements
  */
-export class Project implements type.Project {
+export class Project extends Record(projectDefaults) implements type.Project {
   name: string;
-  valid: boolean;
-  simSpec: type.SimSpec;
   main: type.Module;
+  files: List<xmile.File>;
+  models: Map<string, type.Model>;
 
-  private files: List<xmile.File>;
-  private models: Map<string, type.Model>;
+  constructor() {
+    let models = Map<string, type.Model>();
 
-  constructor(xmileDoc: XMLDocument, skipStdlib = false) {
-    this.files = List();
-    this.models = Map();
-    this.valid = false;
-
-    if (!skipStdlib) {
-      if (stdModels === undefined) {
-        parseStdModels();
+    for (const [name, modelStr] of stdlib.xmileModels) {
+      const xml = new xmldom.DOMParser().parseFromString(modelStr, 'application/xml');
+      const [file, err] = Project.parseFile(xml);
+      if (err) {
+        throw err;
       }
-      if (stdModels === undefined) {
-        throw new Error("couldn't parse std models");
+      if (defined(file).models.size !== 1) {
+        throw new Error(`stdlib layout error`);
       }
 
-      // add standard models, like 'delay1' and 'smth3'.
-      for (const [name, stdModel] of stdModels) {
-        this.models = this.models.set(name, stdModel);
+      const xModel = defined(defined(file).models.first());
+      const model = new Model((null as any) as Project, xModel);
+      if (!model.ident.startsWith('stdlib·')) {
+        throw new Error(`stdlib bad model name: ${model.ident}`);
       }
+      models = models.set(model.ident, model);
     }
+    super({ models });
+  }
 
-    this.addDocument(xmileDoc, true);
+  get simSpec(): xmile.SimSpec {
+    return defined(defined(this.files.last()).simSpec);
   }
 
   getFiles(): List<xmile.File> {
@@ -97,16 +88,61 @@ export class Project implements type.Project {
     return this.models.get('stdlib·' + name);
   }
 
+  addFile(xmileDoc: XMLDocument, isMain = false): [Project, undefined] | [undefined, Error] {
+    const [file, err] = Project.parseFile(xmileDoc);
+    if (err) {
+      return [undefined, err];
+    }
+
+    const files = this.files.push(defined(file));
+
+    // FIXME: merge the other parts of the model into the project
+    const models = Map(
+      defined(file).models.map(
+        (xModel): [string, Model] => {
+          const model = new Model(this, xModel);
+          return [model.ident, model];
+        },
+      ),
+    );
+
+    let dupErr: Error | undefined;
+    models.forEach((model, name) => {
+      if (this.models.has(name)) {
+        dupErr = new Error(`duplicate name ${name}`);
+      }
+    });
+    if (dupErr) {
+      return [undefined, dupErr];
+    }
+
+    const xMod = new xmile.Variable({
+      type: 'module',
+      name: 'main',
+    });
+    const main = new Module(xMod);
+
+    let newProject = this.mergeDeep({
+      files,
+      models: this.models.merge(models),
+      main,
+    });
+
+    if (models.has('main') && defined(file).header && defined(defined(file).header).name) {
+      newProject = newProject.set('name', defined(defined(file).header).name);
+    }
+
+    return [newProject, undefined];
+  }
+
   // isMain should only be true when called from the constructor.
-  addDocument(xmileDoc: XMLDocument, isMain = false): Error | undefined {
+  private static parseFile(xmileDoc: XMLDocument): [xmile.File, undefined] | [undefined, Error] {
     if (!xmileDoc || xmileDoc.getElementsByTagName('parsererror').length !== 0) {
-      this.valid = false;
-      return Error.Version;
+      return [undefined, Error.Version];
     }
     const xmileElement = getXmileElement(xmileDoc);
     if (!xmileElement) {
-      this.valid = false;
-      return new Error('no XMILE root element');
+      return [undefined, new Error('no XMILE root element')];
     }
 
     // FIXME: compat translation of XML
@@ -116,47 +152,14 @@ export class Project implements type.Project {
     // correspondence to the XMILE doc
     const [file, err] = xmile.File.FromXML(xmileElement);
     if (err || !file) {
-      console.log('File.Build: ' + err);
-      this.valid = false;
-      return new Error('File.Build: ' + err);
+      return [undefined, new Error(`File.Build: ${err}`)];
     }
 
     // FIXME: compat translation of equations
 
-    this.files = this.files.push(file);
-
-    if (isMain) {
-      this.name = (file.header && file.header.name) || 'sd project';
-      this.simSpec = defined(file.simSpec);
-      if (!file.simSpec) {
-        this.valid = false;
-        return new Error('isMain, but no sim spec');
-      }
-    }
-
-    // FIXME: merge the other parts of the model into the
-    // project
-    for (const xModel of file.models) {
-      let ident = xModel.ident;
-      if (ident === '' && !('main' in this.models)) {
-        ident = 'main';
-      }
-      this.models = this.models.set(ident, new Model(this, ident, xModel));
-    }
-    this.valid = true;
-
-    if (!this.models.has('main')) {
-      return undefined;
-    }
-
-    const mainModel = defined(this.models.get('main'));
-
-    const xMod = new xmile.Variable({
-      type: 'module',
-      name: 'main',
-    });
-    this.main = new Module(xMod);
-
-    return undefined;
+    return [file, undefined];
   }
 }
+
+// a project consisting of all the standard library modules
+export const stdProject: Project = new Project();

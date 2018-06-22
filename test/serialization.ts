@@ -5,7 +5,7 @@ import * as fs from 'fs';
 import { expect } from 'chai';
 import { is, List } from 'immutable';
 import { defined } from '../lib/common';
-import { Project } from '../lib/sd';
+import { stdProject } from '../lib/sd';
 import { FileFromJSON } from '../lib/xmile';
 import { promisify } from 'util';
 import { DOMParser } from 'xmldom';
@@ -50,14 +50,15 @@ describe('roundtrip', async () => {
     it(`should roundtrip ${path}`, async () => {
       const data = await readFile(path);
       const xml = new DOMParser().parseFromString(data.toString(), 'application/xml');
-      const project = new Project(xml);
-      const files = project.getFiles();
+      const [project, err] = stdProject.addFile(xml);
+      expect(err).to.be.undefined;
+      const files = defined(project).getFiles();
       expect(files.size).to.equal(1);
       const file1 = defined(files.first());
       const jsonStr1 = JSON.stringify(file1, undefined, 2);
       const jsonParsed1 = JSON.parse(jsonStr1);
-      const [file2, err] = FileFromJSON(jsonParsed1);
-      expect(err).to.be.undefined;
+      const [file2, err2] = FileFromJSON(jsonParsed1);
+      expect(err2).to.be.undefined;
       const jsonStr2 = JSON.stringify(file2, undefined, 2);
       const jsonParsed2 = JSON.parse(jsonStr2);
       expect(jsonParsed1).to.deep.equal(jsonParsed2);

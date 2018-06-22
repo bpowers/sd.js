@@ -15,7 +15,7 @@
 	<isee:prefs show_module_prefix="true" live_update_on_drag="true" layer="model" saved_runs="5" keep="false" rifp="true"/>
 	<isee:multiplayer_settings include_chat="true" allow_observers="false" advance_time_increment="1" observer_start_page="home_page" enabled="false"/>
 	<model_units/>
-	<model name="smth1">
+	<model name="stdlib·smth1">
 		<variables>
 			<flow name="flow">
 				<eqn>(input - Output)/(delay_time/3)</eqn>

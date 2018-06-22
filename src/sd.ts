@@ -4,11 +4,12 @@
 
 import * as common from './common';
 
-import { Model } from './model';
+import { defined } from './common';
+import { isModel, Model } from './model';
 import { Project } from './project';
 
 export { Model } from './model';
-export { Project } from './project';
+export { Project, stdProject } from './project';
 export { Sim } from './sim';
 export { Variable } from './type';
 export { Stock } from './vars';
@@ -25,13 +26,17 @@ export const Error = common.Error;
  * @param xmlString A string containing a xmile model.
  * @return A valid Model object on success, or null on error.
  */
-export function newModel(xmlDoc: XMLDocument): Model | undefined {
-  const p = new Project(xmlDoc);
-  if (!p.valid) {
-    return undefined;
+export function newModel(xmlDoc: XMLDocument): Model {
+  const [project, err] = new Project().addFile(xmlDoc);
+  if (err) {
+    throw err;
   }
 
-  return p.model() as Model;
+  const model = defined(project).model();
+  if (!isModel(model)) {
+    throw new Error('unreachable');
+  }
+  return model;
 }
 
 export async function load(url: string): Promise<[Model, undefined] | [undefined, common.Error]> {

@@ -363,7 +363,7 @@ export class Module extends Variable implements type.Module {
       all = Map();
     }
     const mdl = defined(project.model(this.modelName));
-    const name = mdl.name;
+    const name = mdl.ident;
     if (all.has(name)) {
       const def = defined(all.get(name)).update('modules', (modules: Set<type.Module>) =>
         modules.add(this),
