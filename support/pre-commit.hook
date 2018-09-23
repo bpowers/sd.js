@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -eEuo pipefail
 
 # Redirect output to stderr.

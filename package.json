@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@types/node": "^10.3.3",
-    "immutable": "git://github.com/bpowers/immutable-js.git#ts2.9-keyof-fix-w-dist",
+    "immutable": "^4.0.0-rc.10",
     "mustache": "^2.3.0",
     "xmldom": "^0.1.27"
   },
