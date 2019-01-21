@@ -88,13 +88,17 @@ export class Project extends Record(projectDefaults) implements type.Project {
     return this.models.get('stdlib·' + name);
   }
 
-  addFile(xmileDoc: XMLDocument, isMain = false): [Project, undefined] | [undefined, Error] {
+  addXmileFile(xmileDoc: XMLDocument, isMain = false): [Project, undefined] | [undefined, Error] {
     const [file, err] = Project.parseFile(xmileDoc);
     if (err) {
       return [undefined, err];
     }
 
-    const files = this.files.push(defined(file));
+    return this.addFile(defined(file), isMain);
+  }
+
+  addFile(file: xmile.File, isMain = false): [Project, undefined] | [undefined, Error] {
+    const files = this.files.push(file);
 
     // FIXME: merge the other parts of the model into the project
     const models = Map(

@@ -16,7 +16,7 @@ const main = async () => {
 
   const data = await readFile(argv[2]);
   const xml = new DOMParser().parseFromString(data.toString(), 'application/xml');
-  const [project, err] = sd.stdProject.addFile(xml);
+  const [project, err] = sd.stdProject.addXmileFile(xml);
   if (err) {
     throw err;
   }

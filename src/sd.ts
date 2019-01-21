@@ -27,7 +27,7 @@ export const Error = common.Error;
  * @return A valid Model object on success, or null on error.
  */
 export function newModel(xmlDoc: XMLDocument): Model {
-  const [project, err] = new Project().addFile(xmlDoc);
+  const [project, err] = new Project().addXmileFile(xmlDoc);
   if (err) {
     throw err;
   }

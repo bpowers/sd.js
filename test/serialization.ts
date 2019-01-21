@@ -50,7 +50,7 @@ describe('roundtrip', async () => {
     it(`should roundtrip ${path}`, async () => {
       const data = await readFile(path);
       const xml = new DOMParser().parseFromString(data.toString(), 'application/xml');
-      const [project, err] = stdProject.addFile(xml);
+      const [project, err] = stdProject.addXmileFile(xml);
       expect(err).to.be.undefined;
       const files = defined(project).getFiles();
       expect(files.size).to.equal(1);
