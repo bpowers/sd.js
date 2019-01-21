@@ -6,7 +6,7 @@ import { List } from 'immutable';
 
 import { expect } from 'chai';
 import * as parse from '../lib/parse';
-import { SourceLoc } from '../lib/type';
+import { SourceLoc } from '../lib/token';
 import { Node, BinaryExpr, ParenExpr, IfExpr, CallExpr, Ident, Constant } from '../lib/ast';
 
 interface ParseTestData {

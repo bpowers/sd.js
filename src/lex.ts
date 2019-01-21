@@ -5,7 +5,7 @@
 import { Map, Set } from 'immutable';
 
 import { builtins, reserved } from './common';
-import { SourceLoc, Token, TokenType } from './type';
+import { SourceLoc, Token, TokenType } from './token';
 import { defined, exists } from './util';
 
 const OP: Map<string, string> = Map({

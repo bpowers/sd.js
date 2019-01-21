@@ -6,7 +6,7 @@ import { List } from 'immutable';
 
 import { BinaryExpr, CallExpr, Constant, Ident, IfExpr, Node, ParenExpr, UnaryExpr } from './ast';
 import { Lexer } from './lex';
-import { SourceLoc, Token, TokenType } from './type';
+import { SourceLoc, Token, TokenType } from './token';
 
 const WORD_OPS = {
   not: '!',

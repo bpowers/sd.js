@@ -5,7 +5,7 @@
 'use strict';
 
 import * as chai from 'chai';
-import { SourceLoc, Token, TokenType } from '../lib/type';
+import { SourceLoc, Token, TokenType } from '../lib/token';
 import { Lexer } from '../lib/lex';
 
 const expect = chai.expect;

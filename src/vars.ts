@@ -1,18 +1,314 @@
-// Copyright 2015 Bobby Powers. All rights reserved.
+// Copyright 2019 Bobby Powers. All rights reserved.
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
 // FIXME: this seems to fix a bug in Typescript 1.5
 declare function isFinite(n: string | number): boolean;
 
-import { List, Map, Record, Set } from 'immutable';
+import { List, Map, Record, RecordOf, Set } from 'immutable';
 
 import { builtins, defined, exists } from './common';
 
 import * as ast from './ast';
-import * as parse from './parse';
-import * as type from './type';
+import { eqn } from './parse';
 import * as xmile from './xmile';
+
+export interface Project {
+  readonly name: string;
+  readonly simSpec: xmile.SimSpec;
+  readonly main: Module | undefined;
+
+  model(name?: string): Model | undefined;
+  getFiles(): List<xmile.File>;
+}
+
+export interface Model {
+  readonly ident: string;
+  readonly valid: boolean;
+  readonly modules: Map<string, Module>;
+  readonly tables: Map<string, Table>;
+  readonly vars: Map<string, Variable>;
+  readonly simSpec?: xmile.SimSpec;
+
+  view(index: number): xmile.View | undefined;
+}
+
+interface ModelDefProps {
+  model: Model | undefined;
+  modules: Set<Module>;
+}
+
+const modelDefDefaults: ModelDefProps = {
+  model: undefined,
+  modules: Set<Module>(),
+};
+
+export class ModelDef extends Record(modelDefDefaults) {
+  constructor(params: ModelDefProps) {
+    super(params);
+  }
+
+  get<T extends keyof ModelDefProps>(key: T): ModelDefProps[T] {
+    return super.get(key);
+  }
+}
+
+const contextDefaults = {
+  project: (null as any) as Project,
+  models: List<Model>(),
+};
+
+export class Context extends Record(contextDefaults) {
+  constructor(project: Project, model: Model, prevContext?: Context) {
+    const models = prevContext ? prevContext.models : List<Model>();
+    super({
+      project,
+      models: models.push(model),
+    });
+  }
+
+  get parent(): Model {
+    return defined(this.models.last());
+  }
+
+  get mainModel(): Model {
+    const main = defined(this.project.main);
+    return defined(this.project.model(main.modelName));
+  }
+
+  lookup(ident: string): Variable | undefined {
+    if (ident[0] === '.') {
+      ident = ident.substr(1);
+      return new Context(this.project, this.mainModel).lookup(ident);
+    }
+
+    const model = this.parent;
+    if (model.vars.has(ident)) {
+      return model.vars.get(ident);
+    }
+    const parts = ident.split('.');
+    const module = model.modules.get(parts[0]);
+    if (!module) {
+      return undefined;
+    }
+    const nextModel = this.project.model(module.modelName);
+    if (!nextModel) {
+      return undefined;
+    }
+    return new Context(this.project, nextModel).lookup(parts.slice(1).join('.'));
+  }
+}
+
+export type VariableKind = 'ordinary' | 'stock' | 'table' | 'module' | 'reference';
+
+interface OrdinaryProps {
+  kind: VariableKind;
+  xmile?: xmile.Variable;
+  valid: boolean;
+  ident?: string;
+  eqn?: string;
+  ast?: ast.Node;
+  deps: Set<string>;
+}
+
+const variableDefaults: OrdinaryProps = {
+  kind: 'ordinary',
+  xmile: undefined,
+  valid: false,
+  ident: undefined,
+  eqn: undefined,
+  ast: undefined,
+  deps: Set<string>(),
+};
+
+function variableFrom(xVar: xmile.Variable | undefined, kind: VariableKind): OrdinaryProps {
+  const variable = Object.assign({}, variableDefaults);
+  variable.kind = kind;
+  variable.xmile = xVar;
+
+  variable.ident = xVar && xVar.name ? xVar.ident : undefined;
+  variable.eqn = xVar && xVar.eqn;
+
+  if (variable.eqn) {
+    const [ast, errs] = eqn(variable.eqn);
+    if (ast) {
+      variable.ast = ast || undefined;
+      variable.valid = true;
+    }
+  }
+
+  // for a flow or aux, we depend on variables that aren't built-in
+  // functions in the equation.
+  if (xVar && xVar.type === 'module') {
+    variable.deps = Set<string>();
+    if (xVar.connections) {
+      for (const conn of xVar.connections) {
+        const ref = new Reference(conn);
+        variable.deps = variable.deps.add(ref.ptr);
+      }
+    }
+  } else {
+    variable.deps = identifierSet(variable.ast);
+  }
+
+  return variable;
+}
+
+// Ordinary variables are either auxiliaries or flows -- they are
+// represented the same way.
+export class Ordinary extends Record(variableDefaults) {
+  constructor(xVar?: xmile.Variable) {
+    const variable = variableFrom(xVar, 'ordinary');
+    super(variable);
+  }
+}
+
+const stockOnlyDefaults = {
+  initial: '',
+  inflows: List<string>(),
+  outflows: List<string>(),
+};
+const stockDefaults = {
+  ...variableDefaults,
+  ...stockOnlyDefaults,
+};
+
+export class Stock extends Record(stockDefaults) {
+  constructor(xVar: xmile.Variable) {
+    const variable = variableFrom(xVar, 'stock');
+    const stock = {
+      ...variable,
+      initial: xVar.eqn ? xVar.eqn : '',
+      inflows: xVar.inflows || List(),
+      outflows: xVar.outflows || List(),
+    };
+    // build an ast from our initialization equation
+    if (stock.initial) {
+      const [ast, errs] = eqn(stock.initial);
+      if (ast) {
+        stock.ast = ast;
+        stock.valid = true;
+      }
+    }
+    super(stock);
+  }
+}
+
+const tableOnlyDefaults = {
+  x: List<number>(),
+  y: List<number>(),
+  ok: false,
+};
+const tableDefaults = {
+  ...variableDefaults,
+  ...tableOnlyDefaults,
+};
+
+// An ordinary variable with an attached table
+export class Table extends Record(tableDefaults) {
+  constructor(xVar: xmile.Variable) {
+    const variable = variableFrom(xVar, 'table');
+
+    const gf = defined(xVar.gf);
+    const ypts = gf.yPoints;
+
+    // FIXME(bp) unit test
+    const xpts = gf.xPoints;
+    const xscale = gf.xScale;
+    const xmin = xscale ? xscale.min : 0;
+    const xmax = xscale ? xscale.max : 0;
+
+    let xList = List<number>();
+    let yList = List<number>();
+    let ok = true;
+
+    if (ypts) {
+      for (let i = 0; i < ypts.size; i++) {
+        let x: number;
+        // either the x points have been explicitly specified, or
+        // it is a linear mapping of points between xmin and xmax,
+        // inclusive
+        if (xpts) {
+          x = defined(xpts.get(i));
+        } else {
+          x = (i / (ypts.size - 1)) * (xmax - xmin) + xmin;
+        }
+        xList = xList.push(x);
+        yList = yList.push(defined(ypts.get(i)));
+      }
+    } else {
+      ok = false;
+    }
+
+    const table = {
+      ...variable,
+      x: xList,
+      y: yList,
+      ok,
+    };
+    super(table);
+  }
+}
+
+const moduleOnlyDefaults = {
+  modelName: '',
+  refs: Map<string, Reference>(),
+};
+const moduleDefaults = {
+  ...variableDefaults,
+  ...moduleOnlyDefaults,
+};
+
+export class Module extends Record(moduleDefaults) {
+  constructor(xVar: xmile.Variable) {
+    const variable = variableFrom(xVar, 'module');
+
+    let refs = Map<string, Reference>();
+    if (xVar.connections) {
+      for (const conn of xVar.connections) {
+        const ref = new Reference(conn);
+        refs = refs.set(defined(ref.ident), ref);
+      }
+    }
+
+    const mod = {
+      ...variable,
+      // This is a deviation from the XMILE spec, but is the
+      // only thing that makes sense -- having a 1 to 1
+      // relationship between model name and module name
+      // would be insane.
+      modelName: xVar.model ? xVar.model : defined(xVar.ident),
+      refs,
+    };
+
+    super(mod);
+  }
+}
+
+const referenceOnlyDefaults = {
+  xmileConn: (undefined as any) as xmile.Connection,
+  ptr: '',
+};
+const referenceDefaults = {
+  ...variableDefaults,
+  ...referenceOnlyDefaults,
+};
+
+export class Reference extends Record(referenceDefaults) {
+  constructor(conn: xmile.Connection) {
+    const variable = variableFrom(new xmile.Variable({ name: conn.to }), 'reference');
+    const reference = {
+      ...variable,
+      xmileConn: conn,
+      ptr: conn.from,
+    };
+    super(reference);
+  }
+}
+
+export type Variable = Ordinary | Stock | Table | Module | Reference;
+
+// ---------------------------------------------------------------------
 
 const JsOps: Map<string, string> = Map({
   '&': '&&',
@@ -142,269 +438,185 @@ export class CodegenVisitor extends Record(codegenVisitorDefaults) implements as
   }
 }
 
-const variableDefaults = {
-  xmile: undefined as xmile.Variable | undefined,
-  valid: false as boolean,
-  ident: undefined as string | undefined,
-  eqn: undefined as string | undefined,
-  ast: undefined as ast.Node | undefined,
-  deps: Set<string>(),
-};
+export function isConst(variable: Variable): boolean {
+  return variable.eqn !== undefined && isFinite(variable.eqn);
+}
 
-export class Variable extends Record(variableDefaults) implements type.Variable {
-  constructor(xVar?: xmile.Variable) {
-    const variable = Object.assign({}, variableDefaults);
-    variable.xmile = xVar;
+export function setAST(variable: Variable, node: ast.Node): Variable {
+  // FIXME :\
+  const v: any = variable;
+  return v.set('ast', node).set('deps', identifierSet(node));
+}
 
-    variable.ident = xVar && xVar.name ? xVar.ident : undefined;
-    variable.eqn = xVar && xVar.eqn;
+function isOrdinary(variable: Variable): variable is Ordinary {
+  return variable.kind === 'ordinary';
+}
 
-    if (variable.eqn) {
-      const [ast, errs] = parse.eqn(variable.eqn);
-      if (ast) {
-        variable.ast = ast || undefined;
-        variable.valid = true;
-      }
-    }
+function isStock(variable: Variable): variable is Stock {
+  return variable.kind === 'stock';
+}
 
-    // for a flow or aux, we depend on variables that aren't built
-    // in functions in the equation.
-    if (xVar && xVar.type === 'module') {
-      variable.deps = Set<string>();
-      if (xVar.connections) {
-        for (const conn of xVar.connections) {
-          const ref = new Reference(conn);
-          variable.deps = variable.deps.add(ref.ptr);
-        }
-      }
-    } else {
-      variable.deps = identifierSet(variable.ast);
-    }
-    super(variable);
+function isTable(variable: Variable): variable is Table {
+  return variable.kind === 'table';
+}
+
+function isModule(variable: Variable): variable is Module {
+  return variable.kind === 'module';
+}
+
+function isReference(variable: Variable): variable is Reference {
+  return variable.kind === 'reference';
+}
+
+function simpleEvalCode(
+  parent: Model,
+  offsets: Map<string, number>,
+  node: ast.Node | undefined,
+): string | undefined {
+  if (!node) {
+    throw new Error('simpleEvalCode called with undefined ast.Node');
   }
+  const visitor = new CodegenVisitor(offsets, parent.ident === 'main');
 
-  setAST(ast: ast.Node): Variable {
-    return this.set('ast', ast).set('deps', identifierSet(ast));
-  }
-
-  // returns a string of this variables initial equation. suitable for
-  // exec()'ing
-  initialEquation(parent: type.Model, offsets: Map<string, number>): string | undefined {
-    return this.code(parent, offsets);
-  }
-
-  code(parent: type.Model, offsets: Map<string, number>): string | undefined {
-    if (this.isConst()) {
-      return "this.initials['" + this.ident + "']";
-    }
-    const visitor = new CodegenVisitor(offsets, parent.ident === 'main');
-
-    try {
-      return defined(this.ast).walk(visitor);
-    } catch (e) {
-      console.log('// codegen failed for ' + this.ident);
-      return '';
-    }
-  }
-
-  getDeps(context: type.Context): Set<string> {
-    let allDeps = Set<string>();
-    for (const ident of this.deps) {
-      if (allDeps.has(ident)) {
-        continue;
-      }
-      allDeps = allDeps.add(ident);
-      const v = context.parent.vars.get(ident);
-      if (!v) {
-        continue;
-      }
-      allDeps = allDeps.merge(v.getDeps(context));
-    }
-    return allDeps;
-  }
-
-  isConst(): boolean {
-    return this.eqn !== undefined && isFinite(this.eqn);
+  try {
+    return defined(node).walk(visitor);
+  } catch (e) {
+    console.log('// codegen failed!');
+    return '';
   }
 }
 
-export class Stock extends Variable {
-  readonly initial: string;
-  readonly inflows: List<string>;
-  readonly outflows: List<string>;
-
-  constructor(xVar: xmile.Variable) {
-    super(xVar);
-
-    this.initial = xVar.eqn ? xVar.eqn : '';
-    this.inflows = xVar.inflows || List();
-    this.outflows = xVar.outflows || List();
-  }
-
-  // FIXME: returns a string of this variables initial equation. suitable for
-  // exec()'ing
-  initialEquation(parent: type.Model, offset: Map<string, number>): string | undefined {
-    return super.code(parent, offset);
-  }
-
-  code(parent: type.Model, offset: Map<string, number>): string | undefined {
-    let eqn = 'curr[' + defined(offset.get(defined(this.ident))) + '] + (';
-    if (this.inflows.size > 0) {
-      eqn += this.inflows.map(s => 'curr[' + defined(offset.get(s)) + ']').join('+');
+export function code(
+  parent: Model,
+  offsets: Map<string, number>,
+  variable: Variable,
+): string | undefined {
+  if (isOrdinary(variable)) {
+    if (isConst(variable)) {
+      return "this.initials['" + variable.ident + "']";
     }
-    if (this.outflows.size > 0) {
-      eqn += '- (' + this.outflows.map(s => 'curr[' + defined(offset.get(s)) + ']').join('+') + ')';
+    return simpleEvalCode(parent, offsets, variable.ast);
+  } else if (isStock(variable)) {
+    let eqn = 'curr[' + defined(offsets.get(defined(variable.ident))) + '] + (';
+    if (variable.inflows.size > 0) {
+      eqn += variable.inflows.map(s => 'curr[' + defined(offsets.get(s)) + ']').join('+');
+    }
+    if (variable.outflows.size > 0) {
+      eqn +=
+        '- (' + variable.outflows.map(s => 'curr[' + defined(offsets.get(s)) + ']').join('+') + ')';
     }
     // stocks can have no inflows or outflows and still be valid
-    if (this.inflows.size === 0 && this.outflows.size === 0) {
+    if (variable.inflows.size === 0 && variable.outflows.size === 0) {
       eqn += '0';
     }
     eqn += ')*dt';
     return eqn;
-  }
-}
-
-export class Table extends Variable {
-  readonly x: List<number> = List();
-  readonly y: List<number> = List();
-  readonly ok: boolean = true;
-
-  constructor(xVar: xmile.Variable) {
-    super(xVar);
-
-    const gf = defined(xVar.gf);
-    const ypts = gf.yPoints;
-
-    // FIXME(bp) unit test
-    const xpts = gf.xPoints;
-    const xscale = gf.xScale;
-    const xmin = xscale ? xscale.min : 0;
-    const xmax = xscale ? xscale.max : 0;
-
-    if (!ypts) {
-      return;
-    }
-
-    for (let i = 0; i < ypts.size; i++) {
-      let x: number;
-      // either the x points have been explicitly specified, or
-      // it is a linear mapping of points between xmin and xmax,
-      // inclusive
-      if (xpts) {
-        x = defined(xpts.get(i));
-      } else {
-        x = (i / (ypts.size - 1)) * (xmax - xmin) + xmin;
-      }
-      this.x = this.x.push(x);
-      this.y = this.y.push(defined(ypts.get(i)));
-    }
-  }
-
-  code(parent: type.Model, v: Map<string, number>): string | undefined {
-    if (!this.eqn) {
+  } else if (isTable(variable)) {
+    if (!variable.eqn) {
       return undefined;
     }
-    const index = defined(super.code(parent, v));
-    return "lookup(this.tables['" + this.ident + "'], " + index + ')';
+    const indexExpr = defined(simpleEvalCode(parent, offsets, variable.ast));
+    return "lookup(this.tables['" + variable.ident + "'], " + indexExpr + ')';
+  } else if (isModule(variable)) {
+    throw new Error('code called for Module');
+  } else if (isReference(variable)) {
+    return `curr["${variable.ptr}"]`;
+  } else {
+    throw new Error('unreachable');
   }
 }
 
-export class Module extends Variable implements type.Module {
-  readonly modelName: string;
-  readonly refs: Map<string, Reference> = Map();
-
-  constructor(xVar: xmile.Variable) {
-    super(xVar);
-
-    // This is a deviation from the XMILE spec, but is the
-    // only thing that makes sense -- having a 1 to 1
-    // relationship between model name and module name
-    // would be insane.
-    if (xVar.model) {
-      this.modelName = xVar.model;
-    } else {
-      this.modelName = defined(xVar.ident);
-    }
-
-    if (xVar.connections) {
-      for (const conn of xVar.connections) {
-        const ref = new Reference(conn);
-        this.refs = this.refs.set(defined(ref.ident), ref);
-      }
-    }
-  }
-
-  getDeps(context: type.Context): Set<string> {
-    // TODO(bp): I think we need qualified idents for module deps
-    let allDeps = Set<string>();
-    for (const ident of this.deps) {
-      if (allDeps.has(ident)) {
-        continue;
-      }
-
-      const v = context.lookup(ident);
-      if (!v) {
-        throw new Error(`couldn't find ${ident}`);
-      }
-      // if we hit a Stock the dependencies 'stop'
-      if (!(v instanceof Stock)) {
-        allDeps = allDeps.add(ident.split('.')[0]);
-        allDeps = allDeps.merge(v.getDeps(context));
-      }
-    }
-    return allDeps;
-  }
-
-  referencedModels(
-    project: type.Project,
-    all?: Map<string, type.ModelDef>,
-  ): Map<string, type.ModelDef> {
-    if (!all) {
-      all = Map();
-    }
-    const mdl = defined(project.model(this.modelName));
-    const name = mdl.ident;
-    if (all.has(name)) {
-      const def = defined(all.get(name)).update('modules', (modules: Set<type.Module>) =>
-        modules.add(this),
-      );
-      all = all.set(name, def);
-    } else {
-      all = all.set(
-        name,
-        new type.ModelDef({
-          model: mdl,
-          modules: Set<type.Module>([this]),
-        }),
-      );
-    }
-    for (const [name, module] of mdl.modules) {
-      all = module.referencedModels(project, all);
-    }
-    return all;
+export function initialEquation(
+  parent: Model,
+  offsets: Map<string, number>,
+  variable: Variable,
+): string | undefined {
+  // returns a string of this variables initial equation. suitable for
+  // exec()'ing
+  if (isOrdinary(variable)) {
+    return code(parent, offsets, variable);
+  } else if (isStock(variable)) {
+    return simpleEvalCode(parent, offsets, variable.ast);
+  } else if (isTable(variable)) {
+    return code(parent, offsets, variable);
+  } else if (isModule(variable)) {
+    return code(parent, offsets, variable);
+  } else if (isReference(variable)) {
+    return code(parent, offsets, variable);
+  } else {
+    throw new Error('unreachable');
   }
 }
 
-export class Reference extends Variable implements type.Reference {
-  readonly xmileConn: xmile.Connection;
-  readonly ptr: string;
+function getModuleDeps(context: Context, variable: Module): Set<string> {
+  // TODO(bp): I think we need qualified idents for module deps
+  let allDeps = Set<string>();
+  for (const ident of variable.deps) {
+    if (allDeps.has(ident)) {
+      continue;
+    }
 
-  constructor(conn: xmile.Connection) {
-    super(new xmile.Variable({ name: conn.to }));
-    this.xmileConn = conn;
-    this.ptr = conn.from;
+    const v = context.lookup(ident);
+    if (!v) {
+      throw new Error(`couldn't find ${ident}`);
+    }
+    // if we hit a Stock the dependencies 'stop'
+    if (!(v instanceof Stock)) {
+      allDeps = allDeps.add(ident.split('.')[0]);
+      allDeps = allDeps.merge(getDeps(context, v));
+    }
+  }
+  return allDeps;
+}
+
+export function getDeps(context: Context, variable: Variable): Set<string> {
+  if (isModule(variable)) {
+    return getModuleDeps(context, variable);
   }
 
-  code(parent: type.Model, offsets: Map<string, number>): string | undefined {
-    return `curr["${this.ptr}"]`;
+  let allDeps = Set<string>();
+  for (const ident of variable.deps) {
+    if (allDeps.has(ident)) {
+      continue;
+    }
+    allDeps = allDeps.add(ident);
+    const v = context.parent.vars.get(ident);
+    if (!v) {
+      continue;
+    }
+    allDeps = allDeps.merge(getDeps(context, v));
   }
+  return allDeps;
+}
 
-  isConst(): boolean {
-    // FIXME(bp) should actually lookup whether this.ptr is const,
-    // but that requires module instance walking in Model which I
-    // don't want to implement yet.
-    return false;
+export function referencedModels(
+  project: Project,
+  mod: Module,
+  all?: Map<string, ModelDef>,
+): Map<string, ModelDef> {
+  if (!all) {
+    all = Map();
   }
+  const mdl = defined(project.model(mod.modelName));
+  const name = mdl.ident;
+  if (all.has(name)) {
+    const def = defined(all.get(name)).update('modules', (modules: Set<Module>) =>
+      modules.add(mod),
+    );
+    all = all.set(name, def);
+  } else {
+    all = all.set(
+      name,
+      new ModelDef({
+        model: mdl,
+        modules: Set<Module>([mod]),
+      }),
+    );
+  }
+  for (const [name, module] of mdl.modules) {
+    all = referencedModels(project, module, all);
+  }
+  return all;
 }
 
 // An AST visitor to deal with desugaring calls to builtin functions

@@ -11,8 +11,7 @@ import { Project } from './project';
 export { Model } from './model';
 export { Project, stdProject } from './project';
 export { Sim } from './sim';
-export { Variable } from './type';
-export { Stock } from './vars';
+export { Variable, Stock } from './vars';
 export { FileFromJSON, View, ViewElement } from './xmile';
 
 export const Error = common.Error;

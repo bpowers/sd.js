@@ -7,13 +7,12 @@ import { List, Map, Record } from 'immutable';
 import * as xmldom from 'xmldom';
 
 import * as stdlib from './stdlib';
-import * as type from './type';
 import * as xmile from './xmile';
 
 import { Error } from './common';
 import { Model } from './model';
 import { defined } from './util';
-import { Module } from './vars';
+import { Module, Project as varsProject } from './vars';
 
 const getXmileElement = (xmileDoc: XMLDocument): Element | undefined => {
   // in Chrome/Firefox, item 0 is xmile.  Under node's XML DOM
@@ -30,9 +29,9 @@ const getXmileElement = (xmileDoc: XMLDocument): Element | undefined => {
 
 const projectDefaults = {
   name: 'sd project',
-  main: undefined as type.Module | undefined,
+  main: undefined as Module | undefined,
   files: List<xmile.File>(),
-  models: Map<string, type.Model>(),
+  models: Map<string, Model>(),
 };
 
 /**
@@ -40,14 +39,9 @@ const projectDefaults = {
  *
  * A single project may include models + non-model elements
  */
-export class Project extends Record(projectDefaults) implements type.Project {
-  name: string;
-  main: type.Module;
-  files: List<xmile.File>;
-  models: Map<string, type.Model>;
-
+export class Project extends Record(projectDefaults) implements varsProject {
   constructor() {
-    let models = Map<string, type.Model>();
+    let models = Map<string, Model>();
 
     for (const [name, modelStr] of stdlib.xmileModels) {
       const xml = new xmldom.DOMParser().parseFromString(modelStr, 'application/xml');
@@ -60,7 +54,7 @@ export class Project extends Record(projectDefaults) implements type.Project {
       }
 
       const xModel = defined(defined(file).models.first());
-      const model = new Model((null as any) as Project, xModel);
+      const model = new Model((undefined as any) as Project, xModel);
       if (!model.ident.startsWith('stdlib·')) {
         throw new Error(`stdlib bad model name: ${model.ident}`);
       }
@@ -77,7 +71,7 @@ export class Project extends Record(projectDefaults) implements type.Project {
     return this.files;
   }
 
-  model(name?: string): type.Model | undefined {
+  model(name?: string): Model | undefined {
     if (!name) {
       name = 'main';
     }

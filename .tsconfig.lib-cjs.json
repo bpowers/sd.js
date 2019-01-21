@@ -8,7 +8,6 @@
     "src/project.ts",
     "src/sd.ts",
     "src/sim.ts",
-    "src/type.ts",
     "src/util.ts",
     "src/vars.ts",
     "src/xmile.ts"

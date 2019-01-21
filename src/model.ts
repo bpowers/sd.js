@@ -6,12 +6,20 @@ import { List, Map, Record } from 'immutable';
 
 import * as ast from './ast';
 import * as common from './common';
-import * as type from './type';
 import * as xmile from './xmile';
 
 import { isIdent } from './ast';
 import { defined } from './common';
-import { Module, Stock, Table, Variable } from './vars';
+import {
+  Model as varModel,
+  Module,
+  Ordinary,
+  Project,
+  setAST,
+  Stock,
+  Table,
+  Variable,
+} from './vars';
 
 const modelDefaults = {
   valid: false,
@@ -21,8 +29,8 @@ const modelDefaults = {
   vars: Map<string, Variable>(),
 };
 
-export class Model extends Record(modelDefaults) implements type.Model {
-  constructor(project: type.Project, xModel: xmile.Model) {
+export class Model extends Record(modelDefaults) implements varModel {
+  constructor(project: Project, xModel: xmile.Model) {
     const [vars, modules, tables, err] = Model.parseVars(project, xModel.variables);
     if (err !== undefined) {
       throw err;
@@ -46,7 +54,7 @@ export class Model extends Record(modelDefaults) implements type.Model {
     return common.canonicalize(name);
   }
 
-  get simSpec(): type.SimSpec | undefined {
+  get simSpec(): xmile.SimSpec | undefined {
     return this.xModel.simSpec;
   }
 
@@ -54,7 +62,7 @@ export class Model extends Record(modelDefaults) implements type.Model {
    * Validates & figures out all necessary variable information.
    */
   private static parseVars(
-    project: type.Project,
+    project: Project,
     variables: List<xmile.Variable>,
   ):
     | [Map<string, Variable>, Map<string, Module>, Map<string, Table>, undefined]
@@ -85,7 +93,7 @@ export class Model extends Record(modelDefaults) implements type.Model {
           break;
         case 'aux':
           // FIXME: fix Variable/GF/Table nonsense
-          let aux: Variable | null = null;
+          let aux: Variable | undefined;
           if (v.gf) {
             const table = new Table(v);
             if (table.ok) {
@@ -93,13 +101,13 @@ export class Model extends Record(modelDefaults) implements type.Model {
               aux = table;
             }
           }
-          if (aux === null) {
-            aux = new Variable(v);
+          if (!aux) {
+            aux = new Ordinary(v);
           }
           vars = vars.set(ident, aux);
           break;
         case 'flow':
-          let flow: Variable | null = null;
+          let flow: Variable | undefined;
           if (v.gf) {
             const table = new Table(v);
             if (table.ok) {
@@ -107,8 +115,8 @@ export class Model extends Record(modelDefaults) implements type.Model {
               flow = table;
             }
           }
-          if (flow === null) {
-            flow = new Variable(v);
+          if (!flow) {
+            flow = new Ordinary(v);
           }
           vars = vars.set(ident, flow);
           break;
@@ -126,7 +134,7 @@ export class Model extends Record(modelDefaults) implements type.Model {
   }
 
   private static instantiateImplicitModules(
-    project: type.Project,
+    project: Project,
     vars: Map<string, Variable>,
   ): [Map<string, Variable>, Map<string, Module>, undefined] | [undefined, undefined, Error] {
     let modules = Map<string, Module>();
@@ -142,7 +150,7 @@ export class Model extends Record(modelDefaults) implements type.Model {
 
         const ast = v.ast.walk(visitor);
         if (visitor.didRewrite) {
-          v = v.setAST(ast);
+          v = setAST(v, ast);
         }
 
         for (const [name, v] of visitor.vars) {
@@ -181,13 +189,13 @@ const stdlibArgs = Map<string, List<string>>([
 // An AST visitor to deal with desugaring calls to builtin functions
 // that are actually module instantiations
 class BuiltinVisitor implements ast.Visitor<ast.Node> {
-  project: type.Project;
-  variable: type.Variable;
+  project: Project;
+  variable: Variable;
   modules: Map<string, Module> = Map();
   vars: Map<string, Variable> = Map();
   n: number = 0;
 
-  constructor(project: type.Project, v: type.Variable) {
+  constructor(project: Project, v: Variable) {
     this.project = project;
     this.variable = v;
   }
@@ -229,7 +237,7 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
           name: `$·${this.variable.ident}·${this.n}·arg${i}`,
           eqn: arg.walk(new PrintVisitor()),
         });
-        const proxyVar = new Variable(xVar);
+        const proxyVar = new Ordinary(xVar);
         this.vars = this.vars.set(defined(proxyVar.ident), proxyVar);
         identArgs.push(defined(proxyVar.ident));
       }

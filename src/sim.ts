@@ -4,16 +4,28 @@
 
 'use strict';
 
-import { Map, Set } from 'immutable';
+import { List, Map, Set } from 'immutable';
 
 import * as Mustache from 'mustache';
 
 import { defined } from './common';
 
 import * as runtime from './runtime';
-import * as type from './type';
 import * as util from './util';
 import * as vars from './vars';
+
+export interface SeriesProps {
+  name: string;
+  time: Float64Array;
+  values: Float64Array;
+}
+export type Series = Readonly<SeriesProps>;
+
+interface TableProps {
+  x: List<number>;
+  y: List<number>;
+}
+export type Table = Readonly<TableProps>;
 
 // whether we map names -> offsets in a Float64Array, or use names
 // as object property lookups.  With DEBUG = true, equations are
@@ -107,8 +119,8 @@ export class TemplateContext {
   offsets: string;
 
   constructor(
-    project: type.Project,
-    model: type.Model,
+    project: vars.Project,
+    model: vars.Model,
     mods: any,
     init: any,
     initials: any,
@@ -133,30 +145,30 @@ export class TemplateContext {
   }
 }
 
-class VarComparator implements util.Comparator<type.Variable> {
+class VarComparator implements util.Comparator<vars.Variable> {
   deps: Map<string, Set<string>> = Map();
-  context: type.Context;
+  context: vars.Context;
 
-  constructor(project: type.Project, parent: type.Model) {
-    this.context = new type.Context(project, parent);
+  constructor(project: vars.Project, parent: vars.Model) {
+    this.context = new vars.Context(project, parent);
   }
 
-  lessThan(a: type.Variable, b: type.Variable): boolean {
+  lessThan(a: vars.Variable, b: vars.Variable): boolean {
     const aName = defined(a.ident);
     const bName = defined(b.ident);
     if (!this.deps.has(aName)) {
-      this.deps = this.deps.set(aName, a.getDeps(this.context));
+      this.deps = this.deps.set(aName, vars.getDeps(this.context, a));
     }
     if (!this.deps.has(bName)) {
-      this.deps = this.deps.set(bName, b.getDeps(this.context));
+      this.deps = this.deps.set(bName, vars.getDeps(this.context, b));
     }
     return defined(this.deps.get(bName)).has(aName);
   }
 }
 
 export class Sim {
-  root: type.Module;
-  project: type.Project;
+  root: vars.Module;
+  project: vars.Project;
   seq: number = 1; // unique message ids
   // callback storage, keyed by message id
   promised: Map<number, (result: any, err: any) => void> = Map();
@@ -164,7 +176,7 @@ export class Sim {
   idSeq: Map<string, number> = Map();
   worker?: Worker;
 
-  constructor(project: type.Project, root: type.Module, isStandalone: boolean) {
+  constructor(project: vars.Project, root: vars.Module, isStandalone: boolean) {
     this.root = root;
     this.project = project;
 
@@ -174,7 +186,7 @@ export class Sim {
     // JS classes, template out the whole thing to a string, and
     // either write it to stdout or a Worker.
 
-    const models = root.referencedModels(project);
+    const models = vars.referencedModels(project, root);
 
     const compiledModels: TemplateContext[] = [];
     for (const [n, modelDef] of models) {
@@ -222,16 +234,16 @@ export class Sim {
   }
 
   compileModel(
-    project: type.Project,
-    model: type.Model,
-    modules: Set<type.Module>,
+    project: vars.Project,
+    model: vars.Model,
+    modules: Set<vars.Module>,
   ): TemplateContext {
-    const runInitials: type.Variable[] = [];
-    const runFlows: type.Variable[] = [];
-    const runStocks: type.Variable[] = [];
+    const runInitials: vars.Variable[] = [];
+    const runFlows: vars.Variable[] = [];
+    const runStocks: vars.Variable[] = [];
 
     const initialsIncludes = (ident: string): boolean => {
-      return runInitials.some((v: type.Variable) => v.ident === ident);
+      return runInitials.some((v: vars.Variable) => v.ident === ident);
     };
 
     const isRef = (n: string): boolean => {
@@ -246,7 +258,7 @@ export class Sim {
     let offsets: Map<string, number> = Map();
     let runtimeOffsets: Map<string, number> = Map();
 
-    const context = new type.Context(project, model);
+    const context = new vars.Context(project, model);
 
     // decide which run lists each variable has to be, based on
     // its type and const-ness
@@ -257,7 +269,7 @@ export class Sim {
         runStocks.push(v);
       } else if (v instanceof vars.Stock) {
         // add any referenced vars to initials
-        for (const d of v.getDeps(context)) {
+        for (const d of vars.getDeps(context, v)) {
           if (d === 'time' || initialsIncludes(d)) {
             continue;
           }
@@ -270,7 +282,7 @@ export class Sim {
         runStocks.push(v);
       } else if (v instanceof vars.Table) {
         runFlows.push(v);
-      } else if (v.isConst()) {
+      } else if (vars.isConst(v)) {
         runInitials.push(v);
         runStocks.push(v);
       } else {
@@ -294,7 +306,7 @@ export class Sim {
     util.sort(runFlows, new VarComparator(this.project, model));
 
     const initials: { [name: string]: number } = {};
-    const tables: { [name: string]: type.Table } = {};
+    const tables: { [name: string]: Table } = {};
 
     const ci: string[] = [];
     const cf: string[] = [];
@@ -310,11 +322,11 @@ export class Sim {
         if (isRef(ident)) {
           continue;
         }
-        if (v.isConst()) {
+        if (vars.isConst(v)) {
           initials[ident] = parseFloat(defined(v.eqn));
         }
         const off = defined(offsets.get(ident));
-        const value = v.initialEquation(model, offsets);
+        const value = vars.initialEquation(model, offsets, v);
         eqn = `curr[${off}] = ${value};`;
       }
       ci.push(eqn);
@@ -324,7 +336,7 @@ export class Sim {
       if (v instanceof vars.Module) {
         cf.push(`this.modules["${ident}"].calcFlows(dt, curr);`);
       } else if (!isRef(ident)) {
-        cf.push(`curr[${defined(offsets.get(ident))}] = ${v.code(model, offsets)};`);
+        cf.push(`curr[${defined(offsets.get(ident))}] = ${vars.code(model, offsets, v)};`);
       }
     }
     for (const v of runStocks) {
@@ -338,15 +350,9 @@ export class Sim {
         cs.push(`this.modules['${ident}'].calcStocks(dt, curr, next);`);
       } else {
         const off = defined(offsets.get(ident));
-        const value = v instanceof vars.Stock ? v.code(model, offsets) : `curr[${off}]`;
+        const value = v instanceof vars.Stock ? vars.code(model, offsets, v) : `curr[${off}]`;
         cs.push(`next[${off}] = ${value};`);
       }
-    }
-    for (const [n, table] of model.tables) {
-      tables[n] = {
-        x: table.x,
-        y: table.y,
-      };
     }
 
     const init: string[] = [];
@@ -369,6 +375,15 @@ export class Sim {
       mods.push(`    "${n}": ${n},`);
     }
     mods.push('}');
+
+    for (const [k, table] of model.tables) {
+      // this is something that is going to be templated out; thats
+      // why it isn't an immutable type.
+      tables[k] = {
+        x: table.x,
+        y: table.y,
+      };
+    }
 
     return new TemplateContext(
       project,
@@ -457,18 +472,18 @@ export class Sim {
 
   async csv(delim: string = ','): Promise<string> {
     const names: string[] = await this.varNames();
-    const data: { [name: string]: type.Series } = await this.series(...names);
+    const data: { [name: string]: Series } = await this.series(...names);
     return Sim.csvFromData(data, names, delim);
   }
 
   private static csvFromData(
-    data: { [name: string]: type.Series },
+    data: { [name: string]: Series },
     vars: string[],
     delim: string,
   ): string {
     let file = '';
-    const series: { [name: string]: type.Series } = {};
-    let time: type.Series | undefined;
+    const series: { [name: string]: Series } = {};
+    let time: Series | undefined;
     let header = 'time' + delim;
 
     // create the CSV header
