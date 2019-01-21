@@ -9,13 +9,12 @@ TEST_SRCS  = $(wildcard test/*.ts)
 
 TEST       = test/.stamp
 
-LIB        = sd.js
-LIB_MIN    = sd.min.js
+LIB        = lib
 
-TARGETS    = $(LIB) $(LIB_MIN) lib
+TARGETS    = $(LIB)
 # make sure we recompile when the Makefile (and associated
 # CFLAGS/LDFLAGS change) or any project files are changed.
-CONFIG     = Makefile $(TSC) $(TSLINT)
+CONFIG     = Makefile package.json $(TSC) $(TSLINT)
 
 RTEST_DIR  = test/test-models
 RTEST_CMD  = $(RTEST_DIR)/regression-test.py
@@ -45,18 +44,15 @@ node_modules: package.json
 	yarn install
 	touch -c $@
 
-$(LIB): node_modules $(LIB_SRCS) $(RT_SRCS)
+$(LIB): node_modules $(LIB_SRCS) $(RT_SRCS) $(CONFIG)
 	@echo "  YARN  $@"
 	yarn build
-
-$(LIB_MIN): $(LIB)
-	@echo "  TODO  $@"
-	cp $(LIB) $(LIB_MIN)
+	touch -c $@
 
 $(RTEST_CMD): $(RTEST_DIR) .gitmodules
 	@echo "  GIT   $<"
 	git submodule update --init
-	touch $@
+	touch -c $@
 
 test check: $(LIB)
 	@echo "  TEST"
