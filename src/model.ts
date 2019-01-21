@@ -23,14 +23,15 @@ import {
 
 const modelDefaults = {
   valid: false,
-  xModel: (null as any) as xmile.Model,
+  shouldPersist: false,
+  xModel: (undefined as any) as xmile.Model,
   modules: Map<string, Module>(),
   tables: Map<string, Table>(),
   vars: Map<string, Variable>(),
 };
 
 export class Model extends Record(modelDefaults) implements varModel {
-  constructor(project: Project, xModel: xmile.Model) {
+  constructor(project: Project, xModel: xmile.Model, shouldPersist: boolean = false) {
     const [vars, modules, tables, err] = Model.parseVars(project, xModel.variables);
     if (err !== undefined) {
       throw err;
@@ -39,6 +40,7 @@ export class Model extends Record(modelDefaults) implements varModel {
     super({
       xModel,
       valid: true,
+      shouldPersist,
       vars: defined(vars),
       modules: defined(modules),
       tables: defined(tables),
@@ -47,6 +49,10 @@ export class Model extends Record(modelDefaults) implements varModel {
 
   view(index: number): xmile.View | undefined {
     return this.xModel.views.get(index);
+  }
+
+  toXmile(): xmile.Model {
+    return this.xModel;
   }
 
   get ident(): string {

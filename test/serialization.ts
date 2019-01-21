@@ -52,9 +52,7 @@ describe('roundtrip', async () => {
       const xml = new DOMParser().parseFromString(data.toString(), 'application/xml');
       const [project, err] = stdProject.addXmileFile(xml);
       expect(err).to.be.undefined;
-      const files = defined(project).getFiles();
-      expect(files.size).to.equal(1);
-      const file1 = defined(files.first());
+      const file1 = defined(project).toFile();
       const jsonStr1 = JSON.stringify(file1, undefined, 2);
       const jsonParsed1 = JSON.parse(jsonStr1);
       const [file2, err2] = FileFromJSON(jsonParsed1);

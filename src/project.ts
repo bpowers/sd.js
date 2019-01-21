@@ -67,8 +67,19 @@ export class Project extends Record(projectDefaults) implements varsProject {
     return defined(defined(this.files.last()).simSpec);
   }
 
-  getFiles(): List<xmile.File> {
-    return this.files;
+  toFile(): xmile.File {
+    if (this.files.size !== 1) {
+      throw new Error('Expected only a single file in a project for now');
+    }
+    const file = defined(this.files.get(0));
+    let models = List<xmile.Model>();
+    for (const [name, model] of this.models) {
+      if (!model.shouldPersist) {
+        continue;
+      }
+      models = models.push(model.toXmile());
+    }
+    return file.set('models', models);
   }
 
   model(name?: string): Model | undefined {
@@ -93,12 +104,16 @@ export class Project extends Record(projectDefaults) implements varsProject {
 
   addFile(file: xmile.File, isMain = false): [Project, undefined] | [undefined, Error] {
     const files = this.files.push(file);
+    const xModels = file.models;
+
+    // clear out the models for now
+    file = file.set('models', List<xmile.Model>());
 
     // FIXME: merge the other parts of the model into the project
     const models = Map(
-      defined(file).models.map(
+      xModels.map(
         (xModel): [string, Model] => {
-          const model = new Model(this, xModel);
+          const model = new Model(this, xModel, true);
           return [model.ident, model];
         },
       ),

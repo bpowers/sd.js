@@ -19,7 +19,7 @@ export interface Project {
   readonly main: Module | undefined;
 
   model(name?: string): Model | undefined;
-  getFiles(): List<xmile.File>;
+  toFile(): xmile.File;
 }
 
 export interface Model {
