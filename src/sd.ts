@@ -12,7 +12,33 @@ export { Model } from './model';
 export { Project, stdProject } from './project';
 export { Sim } from './sim';
 export { Variable, Stock } from './vars';
-export { FileFromJSON, View, ViewElement } from './xmile';
+export {
+  ArrayElement as XmileArrayElement,
+  Behavior as XmileBehavior,
+  Connection as XmileConnection,
+  Data as XmileData,
+  Dimension as XmileDimension,
+  File as XmileFile,
+  FileFromJSON,
+  Format as XmileFormat,
+  GF as XmileGF,
+  Header as XmileHeader,
+  Model as XmileModel,
+  Options as XmileOptions,
+  Point as XmilePoint,
+  Product as XmileProduct,
+  Range as XmileRange,
+  Scale as XmileScale,
+  Shape as XmileShape,
+  SimSpec as XmileSimSpec,
+  Style as XmileStyle,
+  Unit as XmileUnit,
+  Variable as XmileVariable,
+  View,
+  View as XmileView,
+  ViewElement,
+  ViewElement as XmileViewElement,
+} from './xmile';
 
 export const Error = common.Error;
 
