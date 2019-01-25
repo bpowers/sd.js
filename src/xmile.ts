@@ -1047,12 +1047,8 @@ export class Variable extends Record(VariableDefaults) implements XNode {
     return [new Variable(v), undefined];
   }
 
-  get ident(): string {
-    if (!this.name) {
-      console.log('FIXME');
-      return '';
-    }
-    return canonicalize(this.name);
+  get ident(): string | undefined {
+    return this.name ? canonicalize(this.name) : undefined;
   }
 
   toXml(doc: XMLDocument, parent: Element): boolean {

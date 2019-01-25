@@ -154,8 +154,8 @@ class VarComparator implements util.Comparator<vars.Variable> {
   }
 
   lessThan(a: vars.Variable, b: vars.Variable): boolean {
-    const aName = defined(a.ident);
-    const bName = defined(b.ident);
+    const aName = defined(vars.ident(a));
+    const bName = defined(vars.ident(b));
     if (!this.deps.has(aName)) {
       this.deps = this.deps.set(aName, vars.getDeps(this.context, a));
     }
@@ -243,7 +243,7 @@ export class Sim {
     const runStocks: vars.Variable[] = [];
 
     const initialsIncludes = (ident: string): boolean => {
-      return runInitials.some((v: vars.Variable) => v.ident === ident);
+      return runInitials.some((v: vars.Variable) => vars.ident(v) === ident);
     };
 
     const isRef = (n: string): boolean => {
@@ -315,7 +315,7 @@ export class Sim {
     // equations, they need to be promoted into initials.
     for (const v of runInitials) {
       let eqn: string;
-      const ident = defined(v.ident);
+      const ident = defined(vars.ident(v));
       if (v instanceof vars.Module) {
         eqn = `this.modules["${ident}"].calcInitial(dt, curr);`;
       } else {
@@ -323,7 +323,7 @@ export class Sim {
           continue;
         }
         if (vars.isConst(v)) {
-          initials[ident] = parseFloat(defined(v.eqn));
+          initials[ident] = parseFloat(defined(defined(v.xmile).eqn));
         }
         const off = defined(offsets.get(ident));
         const value = vars.initialEquation(model, offsets, v);
@@ -332,7 +332,7 @@ export class Sim {
       ci.push(eqn);
     }
     for (const v of runFlows) {
-      const ident = defined(v.ident);
+      const ident = defined(vars.ident(v));
       if (v instanceof vars.Module) {
         cf.push(`this.modules["${ident}"].calcFlows(dt, curr);`);
       } else if (!isRef(ident)) {
@@ -340,7 +340,7 @@ export class Sim {
       }
     }
     for (const v of runStocks) {
-      const ident = defined(v.ident);
+      const ident = defined(vars.ident(v));
       // if a variable is a reference in this monomorphization of a
       // model, no need to calculate + store a value
       if (isRef(ident)) {

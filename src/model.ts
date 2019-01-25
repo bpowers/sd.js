@@ -11,6 +11,7 @@ import * as xmile from './xmile';
 import { isIdent } from './ast';
 import { defined } from './common';
 import {
+  ident,
   Model as varModel,
   Module,
   Ordinary,
@@ -81,6 +82,9 @@ export class Model extends Record(modelDefaults) implements varModel {
       // identifier, not the 'xmile name', which is
       // what I like to think of as the display name.
       const ident = v.ident;
+      if (ident === undefined) {
+        return [undefined, undefined, undefined, new Error('variable without a name')];
+      }
 
       // FIXME: is this too simplistic?
       if (vars.has(ident)) {
@@ -102,7 +106,7 @@ export class Model extends Record(modelDefaults) implements varModel {
           let aux: Variable | undefined;
           if (v.gf) {
             const table = new Table(v);
-            if (table.ok) {
+            if (table.valid) {
               tables = tables.set(ident, table);
               aux = table;
             }
@@ -116,7 +120,7 @@ export class Model extends Record(modelDefaults) implements varModel {
           let flow: Variable | undefined;
           if (v.gf) {
             const table = new Table(v);
-            if (table.ok) {
+            if (table.valid) {
               tables = tables.set(ident, table);
               flow = table;
             }
@@ -238,9 +242,10 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
       if (isIdent(arg)) {
         identArgs = identArgs.push(arg.ident);
       } else {
+        const id = defined(ident(this.variable));
         const xVar = new xmile.Variable({
           type: 'aux',
-          name: `$·${this.variable.ident}·${this.n}·arg${i}`,
+          name: `$·${id}·${this.n}·arg${i}`,
           eqn: arg.walk(new PrintVisitor()),
         });
         const proxyVar = new Ordinary(xVar);
@@ -249,7 +254,8 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
       }
     });
 
-    const modName = `$·${this.variable.ident}·${this.n}·${fn}`;
+    const modId = defined(ident(this.variable));
+    const modName = `$·${modId}·${this.n}·${fn}`;
     let xMod = new xmile.Variable({
       type: 'module',
       name: modName,

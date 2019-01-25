@@ -2,16 +2,16 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
-// FIXME: this seems to fix a bug in Typescript 1.5
-declare function isFinite(n: string | number): boolean;
-
 import { List, Map, Record, RecordOf, Set } from 'immutable';
 
 import { builtins, defined, exists } from './common';
 
 import * as ast from './ast';
-import { eqn } from './parse';
+import { eqn as parseEqn } from './parse';
 import * as xmile from './xmile';
+
+// FIXME: this seems to fix a bug in Typescript 1.5
+declare function isFinite(n: string | number): boolean;
 
 export interface Project {
   readonly name: string;
@@ -105,8 +105,6 @@ interface OrdinaryProps {
   kind: VariableKind;
   xmile?: xmile.Variable;
   valid: boolean;
-  ident?: string;
-  eqn?: string;
   ast?: ast.Node;
   deps: Set<string>;
 }
@@ -115,8 +113,6 @@ const variableDefaults: OrdinaryProps = {
   kind: 'ordinary',
   xmile: undefined,
   valid: false,
-  ident: undefined,
-  eqn: undefined,
   ast: undefined,
   deps: Set<string>(),
 };
@@ -126,11 +122,11 @@ function variableFrom(xVar: xmile.Variable | undefined, kind: VariableKind): Ord
   variable.kind = kind;
   variable.xmile = xVar;
 
-  variable.ident = xVar && xVar.name ? xVar.ident : undefined;
-  variable.eqn = xVar && xVar.eqn;
+  const ident = xVar && xVar.name ? xVar.ident : undefined;
+  const eqn: string | undefined = xVar && xVar.eqn;
 
-  if (variable.eqn) {
-    const [ast, errs] = eqn(variable.eqn);
+  if (eqn !== undefined) {
+    const [ast, errs] = parseEqn(eqn);
     if (ast) {
       variable.ast = ast || undefined;
       variable.valid = true;
@@ -161,10 +157,13 @@ export class Ordinary extends Record(variableDefaults) {
     const variable = variableFrom(xVar, 'ordinary');
     super(variable);
   }
+
+  get ident(): string | undefined {
+    return this.xmile ? this.xmile.ident : undefined;
+  }
 }
 
 const stockOnlyDefaults = {
-  initial: '',
   inflows: List<string>(),
   outflows: List<string>(),
 };
@@ -178,26 +177,23 @@ export class Stock extends Record(stockDefaults) {
     const variable = variableFrom(xVar, 'stock');
     const stock = {
       ...variable,
-      initial: xVar.eqn ? xVar.eqn : '',
       inflows: xVar.inflows || List(),
       outflows: xVar.outflows || List(),
     };
-    // build an ast from our initialization equation
-    if (stock.initial) {
-      const [ast, errs] = eqn(stock.initial);
-      if (ast) {
-        stock.ast = ast;
-        stock.valid = true;
-      }
+    if (xVar.ident === 'recovered') {
+      debugger;
     }
     super(stock);
+  }
+
+  get ident(): string | undefined {
+    return this.xmile ? this.xmile.ident : undefined;
   }
 }
 
 const tableOnlyDefaults = {
   x: List<number>(),
   y: List<number>(),
-  ok: false,
 };
 const tableDefaults = {
   ...variableDefaults,
@@ -244,14 +240,17 @@ export class Table extends Record(tableDefaults) {
       ...variable,
       x: xList,
       y: yList,
-      ok,
+      valid: variable.valid && ok,
     };
     super(table);
+  }
+
+  get ident(): string | undefined {
+    return this.xmile ? this.xmile.ident : undefined;
   }
 }
 
 const moduleOnlyDefaults = {
-  modelName: '',
   refs: Map<string, Reference>(),
 };
 const moduleDefaults = {
@@ -267,27 +266,31 @@ export class Module extends Record(moduleDefaults) {
     if (xVar.connections) {
       for (const conn of xVar.connections) {
         const ref = new Reference(conn);
-        refs = refs.set(defined(ref.ident), ref);
+        refs = refs.set(defined(ident(ref)), ref);
       }
     }
 
     const mod = {
       ...variable,
-      // This is a deviation from the XMILE spec, but is the
-      // only thing that makes sense -- having a 1 to 1
-      // relationship between model name and module name
-      // would be insane.
-      modelName: xVar.model ? xVar.model : defined(xVar.ident),
       refs,
     };
 
     super(mod);
   }
+
+  // This is a deviation from the XMILE spec, but is the only thing
+  // that makes sense -- having a 1 to 1 relationship between model
+  // name and module name would be insane.
+  get modelName(): string {
+    if (!this.xmile) {
+      throw new Error('modelName called on Module without xmile');
+    }
+    return this.xmile.model ? this.xmile.model : defined(this.xmile.ident);
+  }
 }
 
 const referenceOnlyDefaults = {
   xmileConn: (undefined as any) as xmile.Connection,
-  ptr: '',
 };
 const referenceDefaults = {
   ...variableDefaults,
@@ -300,9 +303,12 @@ export class Reference extends Record(referenceDefaults) {
     const reference = {
       ...variable,
       xmileConn: conn,
-      ptr: conn.from,
     };
     super(reference);
+  }
+
+  get ptr(): string {
+    return this.xmileConn.from;
   }
 }
 
@@ -439,7 +445,9 @@ export class CodegenVisitor extends Record(codegenVisitorDefaults) implements as
 }
 
 export function isConst(variable: Variable): boolean {
-  return variable.eqn !== undefined && isFinite(variable.eqn);
+  return (
+    variable.xmile !== undefined && variable.xmile.eqn !== undefined && isFinite(variable.xmile.eqn)
+  );
 }
 
 export function setAST(variable: Variable, node: ast.Node): Variable {
@@ -512,7 +520,7 @@ export function code(
     eqn += ')*dt';
     return eqn;
   } else if (isTable(variable)) {
-    if (!variable.eqn) {
+    if (!variable.xmile || !variable.xmile.eqn) {
       return undefined;
     }
     const indexExpr = defined(simpleEvalCode(parent, offsets, variable.ast));
@@ -521,6 +529,22 @@ export function code(
     throw new Error('code called for Module');
   } else if (isReference(variable)) {
     return `curr["${variable.ptr}"]`;
+  } else {
+    throw new Error('unreachable');
+  }
+}
+
+export function ident(variable: Variable): string | undefined {
+  if (isOrdinary(variable)) {
+    return variable.ident;
+  } else if (isStock(variable)) {
+    return variable.ident;
+  } else if (isTable(variable)) {
+    return variable.ident;
+  } else if (isModule(variable)) {
+    return variable.xmile && variable.xmile.ident;
+  } else if (isReference(variable)) {
+    return variable.xmile && variable.xmile.ident;
   } else {
     throw new Error('unreachable');
   }
