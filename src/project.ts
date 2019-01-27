@@ -40,25 +40,26 @@ const projectDefaults = {
  * A single project may include models + non-model elements
  */
 export class Project extends Record(projectDefaults) implements varsProject {
-  constructor() {
+  constructor(omitStdlib = false) {
     let models = Map<string, Model>();
 
-    for (const [name, modelStr] of stdlib.xmileModels) {
-      const xml = new xmldom.DOMParser().parseFromString(modelStr, 'application/xml');
-      const [file, err] = Project.parseFile(xml);
-      if (err) {
-        throw err;
-      }
-      if (defined(file).models.size !== 1) {
-        throw new Error(`stdlib layout error`);
-      }
+    if (!omitStdlib) {
+      for (const [name, modelJSON] of stdlib.xmileModels) {
+        const [file, err] = xmile.FileFromJSON(modelJSON);
+        if (err || !file) {
+          throw err;
+        }
+        if (file.models.size !== 1) {
+          throw new Error(`stdlib layout error`);
+        }
 
-      const xModel = defined(defined(file).models.first());
-      const model = new Model((undefined as any) as Project, xModel);
-      if (!model.ident.startsWith('stdlib·')) {
-        throw new Error(`stdlib bad model name: ${model.ident}`);
+        const xModel = defined(file.models.first());
+        const model = new Model((undefined as any) as Project, xModel);
+        if (!model.ident.startsWith('stdlib·')) {
+          throw new Error(`stdlib bad model name: ${model.ident}`);
+        }
+        models = models.set(model.ident, model);
       }
-      models = models.set(model.ident, model);
     }
     super({ models });
   }

@@ -1,11 +1,21 @@
 #!/usr/bin/env node
 'use strict';
 
-let fs = require('fs');
-let _ = require('lodash');
-let util = require('util');
+const fs = require('fs');
+const _ = require('lodash');
+const util = require('util');
+const DOMParser = require('xmldom').DOMParser;
 
-const WRAPPER = `// Copyright 2017 Bobby Powers. All rights reserved.
+try {
+  fs.statSync('lib/sd.js');
+} catch (err) {
+  console.log(`lib/sd.js doesn't exist, skipping stdlib regeneration`);
+  return;
+}
+
+const sd = require('../lib/sd.js');
+
+const WRAPPER = `// Copyright 2019 Bobby Powers. All rights reserved.
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
@@ -35,10 +45,16 @@ const buildBundle = () => {
   let bundle = Buffer.alloc(bufLen);
   let off = bundle.write(WRAPPER);
 
-  off += bundle.write(`export const xmileModels = Map<string, string>([`, off);
+  off += bundle.write(`export const xmileModels = Map<string, any>([`, off);
 
-  for (let variable in content) {
-    const value = JSON.stringify(content[variable]);
+  for (const variable in content) {
+    const data = content[variable];
+    const xml = new DOMParser().parseFromString(data.toString(), 'application/xml');
+    const [project, err] = new sd.Project(true).addXmileFile(xml);
+    if (err) {
+      throw err;
+    }
+    const value = JSON.stringify(project.toFile());
     off += bundle.write(
       `
   [
