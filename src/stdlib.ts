@@ -148,7 +148,7 @@ export const xmileModels = Map<string, any>([
             vendor: 'isee systems, inc.',
             product: {
               '@class': 'Product',
-              data: { name: 'Stella Architect', lang: 'en', version: '1.4.1' },
+              data: { name: 'Stella Professional', lang: 'en', version: '1.8.2' },
             },
             name: 'delay3',
             uuid: '65758527-4979-4e04-b61c-25c628175fd0',
@@ -218,8 +218,8 @@ export const xmileModels = Map<string, any>([
                     zoom: 100,
                     scrollX: 0,
                     scrollY: 0,
-                    pageWidth: 764,
-                    pageHeight: 576,
+                    pageWidth: 305,
+                    pageHeight: 213,
                     elements: [
                       { '@class': 'ViewElement', data: { type: 'style' } },
                       {

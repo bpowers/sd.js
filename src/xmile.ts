@@ -1190,7 +1190,9 @@ export class ViewElement extends Record(ViewElementDefaults) implements XNode {
     };
   }
 
-  static FromXML(el: Element): [ViewElement, undefined] | [undefined, Error] {
+  static FromXML(
+    el: Element,
+  ): [ViewElement, undefined] | [undefined, Error] | [undefined, undefined] {
     const viewEl = Object.assign({}, ViewElementDefaults);
     let err: Error | undefined;
 
@@ -1204,6 +1206,16 @@ export class ViewElement extends Record(ViewElementDefaults) implements XNode {
       typename === 'style'
     ) {
       viewEl.type = typename;
+    } else if (
+      typename === 'text_box' ||
+      typename === 'stacked_container' ||
+      typename === 'graph' ||
+      typename === 'table' ||
+      typename === 'button' ||
+      typename === 'isee:loop_indicator'
+    ) {
+      // TODO(bpowers)
+      return [undefined, undefined];
     } else {
       return [undefined, new Error(`unknown variable type: ${typename}`)];
     }
@@ -1523,11 +1535,13 @@ export class View extends Record(ViewDefaults) implements XNode {
       [viewEl, err] = ViewElement.FromXML(child);
       if (err) {
         return [undefined, new Error('viewEl: ' + err)];
+      } else if (!viewEl) {
+        continue;
       }
       if (!view.elements) {
         view.elements = List<ViewElement>();
       }
-      view.elements = view.elements.push(defined(viewEl));
+      view.elements = view.elements.push(viewEl);
     }
 
     return [new View(view), undefined];
