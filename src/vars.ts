@@ -507,7 +507,9 @@ export function code(
   } else if (isStock(variable)) {
     let eqn = 'curr[' + defined(offsets.get(defined(variable.ident))) + '] + (';
     if (variable.inflows.size > 0) {
-      eqn += variable.inflows.map(s => 'curr[' + defined(offsets.get(s)) + ']').join('+');
+      eqn += variable.inflows
+        .map(s => 'curr[' + defined(offsets.get(s, '/*:ohno:*/NaN')) + ']')
+        .join('+');
     }
     if (variable.outflows.size > 0) {
       eqn +=
