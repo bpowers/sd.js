@@ -12,3 +12,4 @@ v8.log
 /test
 /.vscode
 /node_modules
+/.idea
