@@ -180,11 +180,9 @@ export function qsa(e: any, s: any): any {
   if (e.querySelectorAll) {
     return e.querySelectorAll(s);
   }
-  const selectors = s.split('>').map(
-    (sel: string): string => {
-      return sel.toLowerCase();
-    },
-  );
+  const selectors = s.split('>').map((sel: string): string => {
+    return sel.toLowerCase();
+  });
 
   return querySelectorInner(e, selectors);
 }

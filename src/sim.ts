@@ -219,18 +219,15 @@ export class Sim {
       const blob = new Blob([source], { type: 'text/javascript' });
       this.worker = new Worker(window.URL.createObjectURL(blob));
     }
-    this.worker.addEventListener(
-      'message',
-      (e: MessageEvent): void => {
-        const id: number = e.data[0];
-        const result = e.data[1];
-        const cb = this.promised.get(id);
-        this.promised = this.promised.delete(id);
-        if (cb) {
-          cb(result[0], result[1]);
-        }
-      },
-    );
+    this.worker.addEventListener('message', (e: MessageEvent): void => {
+      const id: number = e.data[0];
+      const result = e.data[1];
+      const cb = this.promised.get(id);
+      this.promised = this.promised.delete(id);
+      if (cb) {
+        cb(result[0], result[1]);
+      }
+    });
   }
 
   compileModel(

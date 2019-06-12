@@ -112,12 +112,10 @@ export class Project extends Record(projectDefaults) implements varsProject {
 
     // FIXME: merge the other parts of the model into the project
     const models = Map(
-      xModels.map(
-        (xModel): [string, Model] => {
-          const model = new Model(this, xModel, true);
-          return [model.ident, model];
-        },
-      ),
+      xModels.map((xModel): [string, Model] => {
+        const model = new Model(this, xModel, true);
+        return [model.ident, model];
+      }),
     );
 
     let dupErr: Error | undefined;

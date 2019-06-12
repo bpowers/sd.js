@@ -19,12 +19,9 @@ export function defined<T>(object: T | undefined): T {
 }
 
 export function titleCase(str: string): string {
-  return str.replace(
-    /(?:^|\s)\w/g,
-    (match: string): string => {
-      return match.toUpperCase();
-    },
-  );
+  return str.replace(/(?:^|\s)\w/g, (match: string): string => {
+    return match.toUpperCase();
+  });
 }
 
 export class Error {

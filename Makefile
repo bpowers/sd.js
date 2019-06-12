@@ -54,7 +54,7 @@ $(RTEST_CMD): $(RTEST_DIR) .gitmodules
 	git submodule update --init
 	touch -c $@
 
-test check: $(LIB)
+test check: $(LIB) $(RTEST_CMD)
 	@echo "  TEST"
 	yarn test
 
