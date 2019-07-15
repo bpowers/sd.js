@@ -286,14 +286,10 @@ export class Sim {
         runFlows.push(v);
       }
 
-      if (!(v instanceof vars.Module) && !isRef(n)) {
+      if (!(v instanceof vars.Module)) {
         const off = this.nextID(model.ident);
         runtimeOffsets = runtimeOffsets.set(n, off);
-        if (DEBUG) {
-          offsets = offsets.set(n, off); // `${off}/*${n}*/`;
-        } else {
-          offsets = offsets.set(n, off);
-        }
+        offsets = offsets.set(n, off);
       }
     }
 
@@ -316,15 +312,20 @@ export class Sim {
       if (v instanceof vars.Module) {
         eqn = `this.modules["${ident}"].calcInitial(dt, curr);`;
       } else {
-        if (isRef(ident)) {
-          continue;
-        }
         if (vars.isConst(v)) {
           initials[ident] = parseFloat(defined(defined(v.xmile).eqn));
         }
         const off = defined(offsets.get(ident));
         const value = vars.initialEquation(model, offsets, v);
         eqn = `curr[${off}] = ${value};`;
+
+        if (isRef(ident)) {
+          eqn = `    if ('${ident}' in this.ref) {
+      curr[${off}] = globalCurr[this.ref['${ident}']];
+    } else {
+      ${eqn}
+    }`;
+        }
       }
       ci.push(eqn);
     }
@@ -332,23 +333,36 @@ export class Sim {
       const ident = defined(vars.ident(v));
       if (v instanceof vars.Module) {
         cf.push(`this.modules["${ident}"].calcFlows(dt, curr);`);
-      } else if (!isRef(ident)) {
-        cf.push(`curr[${defined(offsets.get(ident))}] = ${vars.code(model, offsets, v)};`);
+      } else {
+        let off = defined(offsets.get(ident));
+        let eqn = `curr[${off}] = ${vars.code(model, offsets, v)};`;
+
+        if (isRef(ident)) {
+          eqn = `    if ('${ident}' in this.ref) {
+      curr[${off}] = globalCurr[this.ref['${ident}']];
+    } else {
+      ${eqn}
+    }`;
+        }
+        cf.push(eqn);
       }
     }
     for (const v of runStocks) {
       const ident = defined(vars.ident(v));
-      // if a variable is a reference in this monomorphization of a
-      // model, no need to calculate + store a value
-      if (isRef(ident)) {
-        continue;
-      }
       if (v instanceof vars.Module) {
         cs.push(`this.modules['${ident}'].calcStocks(dt, curr, next);`);
       } else {
         const off = defined(offsets.get(ident));
         const value = v instanceof vars.Stock ? vars.code(model, offsets, v) : `curr[${off}]`;
-        cs.push(`next[${off}] = ${value};`);
+        let eqn = `next[${off}] = ${value};`;
+        if (isRef(ident)) {
+          eqn = `    if ('${ident}' in this.ref) {
+      next[${off}] = globalCurr[this.ref['${ident}']];
+    } else {
+      ${eqn}
+    }`;
+        }
+        cs.push(eqn);
       }
     }
 

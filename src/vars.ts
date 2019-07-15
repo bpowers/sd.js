@@ -344,11 +344,10 @@ export class CodegenVisitor extends Record(codegenVisitorDefaults) implements as
   ident(n: ast.Ident): string {
     if (n.ident === 'time') {
       return this.refTime();
-    } else if (this.offsets.has(n.ident)) {
-      return this.refDirect(n.ident);
-    } else {
-      return this.refIndirect(n.ident);
+    } else if (!this.offsets.has(n.ident)) {
+      throw new Error('unknown offset!');
     }
+    return this.refDirect(n.ident);
   }
 
   constant(n: ast.Constant): string {
@@ -482,7 +481,8 @@ function simpleEvalCode(
   node: ast.Node | undefined,
 ): string | undefined {
   if (!node) {
-    throw new Error('simpleEvalCode called with undefined ast.Node');
+    return 'NaN';
+    // throw new Error('simpleEvalCode called with undefined ast.Node');
   }
   const visitor = new CodegenVisitor(offsets, parent.ident === 'main');
 
@@ -508,7 +508,7 @@ export function code(
     let eqn = 'curr[' + defined(offsets.get(defined(variable.ident))) + '] + (';
     if (variable.inflows.size > 0) {
       eqn += variable.inflows
-        .map(s => 'curr[' + defined(offsets.get(s, '/*:ohno:*/NaN')) + ']')
+        .map(s => 'curr[' + defined(offsets.get(s, `/*err:${s}*/NaN`)) + ']')
         .join('+');
     }
     if (variable.outflows.size > 0) {
