@@ -56,14 +56,16 @@ export class ModelDef extends Record(modelDefDefaults) {
 const contextDefaults = {
   project: (null as any) as Project,
   models: List<Model>(),
+  isInitials: false,
 };
 
 export class Context extends Record(contextDefaults) {
-  constructor(project: Project, model: Model, prevContext?: Context) {
+  constructor(project: Project, model: Model, isInitials: boolean, prevContext?: Context) {
     const models = prevContext ? prevContext.models : List<Model>();
     super({
       project,
       models: models.push(model),
+      isInitials,
     });
   }
 
@@ -79,7 +81,7 @@ export class Context extends Record(contextDefaults) {
   lookup(ident: string): Variable | undefined {
     if (ident[0] === '.') {
       ident = ident.substr(1);
-      return new Context(this.project, this.mainModel).lookup(ident);
+      return new Context(this.project, this.mainModel, this.isInitials).lookup(ident);
     }
 
     const model = this.parent;
@@ -95,7 +97,7 @@ export class Context extends Record(contextDefaults) {
     if (!nextModel) {
       return undefined;
     }
-    return new Context(this.project, nextModel).lookup(parts.slice(1).join('.'));
+    return new Context(this.project, nextModel, this.isInitials).lookup(parts.slice(1).join('.'));
   }
 }
 

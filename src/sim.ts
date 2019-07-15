@@ -149,8 +149,8 @@ class VarComparator implements util.Comparator<vars.Variable> {
   deps: Map<string, Set<string>> = Map();
   context: vars.Context;
 
-  constructor(project: vars.Project, parent: vars.Model) {
-    this.context = new vars.Context(project, parent);
+  constructor(context: vars.Context) {
+    this.context = context;
   }
 
   lessThan(a: vars.Variable, b: vars.Variable): boolean {
@@ -255,7 +255,8 @@ export class Sim {
     let offsets: Map<string, number> = Map();
     let runtimeOffsets: Map<string, number> = Map();
 
-    const context = new vars.Context(project, model);
+    const initialContext = new vars.Context(project, model, true);
+    const flowContext = new vars.Context(project, model, false);
 
     // decide which run lists each variable has to be, based on
     // its type and const-ness
@@ -266,11 +267,11 @@ export class Sim {
         runStocks.push(v);
       } else if (v instanceof vars.Stock) {
         // add any referenced vars to initials
-        for (const d of vars.getDeps(context, v)) {
+        for (const d of vars.getDeps(initialContext, v)) {
           if (d === 'time' || initialsIncludes(d)) {
             continue;
           }
-          const dependentVar = context.lookup(d);
+          const dependentVar = initialContext.lookup(d);
           if (dependentVar) {
             runInitials.push(dependentVar);
           }
@@ -295,8 +296,8 @@ export class Sim {
 
     // stocks don't have to be sorted, since they can only depend
     // on values calculated in the flows phase.
-    util.sort(runInitials, new VarComparator(this.project, model));
-    util.sort(runFlows, new VarComparator(this.project, model));
+    util.sort(runInitials, new VarComparator(initialContext));
+    util.sort(runFlows, new VarComparator(flowContext));
 
     const initials: { [name: string]: number } = {};
     const tables: { [name: string]: Table } = {};
