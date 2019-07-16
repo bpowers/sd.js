@@ -525,7 +525,9 @@ export function code(
   } else if (isStock(variable)) {
     let eqn = 'curr[' + defined(offsets.get(defined(variable.ident))) + '] + (';
     if (variable.inflows.size > 0) {
-      eqn += variable.inflows
+      // FIXME(bpowers): this shouldn't require converting to a set + back again
+      eqn += List(Set(variable.inflows))
+        .sort()
         .map(s => {
           if (offsets.has(s)) {
             return `curr[${defined(offsets.get(s))}]`;
@@ -536,8 +538,18 @@ export function code(
         .join('+');
     }
     if (variable.outflows.size > 0) {
-      eqn +=
-        '- (' + variable.outflows.map(s => 'curr[' + defined(offsets.get(s)) + ']').join('+') + ')';
+      eqn += '- (';
+      eqn += List(Set(variable.outflows))
+        .sort()
+        .map(s => {
+          if (offsets.has(s)) {
+            return `curr[${defined(offsets.get(s))}]`;
+          } else {
+            return `globalCurr[this.ref['${s}']]`;
+          }
+        })
+        .join('+');
+      eqn += ')';
     }
     // stocks can have no inflows or outflows and still be valid
     if (variable.inflows.size === 0 && variable.outflows.size === 0) {
