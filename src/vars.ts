@@ -430,7 +430,7 @@ export class CodegenVisitor extends Record(codegenVisitorDefaults) implements as
       const r = n.r.walk(this);
       return `isNaN(${r})`;
     } else if (n.op === '=' && n.r instanceof ast.Constant && isNaN(n.r.value)) {
-      const l = n.r.walk(this);
+      const l = n.l.walk(this);
       return `isNaN(${l})`;
     }
 
@@ -499,8 +499,8 @@ function simpleEvalCode(
   node: ast.Node | undefined,
 ): string | undefined {
   if (!node) {
-    return 'NaN';
-    // throw new Error('simpleEvalCode called with undefined ast.Node');
+    // return 'NaN';
+    throw new Error('simpleEvalCode called with undefined ast.Node');
   }
   const visitor = new CodegenVisitor(offsets, parent.ident === 'main');
 
@@ -526,7 +526,13 @@ export function code(
     let eqn = 'curr[' + defined(offsets.get(defined(variable.ident))) + '] + (';
     if (variable.inflows.size > 0) {
       eqn += variable.inflows
-        .map(s => 'curr[' + defined(offsets.get(s, `/*err:${s}*/NaN`)) + ']')
+        .map(s => {
+          if (offsets.has(s)) {
+            return `curr[${defined(offsets.get(s))}]`;
+          } else {
+            return `globalCurr[this.ref['${s}']]`;
+          }
+        })
         .join('+');
     }
     if (variable.outflows.size > 0) {

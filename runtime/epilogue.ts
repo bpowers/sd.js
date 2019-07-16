@@ -13,15 +13,16 @@ if (typeof console === 'undefined') {
 }
 
 main.runToEnd();
-let series: {[name: string]: Series} = {};
+const series: {[name: string]: Series} = {};
 let header = 'time\t';
-let vars = main.varNames(false);
+const vars = main.varNames(false);
+vars.sort();
 for (let i = 0; i < vars.length; i++) {
-  let v = vars[i];
+  const v = vars[i];
   if (v === 'time')
     continue;
   header += v + '\t';
-  let s = main.series(v);
+  const s = main.series(v);
   if (s !== null)
     series[v] = s;
 }
@@ -33,7 +34,7 @@ if (timeSeries !== null)
   nSteps = timeSeries.time.length;
 for (let i = 0; i < nSteps; i++) {
   let msg = '';
-  for (let v in series) {
+  for (const v in series) {
     if (!series.hasOwnProperty(v))
       continue;
     if (msg === '')

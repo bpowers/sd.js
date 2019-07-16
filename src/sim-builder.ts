@@ -50,6 +50,7 @@ class {{&className}} extends Simulation {
     // symbolic references, which will get resolved into
     // integer offsets in the ref map after all Simulation
     // objects have been initialized.
+    this.implicitRefs = {{&implicitRefs}};
     this.symRefs = symRefs || {};
     this.ref = {};
     this.nVars = this.getNVars();
@@ -110,6 +111,7 @@ export class TemplateContext {
   calcF: string;
   calcS: string;
   offsets: string;
+  implicitRefs: string;
 
   constructor(
     project: vars.Project,
@@ -123,6 +125,7 @@ export class TemplateContext {
     ci: any,
     cf: any,
     cs: any,
+    implicitRefs: Set<string>,
   ) {
     this.name = model.ident;
     this.className = util.titleCase(modelName);
@@ -136,6 +139,7 @@ export class TemplateContext {
     this.calcF = cf.join(NLSP);
     this.calcS = cs.join(NLSP);
     this.offsets = JSON.stringify(runtimeOffsets, null, SP);
+    this.implicitRefs = JSON.stringify(implicitRefs, null, SP);
   }
 }
 
@@ -266,6 +270,8 @@ export class SimBuilder {
     const initialContext = new vars.Context(project, model, true);
     const flowContext = new vars.Context(project, model, false);
 
+    let implicitRefs = Set<string>();
+
     // decide which run lists each variable has to be, based on
     // its type and const-ness
     for (const [n, v] of model.vars) {
@@ -293,6 +299,16 @@ export class SimBuilder {
         runStocks.push(v);
       } else {
         runFlows.push(v);
+      }
+
+      // if we have references to variables inside e.g. delay3, make sure
+      // we remember to initialize those refs
+      if (!(v instanceof vars.Module)) {
+        for (const d of vars.getDeps(flowContext, v)) {
+          if (d.startsWith('$·')) {
+            implicitRefs = implicitRefs.add(d);
+          }
+        }
       }
 
       if (!(v instanceof vars.Module) && !isRef(n)) {
@@ -403,6 +419,7 @@ export class SimBuilder {
       ci,
       cf,
       cs,
+      implicitRefs,
     );
   }
 

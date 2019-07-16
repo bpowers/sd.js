@@ -49,6 +49,7 @@ class Simulation {
 
   modules: {[name: string]: Simulation};
   symRefs: {[name: string]: string};
+  implicitRefs: [string];
   ref: {[name: string]: number};
 
   initials: {[name: string]: number};
@@ -100,6 +101,9 @@ class Simulation {
       if (!this.modules.hasOwnProperty(n))
         continue;
       this.modules[n].resolveAllSymbolicRefs();
+    }
+    for (const n of this.implicitRefs) {
+      this.ref[n] = this.lookupOffset(n);
     }
   }
 
