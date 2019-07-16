@@ -5,6 +5,7 @@
 import { List, Map, Record, RecordOf, Set } from 'immutable';
 
 import { builtins, defined, exists } from './common';
+import { titleCase } from './util';
 
 import * as ast from './ast';
 import { eqn as parseEqn } from './parse';
@@ -52,20 +53,21 @@ export class ModelDef extends Record(modelDefDefaults) {
     return super.get(key);
   }
 
-  monomorphizations(): List<[string, Model, Set<string>]> {
+  monomorphizations(): Map<Set<string>, string> {
     let n = 0;
     let mms = Map<Set<string>, string>();
 
     for (const module of this.modules) {
-      let inputs = Set(module.refs.keys());
+      const inputs = Set(module.refs.keys());
       if (!mms.has(inputs)) {
-        let suffix: string = inputs.sort().join('·');
-        let mononame = defined(this.model).ident + '__' + suffix;
+        let mononame = titleCase(defined(this.model).ident + '_' + n);
+        console.log(`// mono: ${defined(this.model).ident}<${inputs.join(',')}>: ${n}`);
         mms = mms.set(inputs, mononame);
+        n++;
       }
     }
 
-    return List(mms.entrySeq().map(([inputs, name]): [string, Model, Set<string>] => [name, defined(this.model), inputs]));
+    return mms;
   }
 }
 
@@ -198,9 +200,6 @@ export class Stock extends Record(stockDefaults) {
       inflows: xVar.inflows || List(),
       outflows: xVar.outflows || List(),
     };
-    if (xVar.ident === 'recovered') {
-      debugger;
-    }
     super(stock);
   }
 
@@ -317,7 +316,7 @@ const referenceDefaults = {
 
 export class Reference extends Record(referenceDefaults) {
   constructor(conn: xmile.Connection) {
-    const variable = variableFrom(new xmile.Variable({name: conn.to}), 'reference');
+    const variable = variableFrom(new xmile.Variable({ name: conn.to }), 'reference');
     const reference = {
       ...variable,
       xmileConn: conn,
@@ -362,10 +361,11 @@ export class CodegenVisitor extends Record(codegenVisitorDefaults) implements as
   ident(n: ast.Ident): string {
     if (n.ident === 'time') {
       return this.refTime();
-    } else if (!this.offsets.has(n.ident)) {
-      throw new Error('unknown offset!');
+    } else if (this.offsets.has(n.ident)) {
+      return this.refDirect(n.ident);
+    } else {
+      return this.refIndirect(n.ident);
     }
-    return this.refDirect(n.ident);
   }
 
   constant(n: ast.Constant): string {

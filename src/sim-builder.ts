@@ -14,7 +14,6 @@ import * as runtime from './runtime';
 import * as util from './util';
 import * as vars from './vars';
 
-
 interface TableProps {
   x: List<number>;
   y: List<number>;
@@ -114,6 +113,7 @@ export class TemplateContext {
 
   constructor(
     project: vars.Project,
+    modelName: string,
     model: vars.Model,
     mods: any,
     init: any,
@@ -125,7 +125,7 @@ export class TemplateContext {
     cs: any,
   ) {
     this.name = model.ident;
-    this.className = util.titleCase(model.ident);
+    this.className = util.titleCase(modelName);
     this.isModule = model.ident !== 'main';
     this.modules = mods.join(NLSP);
     this.init = init.join(NLSP);
@@ -160,7 +160,11 @@ class VarComparator implements util.Comparator<vars.Variable> {
   }
 }
 
-export function buildSim(project: vars.Project, root: vars.Module, isStandalone: boolean): Worker | undefined {
+export function buildSim(
+  project: vars.Project,
+  root: vars.Module,
+  isStandalone: boolean,
+): Worker | undefined {
   return new SimBuilder(project, root, isStandalone).worker;
 }
 
@@ -169,6 +173,8 @@ export class SimBuilder {
   project: vars.Project;
   // variable offset sequence.  Time is always offset 0 for the main model
   idSeq: Map<string, number> = Map();
+
+  modelNames: Map<string, Map<Set<string>, string>> = Map();
 
   worker: Worker | undefined;
 
@@ -186,18 +192,26 @@ export class SimBuilder {
 
     const compiledModels: TemplateContext[] = [];
     for (const [n, modelDef] of models) {
-      if (n === 'main') {
-        this.idSeq = this.idSeq.set(n, 1); // add 1 for time
-      } else {
-        this.idSeq = this.idSeq.set(n, 0);
-      }
       if (!modelDef.model) {
         throw new Error('expected a model');
       }
-      for (const [name, model, inputs] of modelDef.monomorphizations()) {
-        // console.log(`MM: ${name}`);
+      const monomorphizations = modelDef.monomorphizations();
+      for (const [inputs, modelName] of monomorphizations) {
+        if (n === 'main') {
+          this.idSeq = this.idSeq.set(n, 1); // add 1 for time
+        } else {
+          this.idSeq = this.idSeq.set(n, 0);
+        }
+        this.modelNames = this.modelNames.setIn([modelDef.model.ident, inputs], modelName);
       }
-      compiledModels.push(this.compileModel(project, modelDef.model, modelDef.modules));
+    }
+
+    // compile the models after we've named all of our monomorphizations
+    for (const [n, modelDef] of models) {
+      const monomorphizations = modelDef.monomorphizations();
+      for (const [inputs, modelName] of monomorphizations) {
+        compiledModels.push(this.compileModel(project, modelName, defined(modelDef.model), inputs));
+      }
     }
 
     const mainRefs = root.refs;
@@ -207,7 +221,7 @@ export class SimBuilder {
       const source = Mustache.render(tmpl, {
         preamble: runtime.preamble,
         epilogue: isStandalone ? runtime.epilogue : 'onmessage = handleMessage;',
-        mainClassName: util.titleCase(root.modelName),
+        mainClassName: this.modelNameFor(root),
         models: compiledModels,
         mainRefs,
       });
@@ -220,10 +234,19 @@ export class SimBuilder {
     }
   }
 
+  modelNameFor(module: vars.Module): string {
+    const name = this.modelNames.getIn([module.modelName, Set(module.refs.keys())]);
+    if (!name) {
+      throw new Error(`couldn't find model name for ${module.modelName}`);
+    }
+    return name;
+  }
+
   compileModel(
     project: vars.Project,
+    modelName: string,
     model: vars.Model,
-    modules: Set<vars.Module>,
+    refs: Set<string>,
   ): TemplateContext {
     const runInitials: vars.Variable[] = [];
     const runFlows: vars.Variable[] = [];
@@ -234,12 +257,7 @@ export class SimBuilder {
     };
 
     const isRef = (n: string): boolean => {
-      for (const module of modules) {
-        if (module.refs.has(n)) {
-          return true;
-        }
-      }
-      return false;
+      return refs.has(n);
     };
 
     let offsets: Map<string, number> = Map();
@@ -277,7 +295,7 @@ export class SimBuilder {
         runFlows.push(v);
       }
 
-      if (!(v instanceof vars.Module)) {
+      if (!(v instanceof vars.Module) && !isRef(n)) {
         const off = this.nextID(model.ident);
         runtimeOffsets = runtimeOffsets.set(n, off);
         offsets = offsets.set(n, off);
@@ -303,20 +321,15 @@ export class SimBuilder {
       if (v instanceof vars.Module) {
         eqn = `this.modules["${ident}"].calcInitial(dt, curr);`;
       } else {
+        if (isRef(ident)) {
+          continue;
+        }
         if (vars.isConst(v)) {
           initials[ident] = parseFloat(defined(defined(v.xmile).eqn));
         }
         const off = defined(offsets.get(ident));
         const value = vars.initialEquation(model, offsets, v);
         eqn = `curr[${off}] = ${value};`;
-
-        if (isRef(ident)) {
-          eqn = `    if ('${ident}' in this.ref) {
-      curr[${off}] = globalCurr[this.ref['${ident}']];
-    } else {
-      ${eqn}
-    }`;
-        }
       }
       ci.push(eqn);
     }
@@ -324,35 +337,26 @@ export class SimBuilder {
       const ident = defined(vars.ident(v));
       if (v instanceof vars.Module) {
         cf.push(`this.modules["${ident}"].calcFlows(dt, curr);`);
-      } else {
-        let off = defined(offsets.get(ident));
-        let eqn = `curr[${off}] = ${vars.code(model, offsets, v)};`;
+      } else if (!isRef(ident)) {
+        const off = defined(offsets.get(ident));
+        const eqn = `curr[${off}] = ${vars.code(model, offsets, v)};`;
 
-        if (isRef(ident)) {
-          eqn = `    if ('${ident}' in this.ref) {
-      curr[${off}] = globalCurr[this.ref['${ident}']];
-    } else {
-      ${eqn}
-    }`;
-        }
         cf.push(eqn);
       }
     }
     for (const v of runStocks) {
       const ident = defined(vars.ident(v));
+      // if a variable is a reference in this monomorphization of a
+      // model, no need to calculate + store a value
+      if (isRef(ident)) {
+        continue;
+      }
       if (v instanceof vars.Module) {
         cs.push(`this.modules['${ident}'].calcStocks(dt, curr, next);`);
       } else {
         const off = defined(offsets.get(ident));
         const value = v instanceof vars.Stock ? vars.code(model, offsets, v) : `curr[${off}]`;
-        let eqn = `next[${off}] = ${value};`;
-        if (isRef(ident)) {
-          eqn = `    if ('${ident}' in this.ref) {
-      next[${off}] = globalCurr[this.ref['${ident}']];
-    } else {
-      ${eqn}
-    }`;
-        }
+        const eqn = `next[${off}] = ${value};`;
         cs.push(eqn);
       }
     }
@@ -371,7 +375,7 @@ export class SimBuilder {
         init.push(`    "${refName}": "${ref.ptr}",`);
       }
       init.push('};');
-      const modelName = util.titleCase(module.modelName);
+      const modelName = this.modelNameFor(module);
       init.push(`const ${n} = new ${modelName}("${n}", this, off, ${n}Refs);`);
       init.push(`off += ${n}.nVars;`);
       mods.push(`    "${n}": ${n},`);
@@ -389,6 +393,7 @@ export class SimBuilder {
 
     return new TemplateContext(
       project,
+      modelName,
       model,
       mods,
       init,
