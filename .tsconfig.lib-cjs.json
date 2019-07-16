@@ -8,6 +8,7 @@
     "src/project.ts",
     "src/sd.ts",
     "src/sim.ts",
+    "src/sim-builder.ts",
     "src/util.ts",
     "src/vars.ts",
     "src/xmile.ts"
