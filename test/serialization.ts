@@ -60,9 +60,18 @@ describe('roundtrip', async () => {
       const jsonStr2 = JSON.stringify(file2, undefined, 2);
       const jsonParsed2 = JSON.parse(jsonStr2);
       expect(jsonParsed1).to.deep.equal(jsonParsed2);
-      expect(is(file1, file2)).to.be.be.true;
-      expect(file1.equals(defined(file2))).to.be.be.true;
-      expect(defined(file2).equals(file1)).to.be.be.true;
+      expect(is(file1, file2)).to.be.true;
+      expect(file1.equals(defined(file2))).to.be.true;
+      expect(defined(file2).equals(file1)).to.be.true;
     });
   }
+});
+
+describe('list sorts', () => {
+  it('should sort', () => {
+    const l1 = List(['c', 'a', 'b']).sort();
+    const l2 = List(['a', 'b', 'c']);
+
+    expect(l1.equals(l2)).to.be.true;
+  });
 });

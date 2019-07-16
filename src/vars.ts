@@ -51,6 +51,22 @@ export class ModelDef extends Record(modelDefDefaults) {
   get<T extends keyof ModelDefProps>(key: T): ModelDefProps[T] {
     return super.get(key);
   }
+
+  monomorphizations(): List<[string, Model, Set<string>]> {
+    let n = 0;
+    let mms = Map<Set<string>, string>();
+
+    for (const module of this.modules) {
+      let inputs = Set(module.refs.keys());
+      if (!mms.has(inputs)) {
+        let suffix: string = inputs.sort().join('·');
+        let mononame = defined(this.model).ident + '__' + suffix;
+        mms = mms.set(inputs, mononame);
+      }
+    }
+
+    return List(mms.entrySeq().map(([inputs, name]): [string, Model, Set<string>] => [name, defined(this.model), inputs]));
+  }
 }
 
 const contextDefaults = {
@@ -301,7 +317,7 @@ const referenceDefaults = {
 
 export class Reference extends Record(referenceDefaults) {
   constructor(conn: xmile.Connection) {
-    const variable = variableFrom(new xmile.Variable({ name: conn.to }), 'reference');
+    const variable = variableFrom(new xmile.Variable({name: conn.to}), 'reference');
     const reference = {
       ...variable,
       xmileConn: conn,

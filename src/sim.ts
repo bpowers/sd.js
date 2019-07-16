@@ -198,6 +198,9 @@ export class Sim {
       if (!modelDef.model) {
         throw new Error('expected a model');
       }
+      for (const [name, model, inputs] of modelDef.monomorphizations()) {
+        console.log(`MM: ${name}`);
+      }
       compiledModels.push(this.compileModel(project, modelDef.model, modelDef.modules));
     }
 
