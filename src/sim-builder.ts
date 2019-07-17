@@ -304,11 +304,12 @@ export class SimBuilder {
       // if we have references to variables inside e.g. delay3, make sure
       // we remember to initialize those refs
       if (!(v instanceof vars.Module)) {
-        for (const d of vars.getDeps(flowContext, v)) {
+        for (const d of v.deps) {
           if (d.startsWith('$·')) {
             implicitRefs = implicitRefs.add(d);
           }
         }
+        // implicitRefs = v.deps.filter(id => id.startsWith('$·'));
       }
 
       if (!(v instanceof vars.Module) && !isRef(n)) {

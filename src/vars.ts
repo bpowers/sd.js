@@ -611,9 +611,17 @@ export function initialEquation(
 }
 
 function getModuleDeps(context: Context, variable: Module): Set<string> {
-  // TODO(bp): I think we need qualified idents for module deps
   let allDeps = Set<string>();
-  for (const ident of variable.deps) {
+  for (let ident of variable.deps) {
+    if (ident[0] === '.') {
+      if (context.parent === context.mainModel) {
+        ident = ident.substr(1);
+      } else {
+        // we aren't the root model, so we don't care
+        continue;
+      }
+    }
+
     if (allDeps.has(ident)) {
       continue;
     }
@@ -637,10 +645,23 @@ export function getDeps(context: Context, variable: Variable): Set<string> {
   }
 
   let allDeps = Set<string>();
-  for (const ident of variable.deps) {
+  for (let ident of variable.deps) {
+    if (ident[0] === '.') {
+      if (context.parent === context.mainModel) {
+        ident = ident.substr(1);
+      } else {
+        // we aren't the root model, so we don't care
+        continue;
+      }
+    }
+    // we only care about dependencies in our current model's scope
+    // (because this is being used for ordering variables)
+    ident = ident.split('.')[0];
+
     if (allDeps.has(ident)) {
       continue;
     }
+
     allDeps = allDeps.add(ident);
     const v = context.parent.vars.get(ident);
     if (!v) {
