@@ -177,13 +177,13 @@ export const xmileModels = Map<string, any>([
                 { '@class': 'Variable', data: { type: 'flow', name: 'input', eqn: '0' } },
                 {
                   '@class': 'Variable',
-                  data: { type: 'flow', name: 'output', eqn: 'Stock_3/delay_time' },
+                  data: { type: 'flow', name: 'output', eqn: 'Stock_3/(delay_time/3)' },
                 },
                 { '@class': 'Variable', data: { type: 'aux', name: 'delay time', eqn: '1' } },
                 { '@class': 'Variable', data: { type: 'aux', name: 'initial value', eqn: 'NAN' } },
                 {
                   '@class': 'Variable',
-                  data: { type: 'flow', name: 'Flow 1', eqn: 'Stock/delay_time' },
+                  data: { type: 'flow', name: 'Flow 1', eqn: 'Stock/(delay_time/3)' },
                 },
                 {
                   '@class': 'Variable',
@@ -207,7 +207,7 @@ export const xmileModels = Map<string, any>([
                 },
                 {
                   '@class': 'Variable',
-                  data: { type: 'flow', name: 'Flow 2', eqn: 'Stock_2/delay_time' },
+                  data: { type: 'flow', name: 'Flow 2', eqn: 'Stock_2/(delay_time/3)' },
                 },
               ],
               views: [

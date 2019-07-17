@@ -34,7 +34,7 @@
 				<units>unit/time unit</units>
 			</flow>
 			<flow name="output" access="output">
-				<eqn>Stock_3/delay_time</eqn>
+				<eqn>Stock_3/(delay_time/3)</eqn>
 				<non_negative/>
 				<units>unit/time unit</units>
 			</flow>
@@ -46,7 +46,7 @@
 				<eqn>NAN</eqn>
 			</aux>
 			<flow name="Flow 1">
-				<eqn>Stock/delay_time</eqn>
+				<eqn>Stock/(delay_time/3)</eqn>
 				<non_negative/>
 				<units>unit/time unit</units>
 			</flow>
@@ -65,7 +65,7 @@
 				<units>unit</units>
 			</stock>
 			<flow name="Flow 2">
-				<eqn>Stock_2/delay_time</eqn>
+				<eqn>Stock_2/(delay_time/3)</eqn>
 				<non_negative/>
 				<units>unit/time unit</units>
 			</flow>
