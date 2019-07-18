@@ -368,6 +368,10 @@ export class CodegenVisitor extends Record(codegenVisitorDefaults) implements as
     }
   }
 
+  table(n: ast.Table): string {
+    return `this.tables['${n.ident}']`;
+  }
+
   constant(n: ast.Constant): string {
     return `${n.value}`;
   }
@@ -706,6 +710,10 @@ export function referencedModels(
 // that are actually module instantiations
 export class IdentifierSetVisitor implements ast.Visitor<Set<string>> {
   ident(n: ast.Ident): Set<string> {
+    return Set<string>([n.ident]);
+  }
+  table(n: ast.Table): Set<string> {
+    // TODO: I don't think this is necessary, but it can't hurt
     return Set<string>([n.ident]);
   }
   constant(n: ast.Constant): Set<string> {

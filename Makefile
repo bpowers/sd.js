@@ -19,7 +19,7 @@ CONFIG     = Makefile package.json $(TSC) $(TSLINT)
 RTEST_DIR  = test/test-models
 RTEST_CMD  = $(RTEST_DIR)/regression-test.py
 
-RTEST_EXCLUDES = -x '(subscript|macro|initial_function|lookups|stocks_with_expressions|active_initial|smooth_and_stock|euler_step_vs_saveper|special_characters)'
+RTEST_EXCLUDES = -x '(subscript|macro|initial_function|stocks_with_expressions|active_initial|smooth_and_stock|euler_step_vs_saveper|special_characters)'
 
 # quiet output, but allow us to look at what commands are being
 # executed by passing 'V=1' to make, without requiring temporarily

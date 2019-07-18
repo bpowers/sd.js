@@ -17,6 +17,8 @@ export interface Node {
 
   walk<T>(v: Visitor<T>): T;
   equals(other: any): boolean; // provided by Record
+
+  toJS(): any;
 }
 
 export interface Visitor<T> {
@@ -27,6 +29,7 @@ export interface Visitor<T> {
   paren(n: ParenExpr): T;
   unary(n: UnaryExpr): T;
   binary(n: BinaryExpr): T;
+  table(n: Table): T;
 }
 
 const identDefaults = {
@@ -57,6 +60,38 @@ export class Ident extends Record(identDefaults) implements Node {
 
 export function isIdent(n: Node): n is Ident {
   return n.constructor === Ident;
+}
+
+export class Table extends Record(identDefaults) implements Node {
+  constructor(pos: SourceLoc, name: string) {
+    // this.name is canonicalized, so we need to store the
+    // original length.
+    super({
+      ident: canonicalize(name),
+      len: name.length,
+      pos,
+    });
+  }
+
+  get end(): SourceLoc {
+    return this.pos.off(this.len);
+  }
+
+  walk<T>(v: Visitor<T>): T {
+    return v.table(this);
+  }
+}
+
+export function TableFrom(n: Node): Node {
+  if (!isIdent(n)) {
+    throw new Error(`expected first arg of lookup to be Ident, not ${n.toJS()}`);
+  }
+
+  return new Table(n.pos, n.ident);
+}
+
+export function isTable(n: Node): n is Ident {
+  return n.constructor === Table;
 }
 
 const constantDefaults = {

@@ -52,6 +52,7 @@ export const builtins: Map<string, Properties> = Map({
   int: {},
   ln: {},
   log10: {},
+  lookup: {},
   max: {},
   min: {},
   pi: {},

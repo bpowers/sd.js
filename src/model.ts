@@ -217,11 +217,14 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
   ident(n: ast.Ident): ast.Node {
     return n;
   }
+  table(n: ast.Ident): ast.Node {
+    return n;
+  }
   constant(n: ast.Constant): ast.Node {
     return n;
   }
   call(n: ast.CallExpr): ast.Node {
-    const args = n.args.map(arg => arg.walk(this));
+    let args = n.args.map(arg => arg.walk(this));
 
     if (!isIdent(n.fun)) {
       throw new Error('// for now, only idents can be used as fns.');
@@ -229,6 +232,10 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
 
     const fn = n.fun.ident;
     if (common.builtins.has(fn)) {
+      if (fn === 'lookup') {
+        args = args.update(0, defined(args.get(0)), arg => ast.TableFrom(arg));
+        this.n++;
+      }
       return new ast.CallExpr(n.fun, n.lParenPos, args, n.rParenPos);
     }
 
@@ -310,6 +317,9 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
 // that are actually module instantiations
 class PrintVisitor implements ast.Visitor<string> {
   ident(n: ast.Ident): string {
+    return n.ident;
+  }
+  table(n: ast.Table): string {
     return n.ident;
   }
   constant(n: ast.Constant): string {
