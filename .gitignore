@@ -20,3 +20,4 @@ v8.log
 /sd*.js.map
 /.idea
 /sd.js.iml
+/yarn-error.log
