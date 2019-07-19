@@ -60,7 +60,7 @@ export class ModelDef extends Record(modelDefDefaults) {
     for (const module of this.modules) {
       const inputs = Set(module.refs.keys());
       if (!mms.has(inputs)) {
-        let mononame = titleCase(defined(this.model).ident + '_' + n);
+        const mononame = titleCase(defined(this.model).ident + '_' + n);
         console.log(`// mono: ${defined(this.model).ident}<${inputs.join(',')}>: ${n}`);
         mms = mms.set(inputs, mononame);
         n++;

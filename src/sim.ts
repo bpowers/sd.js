@@ -6,8 +6,8 @@
 
 import { Map } from 'immutable';
 
-import * as vars from './vars';
 import { buildSim } from './sim-builder';
+import * as vars from './vars';
 
 export interface SeriesProps {
   name: string;
