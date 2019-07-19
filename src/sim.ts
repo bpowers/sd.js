@@ -72,48 +72,55 @@ export class Sim {
     this.worker = undefined;
   }
 
-  reset(): Promise<any> {
+  reset(): Promise<undefined | Error> {
     return this.post('reset');
   }
 
-  setValue(name: string, val: number): Promise<any> {
+  setValue(name: string, val: number): Promise<undefined | Error> {
     return this.post('set_val', name, val);
   }
 
-  value(...names: string[]): Promise<any> {
+  value(...names: string[]): Promise<[{ [name: string]: number }, undefined] | [undefined, Error]> {
     const args = ['get_val'].concat(names);
     return this.post.apply(this, args);
   }
 
-  series(...names: string[]): Promise<any> {
+  series(
+    ...names: string[]
+  ): Promise<[{ [name: string]: Series }, undefined] | [undefined, Error]> {
     const args = ['get_series'].concat(names);
     return this.post.apply(this, args);
   }
 
-  dominance(overrides: { [n: string]: number }, indicators: string[]): Promise<any> {
+  dominance(
+    overrides: { [n: string]: number },
+    indicators: string[],
+  ): Promise<[{ [name: string]: number }, undefined] | [undefined, Error]> {
     return this.post('dominance', overrides, indicators);
   }
 
-  runTo(time: number): Promise<any> {
+  runTo(time: number): Promise<[number, undefined] | [undefined, Error]> {
     return this.post('run_to', time);
   }
 
-  runToEnd(): Promise<any> {
+  runToEnd(): Promise<[number, undefined] | [undefined, Error]> {
     return this.post('run_to_end');
   }
 
-  setDesiredSeries(names: string[]): Promise<any> {
-    return this.post('set_desired_series', names);
-  }
-
-  varNames(includeHidden = false): Promise<any> {
+  varNames(includeHidden = false): Promise<[string[], undefined] | [undefined, Error]> {
     return this.post('var_names', includeHidden);
   }
 
-  async csv(delim: string = ','): Promise<string> {
-    const names: string[] = await this.varNames();
-    const data: { [name: string]: Series } = await this.series(...names);
-    return Sim.csvFromData(data, names, delim);
+  async csv(delim: string = ','): Promise<[string, undefined] | [undefined, Error]> {
+    const [names, err1] = await this.varNames();
+    if (!names) {
+      return [undefined, err1 || new Error('unknown error getting varNames')];
+    }
+    const [data, err2] = await this.series(...names);
+    if (!data) {
+      return [undefined, err2 || new Error('unknown error getting series')];
+    }
+    return [Sim.csvFromData(data, names, delim), undefined];
   }
 
   private static csvFromData(

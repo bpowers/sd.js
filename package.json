@@ -44,8 +44,8 @@
     "xmldom": "^0.1"
   },
   "scripts": {
-    "needs-format": "prettier -l \"src/*.ts\" \"test/*.ts\"",
-    "format": "prettier --write \"src/*.ts\" \"test/*.ts\"",
+    "needs-format": "prettier -l \"src/*.ts\" \"test/*.ts\" \"runtime/*.ts\"",
+    "format": "prettier --write \"src/*.ts\" \"test/*.ts\" \"runtime/*.ts\"",
     "lint": "yarn run tslint -c .tslint.json --project .tsconfig.lib-cjs.json",
     "test": "tsc -p .tsconfig.test.json && mocha",
     "build:pre": "node support/mkdirp.js build-rt lib build",
