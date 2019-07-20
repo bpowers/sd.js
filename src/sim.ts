@@ -45,7 +45,6 @@ export class Sim {
     });
   }
 
-  // FIXME: any?
   private post(...args: any[]): Promise<any> {
     const id = this.seq++;
 
@@ -53,7 +52,7 @@ export class Sim {
       if (!this.worker) {
         return;
       }
-      this.promised.set(id, (result: any, err: any) => {
+      this.promised = this.promised.set(id, (result: any, err: any) => {
         if (err !== undefined && err !== null) {
           reject(err);
         } else {
