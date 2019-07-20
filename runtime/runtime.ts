@@ -311,13 +311,13 @@ function initCmds(main: Simulation): any {
   'use strict';
 
   return {
-    reset: function(): undefined | Error {
+    reset: function(): [undefined, undefined] | [undefined | Error] {
       main.reset();
-      return undefined;
+      return [undefined, undefined];
     },
-    set_val: function(name: string, val: number): undefined | Error {
+    set_val: function(name: string, val: number): [undefined, undefined] | [undefined | Error] {
       main.setValue(name, val);
-      return undefined;
+      return [undefined, undefined];
     },
     get_val: function(
       ...args: string[]
