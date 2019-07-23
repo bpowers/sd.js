@@ -6,6 +6,7 @@
 
 import { Map } from 'immutable';
 
+import { defined } from './common';
 import { buildSim } from './sim-builder';
 import * as vars from './vars';
 
@@ -79,14 +80,16 @@ export class Sim {
     return this.post('set_val', name, val);
   }
 
-  value(...names: string[]): Promise<{ [name: string]: number }> {
+  async value(...names: string[]): Promise<Map<string, number>> {
     const args = ['get_val'].concat(names);
-    return this.post.apply(this, args);
+    const values = await this.post(...args);
+    return Map(values);
   }
 
-  series(...names: string[]): Promise<{ [name: string]: Series }> {
+  async series(...names: string[]): Promise<Map<string, Series>> {
     const args = ['get_series'].concat(names);
-    return this.post.apply(this, args);
+    const series = await this.post(...args);
+    return Map(series);
   }
 
   dominance(
@@ -115,11 +118,7 @@ export class Sim {
     return Sim.csvFromData(data, names, delim);
   }
 
-  private static csvFromData(
-    data: { [name: string]: Series },
-    vars: string[],
-    delim: string,
-  ): string {
+  private static csvFromData(data: Map<string, Series>, vars: string[], delim: string): string {
     let file = '';
     const series: { [name: string]: Series } = {};
     let time: Series | undefined;
@@ -128,11 +127,14 @@ export class Sim {
     // create the CSV header
     for (const v of vars) {
       if (v === 'time') {
-        time = data[v];
+        time = data.get(v);
+        continue;
+      }
+      if (!data.has(v)) {
         continue;
       }
       header += v + delim;
-      series[v] = data[v];
+      series[v] = defined(data.get(v));
     }
 
     if (time === undefined) {
