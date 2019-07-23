@@ -219,7 +219,7 @@ export class SimBuilder {
     }
 
     const mainRefs = root.refs;
-    console.log('// mainRefs: ' + JSON.stringify(root.refs));
+    // console.log('// mainRefs: ' + JSON.stringify(root.refs));
 
     {
       const source = Mustache.render(tmpl, {
