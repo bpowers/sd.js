@@ -28,10 +28,11 @@ export class Error {
   static Version: Error = new Error('bad xml or unknown smile version');
   static BadTime: Error = new Error('bad time (control) data');
 
-  readonly msg: string;
+  readonly name = 'sd.js error';
+  readonly message: string;
 
   constructor(msg: string) {
-    this.msg = msg;
+    this.message = msg;
   }
 }
 
