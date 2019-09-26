@@ -10,7 +10,7 @@ new_version="$1"
 
 perl -pi -e 's/(\s*"version":\s*")([^"]*)/${1}'"$new_version"'/' package.json
 git commit -a -m "build: $new_version"
-git tag "$new_version"
+git tag "v$new_version"
 
 read -p "Press enter to release $new_version"
 
