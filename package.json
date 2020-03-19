@@ -37,9 +37,9 @@
     "mocha": "^5.2",
     "npm-run-all": "^4.1",
     "prettier": "^1.17",
-    "tslint": "^5.17",
+    "tslint": "^6.0",
     "tslint-react": "^4.0",
-    "typescript": "^3.5",
+    "typescript": "^3.8",
     "watch": "^1.0",
     "xmldom": "^0.1"
   },
