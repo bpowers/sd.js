@@ -224,7 +224,7 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
     return n;
   }
   call(n: ast.CallExpr): ast.Node {
-    let args = n.args.map(arg => arg.walk(this));
+    let args = n.args.map((arg) => arg.walk(this));
 
     if (!isIdent(n.fun)) {
       throw new Error('// for now, only idents can be used as fns.');
@@ -233,7 +233,7 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
     const fn = n.fun.ident;
     if (common.builtins.has(fn)) {
       if (fn === 'lookup') {
-        args = args.update(0, defined(args.get(0)), arg => ast.TableFrom(arg));
+        args = args.update(0, defined(args.get(0)), (arg) => ast.TableFrom(arg));
         this.n++;
       }
       return new ast.CallExpr(n.fun, n.lParenPos, args, n.rParenPos);
@@ -281,7 +281,7 @@ class BuiltinVisitor implements ast.Visitor<ast.Node> {
         to: defined(stdlibVars.get(i)),
         from: '.' + identArg,
       });
-      xMod = xMod.update('connections', conns => (conns || List()).push(conn));
+      xMod = xMod.update('connections', (conns) => (conns || List()).push(conn));
     });
 
     const module = new Module(xMod);
@@ -327,7 +327,7 @@ class PrintVisitor implements ast.Visitor<string> {
   }
   call(n: ast.CallExpr): string {
     const fun = n.fun.walk(this);
-    const args = n.args.map(arg => arg.walk(this)).join(',');
+    const args = n.args.map((arg) => arg.walk(this)).join(',');
     return `${fun}(${args})`;
   }
   if(n: ast.IfExpr): string {

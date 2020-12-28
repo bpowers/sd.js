@@ -116,7 +116,7 @@ class Simulation {
   }
 
   varNames(includeHidden: boolean): string[] {
-    let result = Object.keys(this.offsets).filter(v => includeHidden || !v.startsWith('$·'));
+    let result = Object.keys(this.offsets).filter((v) => includeHidden || !v.startsWith('$·'));
     for (let v in this.modules) {
       if (!this.modules.hasOwnProperty(v)) {
         continue;
@@ -311,15 +311,15 @@ function initCmds(main: Simulation): any {
   'use strict';
 
   return {
-    reset: function(): [undefined, undefined] | [undefined | Error] {
+    reset: function (): [undefined, undefined] | [undefined | Error] {
       main.reset();
       return [undefined, undefined];
     },
-    set_val: function(name: string, val: number): [undefined, undefined] | [undefined | Error] {
+    set_val: function (name: string, val: number): [undefined, undefined] | [undefined | Error] {
       main.setValue(name, val);
       return [undefined, undefined];
     },
-    get_val: function(
+    get_val: function (
       ...args: string[]
     ): [{ [name: string]: number }, undefined] | [undefined, Error] {
       let result: { [name: string]: number } = {};
@@ -328,7 +328,7 @@ function initCmds(main: Simulation): any {
       }
       return [result, undefined];
     },
-    get_series: function(
+    get_series: function (
       ...args: string[]
     ): [{ [name: string]: Series }, undefined] | [undefined, Error] {
       let result: { [name: string]: Series } = {};
@@ -340,21 +340,21 @@ function initCmds(main: Simulation): any {
       }
       return [result, undefined];
     },
-    dominance: function(
+    dominance: function (
       overrides: { [n: string]: number },
       indicators: string[],
     ): [{ [name: string]: number }, undefined] | [undefined, Error] {
       return [main.dominance(overrides, indicators), undefined];
     },
-    run_to: function(time: number): [number, undefined] | [undefined, Error] {
+    run_to: function (time: number): [number, undefined] | [undefined, Error] {
       main.runTo(time);
       return [main.value('time'), undefined];
     },
-    run_to_end: function(): [number, undefined] | [undefined, Error] {
+    run_to_end: function (): [number, undefined] | [undefined, Error] {
       main.runToEnd();
       return [main.value('time'), undefined];
     },
-    var_names: function(includeHidden: boolean): [string[], undefined] | [undefined, Error] {
+    var_names: function (includeHidden: boolean): [string[], undefined] | [undefined, Error] {
       return [main.varNames(includeHidden), undefined];
     },
   };

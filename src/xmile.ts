@@ -15,11 +15,11 @@ export const camelCase = (s: string): string => {
 };
 
 export const splitOnComma = (str: string): List<string> => {
-  return List(str.split(',').map(el => el.trim()));
+  return List(str.split(',').map((el) => el.trim()));
 };
 
 export const numberize = (arr: List<string>): List<number> => {
-  return List(arr.map(el => parseFloat(el)));
+  return List(arr.map((el) => parseFloat(el)));
 };
 
 export const i32 = (n: number): number => {

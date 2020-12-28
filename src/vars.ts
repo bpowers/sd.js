@@ -395,7 +395,7 @@ export class CodegenVisitor extends Record(codegenVisitorDefaults) implements as
       }
     }
 
-    code += n.args.map(arg => arg.walk(this)).join(', ');
+    code += n.args.map((arg) => arg.walk(this)).join(', ');
     code += ')';
 
     return code;
@@ -532,7 +532,7 @@ export function code(
       // FIXME(bpowers): this shouldn't require converting to a set + back again
       eqn += List(Set(variable.inflows))
         .sort()
-        .map(s => {
+        .map((s) => {
           if (offsets.has(s)) {
             return `curr[${defined(offsets.get(s))}]`;
           } else {
@@ -545,7 +545,7 @@ export function code(
       eqn += '- (';
       eqn += List(Set(variable.outflows))
         .sort()
-        .map(s => {
+        .map((s) => {
           if (offsets.has(s)) {
             return `curr[${defined(offsets.get(s))}]`;
           } else {
