@@ -1,14 +1,14 @@
 {
   "files": [
-    "runtime/runtime.ts",
-    "runtime/generated.d.ts",
-    "runtime/epilogue.ts"
+    "./runtime.ts",
+    "./generated.d.ts",
+    "./epilogue.ts"
   ],
 
   "compilerOptions": {
     "target": "es2016",
     "module": "es2015",
-    "outDir": "build-rt",
+    "outDir": "../build-rt",
 
     "lib": [
       "webworker",
