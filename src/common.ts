@@ -60,6 +60,9 @@ export const builtins: Map<string, Properties> = Map({
   pulse: {
     usesTime: true,
   },
+  step: {
+    usesTime: true,
+  },
   sin: {},
   sqrt: {},
   safediv: {},

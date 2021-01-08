@@ -487,6 +487,16 @@ function pulse(
   return 0;
 }
 
+function step(
+  dt: number,
+  time: number,
+  amplitude: number,
+  threshold: number,
+  interval: number,
+): number {
+  return time < threshold ? 0 : amplitude;
+}
+
 function safediv(a: number, b: number, alternative?: number): number {
   a = +a;
   b = +b;
