@@ -402,58 +402,57 @@ function lookup(table: any, index: number): number {
 }
 
 function abs(a: number): number {
-  a = +a;
-  return Math.abs(a);
+  return Math.abs(+a);
 }
 
 function arccos(a: number): number {
-  a = +a;
-  return Math.acos(a);
+  return Math.acos(+a);
 }
 
 function arcsin(a: number): number {
-  a = +a;
-  return Math.asin(a);
+  return Math.asin(+a);
 }
 
 function arctan(a: number): number {
-  a = +a;
-  return Math.atan(a);
+  return Math.atan(+a);
 }
 
 function cos(a: number): number {
-  a = +a;
-  return Math.cos(a);
+  return Math.cos(+a);
 }
 
 function exp(a: number): number {
-  a = +a;
-  return Math.exp(a);
+  return Math.exp(+a);
 }
 
 function inf(): number {
   return Infinity;
 }
 
+/**
+ * Next integer less than or equal to the given number
+ * Note negative fractional numbers increase in magnitude
+ */
 function int(a: number): number {
-  a = +a;
-  return a | 0;
+  return Math.floor(+a);
 }
 
 function ln(a: number): number {
-  a = +a;
-  return Math.log(a);
+  return Math.log(+a);
 }
 
 function log10(a: number): number {
-  a = +a;
-  return Math.log10(a);
+  return Math.log10(+a);
 }
 
 function max(a: number, b: number): number {
   a = +a;
   b = +b;
   return a > b ? a : b;
+}
+
+function mean(a: number, b: number): number {
+  return (+a + +b) / 2;
 }
 
 function min(a: number, b: number): number {
@@ -509,16 +508,13 @@ function safediv(a: number, b: number, alternative?: number): number {
 }
 
 function sin(a: number): number {
-  a = +a;
-  return Math.sin(a);
+  return Math.sin(+a);
 }
 
 function sqrt(a: number): number {
-  a = +a;
-  return Math.sqrt(a);
+  return Math.sqrt(+a);
 }
 
 function tan(a: number): number {
-  a = +a;
-  return Math.tan(a);
+  return Math.tan(+a);
 }
