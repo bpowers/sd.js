@@ -1,5 +1,5 @@
 
-TSLINT    ?= node_modules/.bin/tslint
+TSLINT    ?= node_modules/.bin/eslint
 
 RUNTIME    = src/runtime.ts
 # ensure runtime is only listed once
