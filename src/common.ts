@@ -56,8 +56,15 @@ export const builtins: Map<string, Properties> = Map({
   lookup: {},
   max: {},
   min: {},
+  mean: {},
   pi: {},
   pulse: {
+    usesTime: true,
+  },
+  ramp: {
+    usesTime: true,
+  },
+  step: {
     usesTime: true,
   },
   sin: {},

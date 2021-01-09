@@ -402,58 +402,57 @@ function lookup(table: any, index: number): number {
 }
 
 function abs(a: number): number {
-  a = +a;
-  return Math.abs(a);
+  return Math.abs(+a);
 }
 
 function arccos(a: number): number {
-  a = +a;
-  return Math.acos(a);
+  return Math.acos(+a);
 }
 
 function arcsin(a: number): number {
-  a = +a;
-  return Math.asin(a);
+  return Math.asin(+a);
 }
 
 function arctan(a: number): number {
-  a = +a;
-  return Math.atan(a);
+  return Math.atan(+a);
 }
 
 function cos(a: number): number {
-  a = +a;
-  return Math.cos(a);
+  return Math.cos(+a);
 }
 
 function exp(a: number): number {
-  a = +a;
-  return Math.exp(a);
+  return Math.exp(+a);
 }
 
 function inf(): number {
   return Infinity;
 }
 
+/**
+ * Next integer less than or equal to the given number
+ * Note negative fractional numbers increase in magnitude
+ */
 function int(a: number): number {
-  a = +a;
-  return a | 0;
+  return +a | 0;
 }
 
 function ln(a: number): number {
-  a = +a;
-  return Math.log(a);
+  return Math.log(+a);
 }
 
 function log10(a: number): number {
-  a = +a;
-  return Math.log10(a);
+  return Math.log10(+a);
 }
 
 function max(a: number, b: number): number {
   a = +a;
   b = +b;
   return a > b ? a : b;
+}
+
+function mean(a: number, b: number): number {
+  return (+a + +b) / 2;
 }
 
 function min(a: number, b: number): number {
@@ -466,18 +465,27 @@ function pi(): number {
   return Math.PI;
 }
 
+/**
+ * Generate a one-DT wide pulse at the given time
+ * @example PULSE(20, 12, 5) generates a pulse value of 20/DT at time 12, 17, 22, etc.
+ * @param dt
+ * @param time
+ * @param magnitude
+ * @param firstTime
+ * @param interval Without interval or when interval = 0, the PULSE is generated only once
+ */
 function pulse(
   dt: number,
   time: number,
-  volume: number,
-  firstPulse: number,
-  interval: number,
+  magnitude: number,
+  firstTime: number,
+  interval: number = 0,
 ): number {
-  if (time < firstPulse) return 0;
-  let nextPulse = firstPulse;
+  if (time < firstTime) return 0;
+  let nextPulse = firstTime;
   while (time >= nextPulse) {
     if (time < nextPulse + dt) {
-      return volume / dt;
+      return magnitude / dt;
     } else if (interval <= 0.0) {
       break;
     } else {
@@ -485,6 +493,43 @@ function pulse(
     }
   }
   return 0;
+}
+
+/**
+ * Generate a linearly increasing value over time with the given slope
+ * @example RAMP(2, 5) generates a ramp of slope 2 beginning at time 5
+ * @param dt
+ * @param time
+ * @param slope
+ * @param startTime
+ * @param endTime
+ */
+function ramp(
+  dt: number,
+  time: number,
+  slope: number,
+  startTime: number,
+  endTime?: number,
+): number {
+  return time < startTime
+    ? 0
+    : typeof endTime !== 'undefined' && endTime > startTime && time > endTime
+    ? (endTime - startTime) * slope
+    : (time - startTime) * slope;
+}
+
+/**
+ * Generate a step increase (or decrease) at the given time
+ * @example: STEP(6, 3) steps from 0 to 6 at time 3 (and stays there)
+ */
+function step(
+  dt: number,
+  time: number,
+  height: number,
+  startTime: number,
+  interval: number,
+): number {
+  return time < startTime ? 0 : height;
 }
 
 function safediv(a: number, b: number, alternative?: number): number {
@@ -499,16 +544,13 @@ function safediv(a: number, b: number, alternative?: number): number {
 }
 
 function sin(a: number): number {
-  a = +a;
-  return Math.sin(a);
+  return Math.sin(+a);
 }
 
 function sqrt(a: number): number {
-  a = +a;
-  return Math.sqrt(a);
+  return Math.sqrt(+a);
 }
 
 function tan(a: number): number {
-  a = +a;
-  return Math.tan(a);
+  return Math.tan(+a);
 }

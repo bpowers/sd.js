@@ -79,7 +79,7 @@ Once those are installed on your system, you can simply run `make`
 (which simply ensures `yarn install` has run and wraps `yarn build`)
 to build the library for node and the browser:
 
-```
+```bash
 [bpowers@vyse sd.js]$ make
   YARN
 yarn install v1.1.0
@@ -89,12 +89,14 @@ success Already up-to-date.
 Done in 0.36s.
   YARN  sd.js
 yarn run v1.1.0
-$ npm-run-all build:pre build:runtime0 build:runtime1 -p build:lib build:build -s build:browser
+$ npm run build
 
 build/sd.js → sd.js...
 created sd.js in 1.6s
 Done in 7.35s.
 ```
+
+Alternatively, you can also use `pnpm` to install your dependencies with `pnpm i` (assuming `pnpm` is installed globally using `npm i -g pnpm`), and run `npm run build` to build the output.
 
 Run `make test` to run unit tests, and `make rtest` to run regression
 tests against the XMILE models in the
