@@ -465,18 +465,27 @@ function pi(): number {
   return Math.PI;
 }
 
+/**
+ * Generate a one-DT wide pulse at the given time
+ * @example PULSE(20, 12, 5) generates a pulse value of 20/DT at time 12, 17, 22, etc.
+ * @param dt
+ * @param time
+ * @param magnitude
+ * @param firstTime
+ * @param interval Without interval or when interval = 0, the PULSE is generated only once
+ */
 function pulse(
   dt: number,
   time: number,
-  volume: number,
-  firstPulse: number,
-  interval: number,
+  magnitude: number,
+  firstTime: number,
+  interval: number = 0,
 ): number {
-  if (time < firstPulse) return 0;
-  let nextPulse = firstPulse;
+  if (time < firstTime) return 0;
+  let nextPulse = firstTime;
   while (time >= nextPulse) {
     if (time < nextPulse + dt) {
-      return volume / dt;
+      return magnitude / dt;
     } else if (interval <= 0.0) {
       break;
     } else {
@@ -486,14 +495,41 @@ function pulse(
   return 0;
 }
 
+/**
+ * Generate a linearly increasing value over time with the given slope
+ * @example RAMP(2, 5) generates a ramp of slope 2 beginning at time 5
+ * @param dt
+ * @param time
+ * @param slope
+ * @param startTime
+ * @param endTime
+ */
+function ramp(
+  dt: number,
+  time: number,
+  slope: number,
+  startTime: number,
+  endTime?: number,
+): number {
+  return time < startTime
+    ? 0
+    : typeof endTime !== 'undefined' && endTime > startTime && time > endTime
+    ? (endTime - startTime) * slope
+    : (time - startTime) * slope;
+}
+
+/**
+ * Generate a step increase (or decrease) at the given time
+ * @example: STEP(6, 3) steps from 0 to 6 at time 3 (and stays there)
+ */
 function step(
   dt: number,
   time: number,
-  amplitude: number,
-  threshold: number,
+  height: number,
+  startTime: number,
   interval: number,
 ): number {
-  return time < threshold ? 0 : amplitude;
+  return time < startTime ? 0 : height;
 }
 
 function safediv(a: number, b: number, alternative?: number): number {

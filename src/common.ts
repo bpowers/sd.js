@@ -61,6 +61,9 @@ export const builtins: Map<string, Properties> = Map({
   pulse: {
     usesTime: true,
   },
+  ramp: {
+    usesTime: true,
+  },
   step: {
     usesTime: true,
   },
