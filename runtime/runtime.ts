@@ -434,7 +434,7 @@ function inf(): number {
  * Note negative fractional numbers increase in magnitude
  */
 function int(a: number): number {
-  return Math.floor(+a);
+  return +a | 0;
 }
 
 function ln(a: number): number {
